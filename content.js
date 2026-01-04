@@ -105,6 +105,7 @@
       this.container = null;
       this.shadowRoot = null;
       this.overlayElement = null;
+      this.isActive = false;
     }
 
     /**
@@ -278,6 +279,11 @@
           animation: kairos-ripple-expand 1.6s cubic-bezier(0.33, 1, 0.68, 1) forwards;
         }
 
+        .kairos-ripple.reversing {
+          /* Reverse animation: contract back to source */
+          animation: kairos-ripple-contract 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
         @keyframes kairos-border-pulse {
           0% {
             box-shadow: 
@@ -313,6 +319,20 @@
           }
           100% {
             transform: translate(50%, -50%) scale(100);
+            opacity: 0;
+          }
+        }
+
+        @keyframes kairos-ripple-contract {
+          0% {
+            transform: translate(50%, -50%) scale(100);
+            opacity: 0;
+          }
+          30% {
+            opacity: 0.6; /* Light gathers */
+          }
+          100% {
+            transform: translate(50%, -50%) scale(0);
             opacity: 0;
           }
         }
@@ -386,29 +406,54 @@
      * Handles click event on the floating orb
      */
     handleOrbClick() {
-      log('Orb clicked! Triggering Apple Intelligence-style animation...');
-      
-      if (this.effectElements) {
-        const { flash, ripple, glowBorder } = this.effectElements;
+      if (!this.effectElements) {
+        log('Animation elements missing.');
+        return;
+      }
+
+      const { flash, ripple, glowBorder } = this.effectElements;
+
+      if (this.isActive) {
+        // --- DEACTIVATE ---
+        log('Deactivating Kairos...');
+        this.isActive = false;
+
+        // 1. Fade out the border
+        glowBorder.classList.remove('active');
+
+        // 2. Trigger "Reverse" Ripple (Contract)
+        // Clean up previous animations first
+        ripple.classList.remove('animating');
+        ripple.classList.remove('reversing');
         
-        // Reset animation by removing class and forcing reflow
+        // Force reflow
+        void ripple.offsetWidth;
+        
+        // Start reverse animation
+        ripple.classList.add('reversing');
+
+        // Note: We don't flash on deactivation, just smooth exit
+
+      } else {
+        // --- ACTIVATE ---
+        log('Activating Kairos (Apple Intelligence style)...');
+        this.isActive = true;
+        
+        // 1. Reset all animations
         flash.classList.remove('animating');
         ripple.classList.remove('animating');
-        glowBorder.classList.remove('active');
-        
-        // Trigger reflow to restart animation
+        ripple.classList.remove('reversing');
+        glowBorder.classList.remove('active'); // Temporarily remove to ensure transition
+
+        // Force reflow
         void flash.offsetWidth;
         
-        // Start animation
+        // 2. Start Activation Animations
         flash.classList.add('animating');
         ripple.classList.add('animating');
         
-        // Activate the border - it will stay active without exiting fullscreen
+        // Activate the border - it will fade in as the ripple expands
         glowBorder.classList.add('active');
-        
-        log('Animation active, staying in fullscreen.');
-      } else {
-          log('Animation elements missing.');
       }
     }
 

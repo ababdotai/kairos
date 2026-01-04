@@ -21,7 +21,12 @@
       '.bili-header__banner video',  // Bilibili Banner variant
       '.animated-banner video',      // Generic banner class
       'header video',                // Videos in headers
-      '.banner-video'                // Common banner class
+      '.banner-video',               // Common banner class
+      // YouTube specific ignores
+      'ytd-video-preview video',     // Home feed hover previews
+      '#inline-player video',        // Inline player container
+      'ytd-miniplayer video',        // Miniplayer (corner)
+      '.ytd-moving-thumbnail-renderer video' // Legacy moving thumbnails
     ]
   };
 

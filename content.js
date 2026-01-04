@@ -149,61 +149,172 @@
           transition: all 0.1s ease-out;
         }
 
-        .kairos-debug-border {
+        /* Apple Intelligence-style Border */
+        .kairos-glow-border {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border: 3px solid #39FF14;
-          box-shadow: 0 0 20px rgba(57, 255, 20, 0.5);
+          inset: -1.5px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          box-shadow: 0 0 0 rgba(0,0,0,0); 
+          opacity: 0;
           pointer-events: none;
+          transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Active State: Narrower and subtler colorful inner border */
+        .kairos-glow-border.active {
+          opacity: 1;
+          border-color: rgba(255, 255, 255, 0.6);
+          /* Narrower inset shadows (4px-20px instead of 10px-60px) */
+          box-shadow: 
+            inset 4px 0 25px rgba(0, 200, 255, 0.7),    /* Cyan Left */
+            inset -4px 0 25px rgba(180, 0, 255, 0.7),   /* Purple Right */
+            inset 0 4px 25px rgba(255, 0, 150, 0.7),    /* Pink Top */
+            inset 0 -4px 25px rgba(255, 100, 0, 0.7),   /* Orange Bottom */
+            0 0 15px rgba(255, 255, 255, 0.2);          /* Outer Edge Glow */
+          
+          animation: kairos-border-pulse 3s infinite alternate ease-in-out;
         }
 
         .kairos-orb {
           position: absolute;
-          top: 16px;
-          right: 16px;
-          width: 48px;
-          height: 48px;
-          background: rgba(26, 26, 26, 0.8);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          top: 24px;
+          right: 24px;
+          width: 56px;
+          height: 56px;
+          background: rgba(15, 15, 15, 0.3);
+          backdrop-filter: blur(24px) saturate(200%);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 50%;
           pointer-events: auto;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+          z-index: 20;
         }
 
         .kairos-orb:hover {
-          transform: scale(1.1);
-          border-color: rgba(57, 255, 20, 0.5);
-          box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+          transform: scale(1.08);
+          background: rgba(30, 30, 30, 0.5);
+          border-color: rgba(255, 255, 255, 0.4);
+          box-shadow: 
+            0 12px 48px rgba(0, 0, 0, 0.4),
+            0 0 15px rgba(0, 195, 255, 0.3);
         }
 
         .kairos-orb-icon {
-          width: 24px;
-          height: 24px;
-          fill: #D4D4D4;
+          width: 28px;
+          height: 28px;
+          fill: white;
+          filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
         }
 
         .kairos-info {
           position: absolute;
-          top: 16px;
-          left: 16px;
-          padding: 8px 12px;
-          background: rgba(26, 26, 26, 0.9);
+          top: 24px;
+          left: 24px;
+          padding: 8px 16px;
+          background: rgba(10, 10, 10, 0.4);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          color: #D4D4D4;
-          font-family: 'Inter', system-ui, sans-serif;
-          font-size: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 20px;
+          color: white;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+          font-weight: 500;
+          font-size: 13px;
           pointer-events: none;
+          z-index: 20;
+          opacity: 0.7;
+        }
+
+        /* Animation Layers */
+        .kairos-effect-container {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 10;
+          overflow: hidden;
+          border-radius: 12px;
+        }
+
+        .kairos-flash {
+          position: absolute;
+          inset: 0;
+          background: rgba(255, 255, 255, 0.03);
+          opacity: 0;
+        }
+
+        .kairos-flash.animating {
+          animation: kairos-flash-anim 1.2s ease-in-out forwards;
+        }
+
+        .kairos-ripple {
+          position: absolute;
+          top: 52px;
+          right: 52px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: radial-gradient(circle, 
+            #ffffff 0%,
+            #00f2ff 25%, 
+            #7000ff 50%, 
+            #ff0095 75%, 
+            transparent 100%
+          );
+          filter: blur(12px);
+          transform: translate(50%, -50%) scale(0);
+          opacity: 0;
+          mix-blend-mode: screen;
+        }
+
+        .kairos-ripple.animating {
+          /* Slower expansion (1.6s) with more natural "floating" curve */
+          animation: kairos-ripple-expand 1.6s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+        }
+
+        @keyframes kairos-border-pulse {
+          0% {
+            box-shadow: 
+              inset 4px 0 25px rgba(0, 200, 255, 0.7),
+              inset -4px 0 25px rgba(180, 0, 255, 0.7),
+              inset 0 4px 25px rgba(255, 0, 150, 0.7),
+              inset 0 -4px 25px rgba(255, 100, 0, 0.7),
+              0 0 15px rgba(255, 255, 255, 0.2);
+          }
+          100% {
+            box-shadow: 
+              inset 6px 0 35px rgba(0, 200, 255, 0.8),
+              inset -6px 0 35px rgba(180, 0, 255, 0.8),
+              inset 0 6px 35px rgba(255, 0, 150, 0.8),
+              inset 0 -6px 35px rgba(255, 100, 0, 0.8),
+              0 0 25px rgba(255, 255, 255, 0.3);
+          }
+        }
+
+        @keyframes kairos-flash-anim {
+          0% { opacity: 0; }
+          40% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+
+        @keyframes kairos-ripple-expand {
+          0% {
+            transform: translate(50%, -50%) scale(0);
+            opacity: 0.8;
+          }
+          30% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate(50%, -50%) scale(100);
+            opacity: 0;
+          }
         }
       `;
       this.shadowRoot.appendChild(style);
@@ -216,10 +327,24 @@
       const overlay = document.createElement('div');
       overlay.className = 'kairos-overlay';
 
-      // Debug border (to verify overlay is working)
-      const debugBorder = document.createElement('div');
-      debugBorder.className = 'kairos-debug-border';
-      overlay.appendChild(debugBorder);
+      // Apple Intelligence-style Glow Border
+      const glowBorder = document.createElement('div');
+      glowBorder.className = 'kairos-glow-border';
+      overlay.appendChild(glowBorder);
+
+      // Animation Effect Container
+      const effectContainer = document.createElement('div');
+      effectContainer.className = 'kairos-effect-container';
+
+      const flash = document.createElement('div');
+      flash.className = 'kairos-flash';
+      effectContainer.appendChild(flash);
+
+      const ripple = document.createElement('div');
+      ripple.className = 'kairos-ripple';
+      effectContainer.appendChild(ripple);
+
+      overlay.appendChild(effectContainer);
 
       // Info display
       const info = document.createElement('div');
@@ -240,6 +365,9 @@
 
       this.overlayElement = overlay;
       this.shadowRoot.appendChild(overlay);
+
+      // Store references for animation
+      this.effectElements = { flash, ripple, glowBorder };
     }
 
     /**
@@ -258,9 +386,30 @@
      * Handles click event on the floating orb
      */
     handleOrbClick() {
-      log('Orb clicked!');
-      // TODO: Implement note-taking UI in Phase 1
-      alert('Kairos v0.1 - Click detected!\nNote-taking UI coming in Phase 1');
+      log('Orb clicked! Triggering Apple Intelligence-style animation...');
+      
+      if (this.effectElements) {
+        const { flash, ripple, glowBorder } = this.effectElements;
+        
+        // Reset animation by removing class and forcing reflow
+        flash.classList.remove('animating');
+        ripple.classList.remove('animating');
+        glowBorder.classList.remove('active');
+        
+        // Trigger reflow to restart animation
+        void flash.offsetWidth;
+        
+        // Start animation
+        flash.classList.add('animating');
+        ripple.classList.add('animating');
+        
+        // Activate the border - it will stay active without exiting fullscreen
+        glowBorder.classList.add('active');
+        
+        log('Animation active, staying in fullscreen.');
+      } else {
+          log('Animation elements missing.');
+      }
     }
 
     /**

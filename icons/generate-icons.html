@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Kairos Icon Generator</title>
+</head>
+<body>
+  <h1>Kairos Icon Generator</h1>
+  <p>Right-click each canvas and "Save Image As" to generate PNG icons.</p>
+
+  <div>
+    <h2>16x16</h2>
+    <canvas id="icon16" width="16" height="16"></canvas>
+  </div>
+
+  <div>
+    <h2>48x48</h2>
+    <canvas id="icon48" width="48" height="48"></canvas>
+  </div>
+
+  <div>
+    <h2>128x128</h2>
+    <canvas id="icon128" width="128" height="128"></canvas>
+  </div>
+
+  <script>
+    function drawIcon(canvas) {
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const center = size / 2;
+      const radius = size * 0.3;
+
+      // Background
+      ctx.fillStyle = '#0A0A0A';
+      ctx.fillRect(0, 0, size, size);
+
+      // Outer circle
+      ctx.strokeStyle = '#39FF14';
+      ctx.lineWidth = size > 32 ? 3 : 2;
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center dot
+      ctx.fillStyle = '#39FF14';
+      ctx.beginPath();
+      ctx.arc(center, center, radius * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cross marks
+      if (size > 32) {
+        ctx.strokeStyle = '#39FF14';
+        ctx.lineWidth = size > 64 ? 3 : 2;
+        ctx.lineCap = 'round';
+
+        const markLength = radius * 0.5;
+        const markStart = center - radius - markLength;
+        const markEnd = center - radius;
+
+        // Top
+        ctx.beginPath();
+        ctx.moveTo(center, markStart);
+        ctx.lineTo(center, markEnd);
+        ctx.stroke();
+
+        // Bottom
+        ctx.beginPath();
+        ctx.moveTo(center, size - markStart);
+        ctx.lineTo(center, size - markEnd);
+        ctx.stroke();
+
+        // Left
+        ctx.beginPath();
+        ctx.moveTo(markStart, center);
+        ctx.lineTo(markEnd, center);
+        ctx.stroke();
+
+        // Right
+        ctx.beginPath();
+        ctx.moveTo(size - markStart, center);
+        ctx.lineTo(size - markEnd, center);
+        ctx.stroke();
+      }
+    }
+
+    // Generate all icons
+    drawIcon(document.getElementById('icon16'));
+    drawIcon(document.getElementById('icon48'));
+    drawIcon(document.getElementById('icon128'));
+  </script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin: 10px 0;
+      background: white;
+      cursor: pointer;
+    }
+    div {
+      margin: 20px 0;
+    }
+  </style>
+</body>
+</html>

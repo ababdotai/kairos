@@ -148,7 +148,7 @@
 
       const rect = this.getVideoRect();
       if (rect) {
-        this.callbacks.forEach(callback => callback(rect));
+        this.callbacks.forEach(callback => callback(rect, this.videoElement));
       }
 
       this.animationFrameId = requestAnimationFrame(() => this.update());
@@ -339,6 +339,89 @@
           display: none; /* Hidden as requested */
         }
 
+        /* Ceiling Timeline: The Invisible Touch Area */
+        .kairos-timeline-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 16px; 
+          background: transparent;
+          pointer-events: none; /* Disabled by default */
+          z-index: 30;
+          opacity: 0; 
+          transition: opacity 0.3s ease;
+          overflow: visible; 
+        }
+
+        /* Show and Enable when Overlay is Active (Activated via Orb) */
+        .kairos-overlay.active .kairos-timeline-container {
+          opacity: 1; 
+          pointer-events: auto; /* Enable interaction only when active */
+          /* Custom Pin Cursor: 180deg rotated + Horizontally Flipped */
+          cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="28" x="4" font-size="24" style="transform-origin: 16px 16px; transform: rotate(180deg) scaleX(-1);">📌</text></svg>') 12 12, crosshair;
+        }
+
+        /* The Progress Glow: Aurora Style */
+        .kairos-progress-bar {
+          height: 3px; /* Thicker line */
+          width: 0%; 
+          /* Stronger Gradient */
+          background: linear-gradient(90deg, 
+            rgba(0, 242, 255, 0) 0%, 
+            rgba(0, 242, 255, 0.8) 50%,
+            rgba(160, 60, 255, 1) 100%
+          );
+          /* Intense glow */
+          box-shadow: 
+            0 0 15px rgba(160, 60, 255, 0.6),
+            2px 0 20px rgba(0, 242, 255, 0.5);
+          transition: width 0.1s linear;
+          position: absolute;
+          top: 0;
+          border-radius: 0 3px 3px 0;
+        }
+
+        /* The Pin: Visual Emoji Marker */
+        .kairos-pin {
+          position: absolute;
+          top: 2px; /* Adjust slightly to align point with line */
+          width: 24px; 
+          height: 24px;
+          transform: translateX(-50%);
+          cursor: pointer;
+          z-index: 31;
+          pointer-events: none; /* Hit test via pseudo if needed, or container */
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          /* Remove thread styles */
+          background: transparent;
+        }
+
+        /* The Emoji Head */
+        .kairos-pin::after {
+          content: '📌';
+          font-size: 20px;
+          /* Match the cursor: Rotate 180 + Flip X */
+          transform: rotate(180deg) scaleX(-1);
+          filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.6));
+          transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          pointer-events: auto; 
+        }
+
+        /* Hover Effect: Scale up */
+        .kairos-pin:hover::after {
+          transform: rotate(180deg) scaleX(-1) scale(1.3);
+          filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.9));
+          cursor: pointer;
+        }
+        
+        /* Remove old hover height change */
+        .kairos-pin:hover {
+          height: 24px; 
+        }
+
         /* Animation Layers */
         .kairos-effect-container {
           position: absolute;
@@ -459,6 +542,17 @@
       glowBorder.className = 'kairos-glow-border';
       overlay.appendChild(glowBorder);
 
+      // Ceiling Timeline
+      const timeline = document.createElement('div');
+      timeline.className = 'kairos-timeline-container';
+      
+      const progressBar = document.createElement('div');
+      progressBar.className = 'kairos-progress-bar';
+      timeline.appendChild(progressBar);
+
+      timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
+      overlay.appendChild(timeline);
+
       // Animation Effect Container
       const effectContainer = document.createElement('div');
       effectContainer.className = 'kairos-effect-container';
@@ -497,8 +591,6 @@
       orb.appendChild(labelSpan);
 
       orb.addEventListener('click', (e) => {
-          // Prevent click from propagating if we just wanted to expand? 
-          // No, click always toggles.
           this.handleOrbClick();
       });
 
@@ -506,7 +598,11 @@
 
       this.overlayElement = overlay;
       this.orbElement = orb; 
-      this.orbLabel = labelSpan; // Store reference
+      this.orbLabel = labelSpan; 
+      this.timeline = timeline;
+      this.progressBar = progressBar;
+      this.pins = []; // Track created pins
+      
       this.shadowRoot.appendChild(overlay);
 
       // Store references for animation
@@ -516,13 +612,20 @@
     /**
      * Updates the overlay position based on video rectangle
      */
-    updatePosition(rect) {
+    updatePosition(rect, video) {
       if (!this.overlayElement) return;
+      this.videoElement = video; // Store reference
 
       this.overlayElement.style.top = `${rect.top}px`;
       this.overlayElement.style.left = `${rect.left}px`;
       this.overlayElement.style.width = `${rect.width}px`;
       this.overlayElement.style.height = `${rect.height}px`;
+
+      // Update progress bar
+      if (this.isActive && this.progressBar && video && video.duration) {
+        const progress = (video.currentTime / video.duration) * 100;
+        this.progressBar.style.width = `${progress}%`;
+      }
     }
 
     /**
@@ -536,19 +639,33 @@
 
       const { flash, ripple, glowBorder } = this.effectElements;
 
-            if (this.isActive) {
-              // --- DEACTIVATE ---
-              log('Deactivating Kairos...');
-              this.isActive = false;
-      
-              // 1. Fade out the border
-              glowBorder.classList.remove('active');
-              
-              // 2. Update Orb State
-              if (this.orbElement) this.orbElement.classList.remove('active');
-              if (this.orbLabel) this.orbLabel.textContent = 'Activate Kairos';
-      
-              // 3. Trigger "Reverse" Ripple (Contract)        // Clean up previous animations first
+                  if (this.isActive) {
+
+                    // --- DEACTIVATE ---
+
+                    log('Deactivating Kairos...');
+
+                    this.isActive = false;
+
+            
+
+                    // 1. Fade out the border and Hide Timeline (via overlay active class)
+
+                    glowBorder.classList.remove('active');
+
+                    if (this.overlayElement) this.overlayElement.classList.remove('active');
+
+                    
+
+                    // 2. Update Orb State
+
+                    if (this.orbElement) this.orbElement.classList.remove('active');
+
+                    if (this.orbLabel) this.orbLabel.textContent = 'Activate Kairos';
+
+            
+
+                    // 3. Trigger "Reverse" Ripple (Contract)        // Clean up previous animations first
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
 
@@ -575,6 +692,9 @@
         if (this.orbElement) this.orbElement.classList.add('active');
         if (this.orbLabel) this.orbLabel.textContent = 'Deactivate Kairos';
 
+        // Show Timeline
+        if (this.overlayElement) this.overlayElement.classList.add('active');
+
         // Force reflow
         void flash.offsetWidth;
 
@@ -585,6 +705,48 @@
         // Activate the border - it will fade in as the ripple expands
         glowBorder.classList.add('active');
       }
+    }
+
+    /**
+     * Handles clicks on the timeline to seek and add pins
+     */
+    handleTimelineClick(e) {
+      if (!this.isActive || !this.videoElement || !this.timeline) return;
+
+      e.stopPropagation(); // Don't trigger underlying elements
+
+      const rect = this.timeline.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+      const percentage = Math.max(0, Math.min(1, clickX / width)); // Clamp 0-1
+
+      // 1. Seek video
+      if (Number.isFinite(this.videoElement.duration)) {
+          this.videoElement.currentTime = percentage * this.videoElement.duration;
+      }
+
+      // 2. Create Pin visual
+      this.createPin(percentage * 100);
+      
+      log(`Timeline clicked at ${Math.round(percentage * 100)}%`);
+    }
+
+    /**
+     * Creates a visual pin on the timeline
+     */
+    createPin(percentage) {
+        const pin = document.createElement('div');
+        pin.className = 'kairos-pin';
+        pin.style.left = `${percentage}%`;
+        
+        // Add hover/click interactions for the pin here later
+        
+        this.timeline.appendChild(pin);
+        this.pins.push({
+            element: pin,
+            percentage: percentage,
+            timestamp: this.videoElement ? this.videoElement.currentTime : 0
+        });
     }
 
     /**
@@ -612,8 +774,8 @@
     const videoTracker = new VideoTracker(CONFIG.VIDEO_SELECTOR);
 
     // Start tracking and update overlay position
-    videoTracker.start((rect) => {
-      overlayManager.updatePosition(rect);
+    videoTracker.start((rect, video) => {
+      overlayManager.updatePosition(rect, video);
     });
 
     // Handle fullscreen changes

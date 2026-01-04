@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Kairos",
+  "version": "0.1.0",
+  "description": "Your AI notetaker while watching videos.. Transform linear videos into queryable knowledge bases.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://www.youtube.com/*",
+    "*://www.bilibili.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://www.bilibili.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_title": "Kairos - Your AI notetaker while watching videos."
+  }
+}

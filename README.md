@@ -1,0 +1,179 @@
+# Kairos
+
+> **Your AI notetaker while watching videos.**
+
+Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrome Extension，核心功能为在用户观看视频时通过快捷键或点击进行AI笔记，通过智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
+
+## 🎯 核心理念
+
+传统视频学习是线性的——用户必须通过进度条寻找信息；边看视频边做笔记是麻烦的--用户必须手动截图粘贴到另一个软件中，文字也必须全部自己编写。Kairos 重新定义了看视频做笔记的交互方式：
+
+- **非线性知识提取**：将长视频变成可查询的动态数据库
+- **零 UI 摩擦**：悬浮球交互，无需打开侧边栏
+- **本地优先**：数据存储在用户本地，深度集成 Obsidian/Notion
+- **多模态理解**：利用 Gemini 3 Flash 的视觉能力，自动提取代码、公式、关键概念
+
+## ✨ 核心功能
+
+### 已规划功能
+- **智能笔记**：用户观看视频过程中，通过快捷键或点击时间轴Pin一个笔记点，Kairos捕获视频帧，AI自动截取时间点前后强相关的音频或视频段，生成总结（用户可选择先输入若干关键词，AI会综合考虑进行拓展）
+- **语义化时间轴**：基于信息密度的可视化进度条
+- **AI 辅助补全**：根据视频内容和字幕，自动生成笔记摘要
+- **工作流集成**：
+  - Obsidian 本地直连（FileSystemAccess API）
+  - Notion Database 同步
+  - Deep Link 回跳支持
+- **对象级交互**：识别视频中的代码块、图表，支持一键复制/解释
+
+### 技术亮点
+- **全局悬浮层架构**：Shadow DOM 隔离，完美兼容任何网页
+- **坐标实时同步**：支持全屏、画中画等所有播放模式
+- **本地优先存储**：IndexedDB + 可选云端元数据同步
+
+## 🏗️ 技术栈
+
+- **前端框架**：React 18 + TypeScript
+- **构建工具**：Vite + CRXJS Plugin
+- **样式方案**：Tailwind CSS + Framer Motion
+- **AI 能力**：Gemini 3 Flash API (多模态理解)
+- **存储方案**：IndexedDB (本地) + FileSystemAccess API (Obsidian)
+- **扩展架构**：Manifest V3
+
+## 📅 开发计划
+
+### 阶段 0：技术验证（Week 1）：避免过度工程化，先使用Vanilla ES6+ JavaScript和Vanilla CSS3实现
+- [ ] 项目初始化与架构设计
+- [ ] 全局悬浮层实现（Shadow DOM）
+- [ ] 视频坐标实时追踪（考虑YouTube和Bilibili的几种视频播放方式：默认、影院、全屏）
+- [ ] 里程碑：红框紧贴视频播放器，支持全屏和滚动
+
+### 阶段 1：手动工具 MVP（Week 2-3）
+- [ ] 悬浮球交互组件（The Orb）：悬浮之上显示“”
+- [ ] 视频截图引擎（Canvas drawImage）
+- [ ] 本地笔记存储（IndexedDB CRUD）
+- [ ] Markdown 导出功能
+- [ ] 里程碑：完整记录 5 条笔记并导出到 Obsidian
+
+### 阶段 2：AI 大脑接入（Week 4-5）
+- [ ] Gemini API 调用管道（Background Script）
+- [ ] 字幕抓取与解析（YouTube timedtext API）
+- [ ] 多模态内容分析（截图 + 字幕 → AI 摘要）
+- [ ] Ghost Suggestion 交互
+- [ ] 里程碑：AI 自动提取视频中的代码并生成解释
+
+### 阶段 3：护城河建设（Week 6-7）
+- [ ] Obsidian 本地直连（FileSystemAccess API）
+- [ ] Notion Integration 同步
+- [ ] Deep Link 回跳支持
+- [ ] 里程碑：卸载插件后，笔记仍完整保留在 Obsidian
+
+### 阶段 4：品质打磨与发布（Week 8+）
+- [ ] UI/UX 精细化（Glassmorphism + 动效）
+- [ ] Sound Design（截图音效、保存音效）
+- [ ] Dashboard 页面（瀑布流笔记展示）
+- [ ] 录制 Demo 视频
+- [ ] Product Hunt 发布准备
+
+## 🎨 设计语言
+
+- **核心隐喻**："Kairos"（关键时刻）—— 捕捉质的时间，而非量的时间
+- **视觉风格**：Liquid Glass（流体玻璃），参考 Linear/Granola/Arc
+- **色彩方案**：
+  - 背景：`#0A0A0A`（黑曜石）
+  - 主色：`#D4D4D4`（高级灰）
+  - 强调色：Phosphor Green (`#39FF14`) 或 Electric Violet (`#8A2BE2`)
+- **字体选择**：
+  - 英文：Inter / Geist Sans
+  - 代码：JetBrains Mono / Fira Code
+
+## 🌍 竞品分析
+
+### 核心差异化优势
+
+| 竞品           | 核心局限                     | Kairos 的优势                      |
+| -------------- | ---------------------------- | ---------------------------------- |
+| Monica AI      | 侧边栏交互，打断视频沉浸感   | 全局悬浮层，无侵入式交互           |
+| Recall (Rewind)| 屏幕录制，隐私风险高         | 本地优先，无云端存储               |
+| Granola        | 仅支持会议，不支持视频学习   | 专注视频知识提取，支持所有视频平台 |
+| YouTube 原生字幕 | 无法结构化，无法回溯         | 语义化时间轴 + 笔记锚点            |
+
+### 护城河策略
+1. **设计驱动增长**：极致的 UI/UX，让工具成为"时尚单品"
+2. **工作流绑定**：深度集成 Obsidian/Notion，迁移成本极高
+3. **本地优先架构**：规避大厂合规包袱，快速迭代
+4. **版本领先策略**：保持 2 周的功能领先，避免被抄袭
+
+## 📦 项目结构
+
+```
+kairos/
+├── src/
+│   ├── content/          # Content Script（注入页面）
+│   │   ├── overlay/      # 全局悬浮层组件
+│   │   ├── orb/          # 悬浮球交互
+│   │   └── timeline/     # 语义化进度条
+│   ├── background/       # Background Script（API 调用）
+│   ├── popup/            # 扩展弹窗
+│   ├── options/          # 设置页面/Dashboard
+│   ├── hooks/            # React Hooks
+│   │   └── useVideoTracker.ts  # 视频坐标追踪
+│   ├── utils/
+│   │   ├── gemini.ts     # Gemini API 封装
+│   │   ├── storage.ts    # IndexedDB 封装
+│   │   └── capture.ts    # 截图引擎
+│   └── manifest.json     # Manifest V3 配置
+├── doc/                  # 文档目录
+├── test/                 # 测试文件
+├── temp/                 # 临时文件
+└── ChatHistory.md        # 产品推演聊天记录
+```
+
+## 🚀 快速开始
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式（热重载）
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 加载到 Chrome
+# 1. 打开 chrome://extensions/
+# 2. 开启"开发者模式"
+# 3. 点击"加载已解压的扩展程序"
+# 4. 选择 dist/ 目录
+```
+
+## 📝 开发规范
+
+- **提交规范**：遵守 Angular Commit Message 规范
+- **代码注释**：函数级英文注释，遵守 Google 开源规范
+- **文件组织**：
+  - 测试文件 → `test/`
+  - 文档文件 → `doc/`
+  - 临时文件 → `temp/`
+
+## 🛡️ 隐私与安全
+
+- **数据本地化**：所有笔记数据默认存储在用户本地（IndexedDB）
+- **可选同步**：仅在用户授权时同步元数据到 Obsidian/Notion
+- **无服务器架构**：不依赖后端服务器，直接调用 Gemini API
+- **透明权限**：仅申请必要的 Host Permissions，符合 Chrome Web Store 审核要求
+
+## 📖 参考资料
+
+- [Gemini 3 Flash API 文档](https://ai.google.dev/docs)
+- [Manifest V3 迁移指南](https://developer.chrome.com/docs/extensions/mv3/)
+- [Shadow DOM 教程](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM)
+- [FileSystemAccess API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API)
+
+## 📄 许可证
+
+MIT License
+
+---
+
+**Built with ❤️ by an indie maker who believes in the power of capturing the right moment.**

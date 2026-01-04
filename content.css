@@ -1,0 +1,15 @@
+/**
+ * Kairos Content CSS
+ * This file is intentionally minimal as we use Shadow DOM for style isolation
+ */
+
+/* Ensure our container doesn't interfere with page layout */
+#kairos-overlay-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+}

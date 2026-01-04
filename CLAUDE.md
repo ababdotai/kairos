@@ -6,7 +6,7 @@
 
 **项目名称**：Kairos
 **项目类型**：Chrome Extension (Manifest V3)
-**核心定位**：基于 Gemini 3 Flash 的视频笔记工具，专注于"非线性知识提取"
+**核心定位**：基于 Gemini 3 Flash 的视频笔记工具，遵循Granola的设计哲学，将AI融入心流模式
 
 ### 核心价值主张
 - 将线性视频转化为可查询的知识库

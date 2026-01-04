@@ -3,7 +3,7 @@
  * Main entry point for the video overlay functionality
  */
 
-(function() {
+(function () {
   'use strict';
 
   // Configuration
@@ -13,7 +13,7 @@
     Z_INDEX: 2147483647,
     DEBUG: true,
     // Minimum dimensions to consider a "main" video
-    MIN_WIDTH: 300, 
+    MIN_WIDTH: 300,
     MIN_HEIGHT: 200,
     // CSS selectors to explicitly ignore (e.g., banners, previews)
     IGNORE_SELECTORS: [
@@ -56,33 +56,33 @@
     findVideoElement() {
       // 1. Get all potential video candidates
       const allVideos = Array.from(document.querySelectorAll(this.videoSelector));
-      
+
       // 2. Filter candidates based on size, visibility, and ignore list
       const validCandidates = allVideos.filter(video => {
         // Check 1: Is it visible? (offsetParent is null if display:none)
         if (video.offsetParent === null) return false;
-        
+
         const rect = video.getBoundingClientRect();
-        
+
         // Check 2: Minimum Dimensions
         if (rect.width < CONFIG.MIN_WIDTH || rect.height < CONFIG.MIN_HEIGHT) {
-            return false;
+          return false;
         }
-        
+
         // Check 3: Ignore Selectors (Banners, etc.)
         const isIgnored = CONFIG.IGNORE_SELECTORS.some(selector => {
-            try {
-                return video.matches(selector);
-            } catch (e) {
-                return false;
-            }
+          try {
+            return video.matches(selector);
+          } catch (e) {
+            return false;
+          }
         });
-        
+
         if (isIgnored) return false;
-        
+
         // Check 4: Explicit Structure Check (Safety for known headers)
         if (video.closest('header') || video.closest('.bili-header') || video.closest('.animated-banner')) {
-            return false;
+          return false;
         }
 
         return true;
@@ -90,18 +90,18 @@
 
       // 3. Select the best candidate (Largest Visible Area)
       if (validCandidates.length === 0) {
-          // If currently tracked video is still valid (in DOM), keep it until a better one appears
-          // This prevents flickering if the main video temporarily dips in score
-          return this.videoElement && document.body.contains(this.videoElement);
+        // If currently tracked video is still valid (in DOM), keep it until a better one appears
+        // This prevents flickering if the main video temporarily dips in score
+        return this.videoElement && document.body.contains(this.videoElement);
       }
 
       // Sort by area descending
       validCandidates.sort((a, b) => {
-          const rectA = a.getBoundingClientRect();
-          const rectB = b.getBoundingClientRect();
-          const areaA = rectA.width * rectA.height;
-          const areaB = rectB.width * rectB.height;
-          return areaB - areaA;
+        const rectA = a.getBoundingClientRect();
+        const rectB = b.getBoundingClientRect();
+        const areaA = rectA.width * rectA.height;
+        const areaB = rectB.width * rectB.height;
+        return areaB - areaA;
       });
 
       const bestVideo = validCandidates[0];
@@ -111,7 +111,7 @@
         log('Video element found (Best Candidate):', bestVideo);
         return true;
       }
-      
+
       return this.videoElement !== null;
     }
 
@@ -244,53 +244,91 @@
           animation: kairos-border-pulse 3s infinite alternate ease-in-out;
         }
 
+        /* Orb: The Dynamic Island (Top Center) */
         .kairos-orb {
           position: absolute;
-          top: 24px;
-          right: 24px;
-          width: 56px;
-          height: 56px;
-          background: rgba(15, 15, 15, 0.3);
-          backdrop-filter: blur(24px) saturate(200%);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 50%;
+          top: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          height: 48px; /* Slightly more compact like a notch */
+          width: 48px; 
+          /* iOS 26 Glassmorphism: Ultra-thin border, deep blur, vibrant saturation */
+          background: rgba(10, 10, 10, 0.4);
+          backdrop-filter: blur(32px) saturate(210%);
+          border: 0.5px solid rgba(255, 255, 255, 0.18);
+          border-radius: 24px;
           pointer-events: auto;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          /* Smooth elastic transition */
+          transition: all 0.5s cubic-bezier(0.3, 1.2, 0.3, 1);
           box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.3),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            0 10px 40px rgba(0, 0, 0, 0.4),
+            inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); /* Specular highlight */
           z-index: 20;
+          overflow: hidden;
+          padding: 0 16px; /* Horizontal padding for expansion */
         }
 
+        /* Hover State: Symmetrical Expansion */
         .kairos-orb:hover {
-          transform: scale(1.08);
-          background: rgba(30, 30, 30, 0.5);
-          border-color: rgba(255, 255, 255, 0.4);
+          width: 180px; 
+          background: rgba(20, 20, 20, 0.55);
+          border-color: rgba(255, 255, 255, 0.3);
+          transform: translateX(-50%) scale(1.02);
           box-shadow: 
-            0 12px 48px rgba(0, 0, 0, 0.4),
-            0 0 15px rgba(0, 195, 255, 0.3);
-        }
-
-        .kairos-orb-icon {
-          width: 28px;
-          height: 28px;
-          fill: white;
-          filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
-          transition: fill 0.3s ease;
+            0 15px 50px rgba(0, 0, 0, 0.5),
+            inset 0 0 12px rgba(255, 255, 255, 0.05);
         }
 
         /* Active State for Orb */
         .kairos-orb.active {
-          background: rgba(40, 40, 40, 0.6);
-          border-color: rgba(0, 195, 255, 0.6);
+          background: rgba(10, 10, 10, 0.5);
+          border-color: rgba(0, 242, 255, 0.5);
           box-shadow: 
-            0 0 20px rgba(0, 195, 255, 0.4),
-            inset 0 0 10px rgba(0, 195, 255, 0.2);
+            0 0 30px rgba(0, 242, 255, 0.25),
+            inset 0 0 0 0.5px rgba(0, 242, 255, 0.3);
         }
+        
+        .kairos-orb-icon {
+          width: 24px;
+          height: 24px;
+          min-width: 24px;
+          fill: rgba(255, 255, 255, 0.95);
+          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+          transition: all 0.4s ease;
+        }
+
+        .kairos-orb.active .kairos-orb-icon {
+          fill: #00f2ff; 
+          filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.5));
+        }
+
+        /* Label Text */
+        .kairos-orb-label {
+          margin-left: 0; /* Managed by justify-content */
+          color: white;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: -0.2px;
+          white-space: nowrap;
+          opacity: 0;
+          transform: scale(0.9);
+          transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+          max-width: 0; 
+        }
+
+        /* Show label on hover with a slight delay */
+        .kairos-orb:hover .kairos-orb-label {
+          opacity: 1;
+          transform: scale(1);
+          max-width: 120px;
+          margin-left: 12px;
+        }
+
 
         .kairos-orb.active .kairos-orb-icon {
           fill: #00f2ff; /* Cyan active color */
@@ -324,8 +362,9 @@
 
         .kairos-ripple {
           position: absolute;
-          top: 52px;
-          right: 52px;
+          /* Center of Orb: Top 12px + Half Height 24px = 36px */
+          top: 36px; 
+          left: 50%;
           width: 40px;
           height: 40px;
           border-radius: 50%;
@@ -337,7 +376,7 @@
             transparent 100%
           );
           filter: blur(12px);
-          transform: translate(50%, -50%) scale(0);
+          transform: translate(-50%, -50%) scale(0);
           opacity: 0;
           mix-blend-mode: screen;
         }
@@ -379,28 +418,28 @@
 
         @keyframes kairos-ripple-expand {
           0% {
-            transform: translate(50%, -50%) scale(0);
+            transform: translate(-50%, -50%) scale(0);
             opacity: 0.8;
           }
           30% {
             opacity: 1;
           }
           100% {
-            transform: translate(50%, -50%) scale(100);
+            transform: translate(-50%, -50%) scale(100);
             opacity: 0;
           }
         }
 
         @keyframes kairos-ripple-contract {
           0% {
-            transform: translate(50%, -50%) scale(100);
+            transform: translate(-50%, -50%) scale(100);
             opacity: 0;
           }
           30% {
             opacity: 0.6; /* Light gathers */
           }
           100% {
-            transform: translate(50%, -50%) scale(0);
+            transform: translate(-50%, -50%) scale(0);
             opacity: 0;
           }
         }
@@ -443,16 +482,31 @@
       // Floating orb
       const orb = document.createElement('div');
       orb.className = 'kairos-orb';
-      orb.innerHTML = `
+      
+      const iconSvg = `
         <svg class="kairos-orb-icon" viewBox="0 0 24 24">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
         </svg>
       `;
-      orb.addEventListener('click', () => this.handleOrbClick());
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'kairos-orb-label';
+      labelSpan.textContent = 'Activate Kairos'; // Default text
+
+      orb.innerHTML = iconSvg;
+      orb.appendChild(labelSpan);
+
+      orb.addEventListener('click', (e) => {
+          // Prevent click from propagating if we just wanted to expand? 
+          // No, click always toggles.
+          this.handleOrbClick();
+      });
+
       overlay.appendChild(orb);
 
       this.overlayElement = overlay;
-      this.orbElement = orb; // Store reference
+      this.orbElement = orb; 
+      this.orbLabel = labelSpan; // Store reference
       this.shadowRoot.appendChild(overlay);
 
       // Store references for animation
@@ -482,25 +536,25 @@
 
       const { flash, ripple, glowBorder } = this.effectElements;
 
-      if (this.isActive) {
-        // --- DEACTIVATE ---
-        log('Deactivating Kairos...');
-        this.isActive = false;
-
-        // 1. Fade out the border
-        glowBorder.classList.remove('active');
-        
-        // 2. Update Orb State
-        if (this.orbElement) this.orbElement.classList.remove('active');
-
-        // 3. Trigger "Reverse" Ripple (Contract)
-        // Clean up previous animations first
+            if (this.isActive) {
+              // --- DEACTIVATE ---
+              log('Deactivating Kairos...');
+              this.isActive = false;
+      
+              // 1. Fade out the border
+              glowBorder.classList.remove('active');
+              
+              // 2. Update Orb State
+              if (this.orbElement) this.orbElement.classList.remove('active');
+              if (this.orbLabel) this.orbLabel.textContent = 'Activate Kairos';
+      
+              // 3. Trigger "Reverse" Ripple (Contract)        // Clean up previous animations first
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
-        
+
         // Force reflow
         void ripple.offsetWidth;
-        
+
         // Start reverse animation
         ripple.classList.add('reversing');
 
@@ -510,23 +564,24 @@
         // --- ACTIVATE ---
         log('Activating Kairos (Apple Intelligence style)...');
         this.isActive = true;
-        
+
         // 1. Reset all animations
         flash.classList.remove('animating');
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
         glowBorder.classList.remove('active'); // Temporarily remove to ensure transition
-        
+
         // 2. Update Orb State
         if (this.orbElement) this.orbElement.classList.add('active');
+        if (this.orbLabel) this.orbLabel.textContent = 'Deactivate Kairos';
 
         // Force reflow
         void flash.offsetWidth;
-        
+
         // 3. Start Activation Animations
         flash.classList.add('animating');
         ripple.classList.add('animating');
-        
+
         // Activate the border - it will fade in as the ripple expands
         glowBorder.classList.add('active');
       }

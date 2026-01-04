@@ -8,6 +8,7 @@ Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrom
 
 传统视频学习是线性的——用户必须通过进度条寻找信息；边看视频边做笔记是麻烦的--用户必须手动截图粘贴到另一个软件中，文字也必须全部自己编写。Kairos 重新定义了看视频做笔记的交互方式：
 
+- **心流模式**：遵循Granola的设计哲学，将AI融入看视频的过程中
 - **非线性知识提取**：将长视频变成可查询的动态数据库
 - **零 UI 摩擦**：悬浮球交互，无需打开侧边栏
 - **本地优先**：数据存储在用户本地，深度集成 Obsidian/Notion
@@ -42,22 +43,24 @@ Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrom
 ## 📅 开发计划
 
 ### 阶段 0：技术验证（Week 1）：避免过度工程化，先使用Vanilla ES6+ JavaScript和Vanilla CSS3实现
-- [ ] 项目初始化与架构设计
-- [ ] 全局悬浮层实现（Shadow DOM）
-- [ ] 视频坐标实时追踪（考虑YouTube和Bilibili的几种视频播放方式：默认、影院、全屏）
-- [ ] 里程碑：红框紧贴视频播放器，支持全屏和滚动
+- [x] 项目初始化与架构设计
+- [x] 全局悬浮层实现（Shadow DOM）
+- [x] 视频坐标实时追踪（考虑YouTube和Bilibili的几种视频播放方式：默认、影院、全屏）
+- [x] 里程碑：指示框紧贴视频播放器，支持全屏和滚动
 
-### 阶段 1：手动工具 MVP（Week 2-3）
-- [ ] 悬浮球交互组件（The Orb）：悬浮之上显示“”
-- [ ] 视频截图引擎（Canvas drawImage）
-- [ ] 本地笔记存储（IndexedDB CRUD）
+### 阶段 1：实现交互 MVP（Week 2-3）
+- [ ] 悬浮球交互组件（The Orb）：鼠标悬浮之上显示“Activate/Deactivate Kairos”
+- [ ] 点击Activate Kairos后，视频区域上方会出现一个悬浮的虚拟进度条，用户可通过点击或快捷键（默认为单击K），添加一个Pin到进度条上
+- [ ] 用户可点击Pin或双击快捷键（默认为KK），会在位置出弹出一个Sticky Note，支持用户输入任意文字
+- [ ] 浏览器本地笔记存储（IndexedDB CRUD）
+- [ ] 快捷键仅在Kairos激活时有效
 - [ ] Markdown 导出功能
-- [ ] 里程碑：完整记录 5 条笔记并导出到 Obsidian
+- [ ] 里程碑：完整记录 5 条笔记并导出MD
 
 ### 阶段 2：AI 大脑接入（Week 4-5）
 - [ ] Gemini API 调用管道（Background Script）
 - [ ] 字幕抓取与解析（YouTube timedtext API）
-- [ ] 多模态内容分析（截图 + 字幕 → AI 摘要）
+- [ ] 多模态内容分析（截图 + 字幕（可能为空） + 用户关键词（可能为空）→ AI 摘要）
 - [ ] Ghost Suggestion 交互
 - [ ] 里程碑：AI 自动提取视频中的代码并生成解释
 
@@ -76,7 +79,7 @@ Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrom
 
 ## 🎨 设计语言
 
-- **核心隐喻**："Kairos"（关键时刻）—— 捕捉质的时间，而非量的时间
+- **核心隐喻**："Kairos"（关键时刻）—— 捕捉质的时间，而非量的时间，参考Granola，通过点击甚至无需输入，由AI智能辅助笔记
 - **视觉风格**：Liquid Glass（流体玻璃），参考 Linear/Granola/Arc
 - **色彩方案**：
   - 背景：`#0A0A0A`（黑曜石）

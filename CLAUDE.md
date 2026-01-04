@@ -402,10 +402,10 @@ A: 使用 Testing Library 的 `container.shadowRoot` 访问 Shadow DOM 内部元
 ## 🎯 当前开发目标
 
 **阶段 0 - 可行性验证**：
-- [ ] 避免过度工程化，先使用Vanilla ES6+ JavaScript和Vanilla CSS3实现插件
-- [ ] 在 YouTube 上渲染红色边框，紧贴视频播放器
-- [ ] 支持滚动和全屏模式下的坐标同步
-- [ ] 点击边框内部能穿透到视频（pointer-events 正确处理）
+- [x] 避免过度工程化，先使用Vanilla ES6+ JavaScript和Vanilla CSS3实现插件
+- [x] 在视频周围渲染边框，紧贴视频播放器
+- [x] 支持滚动和全屏模式下的坐标同步
+- [x] 点击边框内部能穿透到视频（pointer-events 正确处理）
 
 完成此里程碑后，立即进入阶段 1 的悬浮球交互开发。
 

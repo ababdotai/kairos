@@ -215,7 +215,6 @@
           position: fixed;
           pointer-events: none;
           z-index: ${CONFIG.Z_INDEX};
-          transition: all 0.1s ease-out;
         }
 
         /* Apple Intelligence-style Border */

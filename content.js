@@ -213,24 +213,25 @@
           height: 28px;
           fill: white;
           filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
+          transition: fill 0.3s ease;
+        }
+
+        /* Active State for Orb */
+        .kairos-orb.active {
+          background: rgba(40, 40, 40, 0.6);
+          border-color: rgba(0, 195, 255, 0.6);
+          box-shadow: 
+            0 0 20px rgba(0, 195, 255, 0.4),
+            inset 0 0 10px rgba(0, 195, 255, 0.2);
+        }
+
+        .kairos-orb.active .kairos-orb-icon {
+          fill: #00f2ff; /* Cyan active color */
+          filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.6));
         }
 
         .kairos-info {
-          position: absolute;
-          top: 24px;
-          left: 24px;
-          padding: 8px 16px;
-          background: rgba(10, 10, 10, 0.4);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 20px;
-          color: white;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-          font-weight: 500;
-          font-size: 13px;
-          pointer-events: none;
-          z-index: 20;
-          opacity: 0.7;
+          display: none; /* Hidden as requested */
         }
 
         /* Animation Layers */
@@ -366,7 +367,7 @@
 
       overlay.appendChild(effectContainer);
 
-      // Info display
+      // Info display (Hidden via CSS)
       const info = document.createElement('div');
       info.className = 'kairos-info';
       info.textContent = 'Kairos Active';
@@ -384,6 +385,7 @@
       overlay.appendChild(orb);
 
       this.overlayElement = overlay;
+      this.orbElement = orb; // Store reference
       this.shadowRoot.appendChild(overlay);
 
       // Store references for animation
@@ -420,8 +422,11 @@
 
         // 1. Fade out the border
         glowBorder.classList.remove('active');
+        
+        // 2. Update Orb State
+        if (this.orbElement) this.orbElement.classList.remove('active');
 
-        // 2. Trigger "Reverse" Ripple (Contract)
+        // 3. Trigger "Reverse" Ripple (Contract)
         // Clean up previous animations first
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
@@ -444,11 +449,14 @@
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
         glowBorder.classList.remove('active'); // Temporarily remove to ensure transition
+        
+        // 2. Update Orb State
+        if (this.orbElement) this.orbElement.classList.add('active');
 
         // Force reflow
         void flash.offsetWidth;
         
-        // 2. Start Activation Animations
+        // 3. Start Activation Animations
         flash.classList.add('animating');
         ripple.classList.add('animating');
         

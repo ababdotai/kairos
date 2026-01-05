@@ -244,15 +244,25 @@
           animation: kairos-border-pulse 3s infinite alternate ease-in-out;
         }
 
-        /* Orb: The Dynamic Island (Top Center) */
-        .kairos-orb {
+        /* The Intelligent Island Container: Managing Orb and Note as a single unit */
+        .kairos-island-container {
           position: absolute;
           top: 12px;
           left: 50%;
           transform: translateX(-50%);
-          height: 48px; /* Slightly more compact like a notch */
+          display: flex;
+          align-items: center;
+          gap: 8px; /* Perfectly fixed tight gap */
+          pointer-events: none;
+          z-index: 20;
+          transition: all 0.5s cubic-bezier(0.3, 1.2, 0.3, 1);
+        }
+
+        /* Orb: Now a member of the island */
+        .kairos-orb {
+          position: relative; /* No longer absolute relative to overlay */
+          height: 48px;
           width: 48px; 
-          /* iOS 26 Glassmorphism: Ultra-thin border, deep blur, vibrant saturation */
           background: rgba(10, 10, 10, 0.4);
           backdrop-filter: blur(32px) saturate(210%);
           border: 0.5px solid rgba(255, 255, 255, 0.18);
@@ -262,58 +272,67 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          /* Smooth elastic transition */
           transition: all 0.5s cubic-bezier(0.3, 1.2, 0.3, 1);
-          box-shadow: 
-            0 10px 40px rgba(0, 0, 0, 0.4),
-            inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); /* Specular highlight */
-          z-index: 20;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
           overflow: hidden;
-          padding: 0 16px; /* Horizontal padding for expansion */
+          flex-shrink: 0; 
+          padding: 0 16px;
         }
 
-        /* Hover State: Symmetrical Expansion */
         .kairos-orb:hover {
           width: 180px; 
           background: rgba(20, 20, 20, 0.55);
-          border-color: rgba(255, 255, 255, 0.3);
-          transform: translateX(-50%) scale(1.02);
-          box-shadow: 
-            0 15px 50px rgba(0, 0, 0, 0.5),
-            inset 0 0 12px rgba(255, 255, 255, 0.05);
         }
 
-        /* Active State for Orb */
-        .kairos-orb.active {
-          background: rgba(10, 10, 10, 0.5);
-          border-color: rgba(0, 242, 255, 0.5);
-          box-shadow: 
-            0 0 30px rgba(0, 242, 255, 0.25),
-            inset 0 0 0 0.5px rgba(0, 242, 255, 0.3);
+        /* Note Wrapper: Now sits next to Orb inside the island */
+        .kairos-note-wrapper {
+          position: relative;
+          width: 0;
+          height: 48px;
+          background: rgba(25, 25, 25, 0.7);
+          backdrop-filter: blur(32px) saturate(180%);
+          border: 0.5px solid rgba(255, 255, 255, 0.15);
+          border-radius: 24px;
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+          display: flex;
+          align-items: center;
+          overflow: hidden;
+          margin-left: -8px; /* Start hidden/overlapping */
+        }
+
+        .kairos-note-wrapper.active {
+          width: 320px;
+          opacity: 1;
+          pointer-events: auto;
+          margin-left: 0; /* Snap into fixed gap */
         }
         
+        .kairos-orb.active {
+          border-color: rgba(0, 242, 255, 0.5);
+          box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+        }
+
+        /* Rest of UI elements... */
         .kairos-orb-icon {
           width: 24px;
           height: 24px;
           min-width: 24px;
           fill: rgba(255, 255, 255, 0.95);
-          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
           transition: all 0.4s ease;
         }
 
         .kairos-orb.active .kairos-orb-icon {
-          fill: #00f2ff; 
-          filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.5));
+          fill: #00f2ff;
         }
 
-        /* Label Text */
         .kairos-orb-label {
-          margin-left: 0; /* Managed by justify-content */
+          margin-left: 0;
           color: white;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
           font-size: 13px;
           font-weight: 600;
-          letter-spacing: -0.2px;
           white-space: nowrap;
           opacity: 0;
           transform: scale(0.9);
@@ -321,7 +340,6 @@
           max-width: 0; 
         }
 
-        /* Show label on hover with a slight delay */
         .kairos-orb:hover .kairos-orb-label {
           opacity: 1;
           transform: scale(1);
@@ -329,15 +347,28 @@
           margin-left: 12px;
         }
 
-
-        .kairos-orb.active .kairos-orb-icon {
-          fill: #00f2ff; /* Cyan active color */
-          filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.6));
+        .kairos-note-icon { display: none; }
+        
+        .kairos-note-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          outline: none;
+          color: white;
+          font-size: 15px;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+          font-weight: 500;
+          padding: 0 20px;
+          height: 100%;
+          min-width: 200px;
         }
 
-        .kairos-info {
-          display: none; /* Hidden as requested */
+        .kairos-note-input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
         }
+
+
+        /* Footer Hints (Optional, can add later) */
 
         /* Ceiling Timeline: The Invisible Touch Area */
         .kairos-timeline-container {
@@ -358,8 +389,15 @@
         .kairos-overlay.active .kairos-timeline-container {
           opacity: 1; 
           pointer-events: auto; /* Enable interaction only when active */
-          /* Custom Pin Cursor: 180deg rotated + Horizontally Flipped */
-          cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="28" x="4" font-size="24" style="transform-origin: 16px 16px; transform: rotate(180deg) scaleX(-1);">📌</text></svg>') 12 12, crosshair;
+          /* Subtle track background to indicate presence */
+          background: rgba(255, 255, 255, 0.02);
+          /* Custom Pin Cursor: URL Encoded 📌 Emoji */
+          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ctext y='28' x='4' font-size='24' style='transform-origin: 16px 16px; transform: rotate(180deg) scaleX(-1);'%3E%F0%9F%93%8C%3C/text%3E%3C/svg%3E") 12 12, crosshair;
+        }
+
+        /* Hover state for the track */
+        .kairos-overlay.active .kairos-timeline-container:hover {
+          background: rgba(255, 255, 255, 0.05);
         }
 
         /* The Progress Glow: Aurora Style */
@@ -395,7 +433,6 @@
           display: flex;
           justify-content: center;
           align-items: center;
-          /* Remove thread styles */
           background: transparent;
         }
 
@@ -417,7 +454,6 @@
           cursor: pointer;
         }
         
-        /* Remove old hover height change */
         .kairos-pin:hover {
           height: 24px; 
         }
@@ -545,7 +581,7 @@
       // Ceiling Timeline
       const timeline = document.createElement('div');
       timeline.className = 'kairos-timeline-container';
-      
+
       const progressBar = document.createElement('div');
       progressBar.className = 'kairos-progress-bar';
       timeline.appendChild(progressBar);
@@ -553,7 +589,46 @@
       timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
       overlay.appendChild(timeline);
 
-      // Animation Effect Container
+      // The Intelligent Island Container (Orb + Note)
+      const island = document.createElement('div');
+      island.className = 'kairos-island-container';
+
+      // Floating orb
+      const orb = document.createElement('div');
+      orb.className = 'kairos-orb';
+
+      const iconSvg = `
+        <svg class="kairos-orb-icon" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      `;
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'kairos-orb-label';
+      labelSpan.textContent = 'Activate Kairos'; 
+
+      orb.innerHTML = iconSvg;
+      orb.appendChild(labelSpan);
+      orb.addEventListener('click', () => this.handleOrbClick());
+
+      // Spotlight Note Input
+      const noteWrapper = document.createElement('div');
+      noteWrapper.className = 'kairos-note-wrapper';
+
+      const noteInput = document.createElement('input');
+      noteInput.className = 'kairos-note-input';
+      noteInput.placeholder = 'Type a note, any keywords...';
+      noteInput.type = 'text';
+
+      noteInput.addEventListener('keydown', (e) => this.handleNoteKeydown(e));
+      noteWrapper.appendChild(noteInput);
+
+      // Add members to island
+      island.appendChild(orb);
+      island.appendChild(noteWrapper);
+      overlay.appendChild(island);
+
+      // Animation Effect Container (Keep outside island)
       const effectContainer = document.createElement('div');
       effectContainer.className = 'kairos-effect-container';
 
@@ -567,42 +642,15 @@
 
       overlay.appendChild(effectContainer);
 
-      // Info display (Hidden via CSS)
-      const info = document.createElement('div');
-      info.className = 'kairos-info';
-      info.textContent = 'Kairos Active';
-      overlay.appendChild(info);
-
-      // Floating orb
-      const orb = document.createElement('div');
-      orb.className = 'kairos-orb';
-      
-      const iconSvg = `
-        <svg class="kairos-orb-icon" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        </svg>
-      `;
-
-      const labelSpan = document.createElement('span');
-      labelSpan.className = 'kairos-orb-label';
-      labelSpan.textContent = 'Activate Kairos'; // Default text
-
-      orb.innerHTML = iconSvg;
-      orb.appendChild(labelSpan);
-
-      orb.addEventListener('click', (e) => {
-          this.handleOrbClick();
-      });
-
-      overlay.appendChild(orb);
-
       this.overlayElement = overlay;
-      this.orbElement = orb; 
-      this.orbLabel = labelSpan; 
+      this.orbElement = orb;
+      this.orbLabel = labelSpan;
       this.timeline = timeline;
       this.progressBar = progressBar;
-      this.pins = []; // Track created pins
-      
+      this.noteWrapper = noteWrapper;
+      this.noteInput = noteInput;
+      this.pins = []; 
+
       this.shadowRoot.appendChild(overlay);
 
       // Store references for animation
@@ -614,6 +662,19 @@
      */
     updatePosition(rect, video) {
       if (!this.overlayElement) return;
+      
+      // Check if video element changed, if so, attach listeners
+      if (video && video !== this.videoElement) {
+          this.videoElement = video;
+          // Remove old listener if exists (not tracking here, but safe to add new)
+          // Ideally we track to remove, but for MVP just adding is okay as long as we don't leak too many.
+          // Better: just add 'play' listener that calls a bound function.
+          video.addEventListener('play', () => {
+              if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
+                  this.closeNoteInput();
+              }
+          });
+      }
       this.videoElement = video; // Store reference
 
       this.overlayElement.style.top = `${rect.top}px`;
@@ -639,33 +700,39 @@
 
       const { flash, ripple, glowBorder } = this.effectElements;
 
-                  if (this.isActive) {
+      if (this.isActive) {
 
-                    // --- DEACTIVATE ---
+        // --- DEACTIVATE ---
 
-                    log('Deactivating Kairos...');
+        log('Deactivating Kairos...');
 
-                    this.isActive = false;
+        this.isActive = false;
 
-            
 
-                    // 1. Fade out the border and Hide Timeline (via overlay active class)
 
-                    glowBorder.classList.remove('active');
+        // 1. Fade out the border and Hide Timeline (via overlay active class)
 
-                    if (this.overlayElement) this.overlayElement.classList.remove('active');
+        glowBorder.classList.remove('active');
 
-                    
+        if (this.overlayElement) this.overlayElement.classList.remove('active');
 
-                    // 2. Update Orb State
 
-                    if (this.orbElement) this.orbElement.classList.remove('active');
 
-                    if (this.orbLabel) this.orbLabel.textContent = 'Activate Kairos';
+        // Ensure note input is closed
 
-            
+        this.closeNoteInput();
 
-                    // 3. Trigger "Reverse" Ripple (Contract)        // Clean up previous animations first
+
+
+        // 2. Update Orb State
+
+        if (this.orbElement) this.orbElement.classList.remove('active');
+
+        if (this.orbLabel) this.orbLabel.textContent = 'Activate Kairos';
+
+
+
+        // 3. Trigger "Reverse" Ripple (Contract)        // Clean up previous animations first
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
 
@@ -708,6 +775,72 @@
     }
 
     /**
+     * Handles keydown events in the note input
+     */
+    handleNoteKeydown(e) {
+      e.stopPropagation(); // Essential: prevent YouTube shortcuts
+
+      if (e.key === 'Enter') {
+        this.saveNote();
+      } else if (e.key === 'Escape') {
+        this.closeNoteInput();
+      }
+    }
+
+    /**
+     * Opens the note input for a specific pin
+     */
+    openNoteInput(pinData) {
+      if (!this.noteWrapper || !this.noteInput) return;
+
+      this.activePin = pinData;
+      this.noteInput.value = pinData.note || '';
+
+      this.noteWrapper.classList.add('active');
+      this.noteInput.focus();
+
+      // Pause video if playing
+      if (this.videoElement && !this.videoElement.paused) {
+        this.wasPlaying = true;
+        this.videoElement.pause();
+      } else {
+        this.wasPlaying = false;
+      }
+
+      log('Note input opened for pin at', pinData.timestamp);
+    }
+
+    /**
+     * Saves the current note and closes input
+     */
+    saveNote() {
+      const content = this.noteInput.value.trim();
+
+      if (this.activePin) {
+        this.activePin.note = content;
+        log('Note saved:', content);
+      }
+
+      this.closeNoteInput();
+    }
+
+    /**
+     * Closes the note input
+     */
+    closeNoteInput() {
+      if (!this.noteWrapper) return;
+
+      this.noteWrapper.classList.remove('active');
+      this.noteInput.blur();
+      this.activePin = null;
+
+      // Resume video if it was playing
+      if (this.wasPlaying && this.videoElement) {
+        this.videoElement.play();
+      }
+    }
+
+    /**
      * Handles clicks on the timeline to seek and add pins
      */
     handleTimelineClick(e) {
@@ -722,31 +855,46 @@
 
       // 1. Seek video
       if (Number.isFinite(this.videoElement.duration)) {
-          this.videoElement.currentTime = percentage * this.videoElement.duration;
+        this.videoElement.currentTime = percentage * this.videoElement.duration;
       }
 
       // 2. Create Pin visual
-      this.createPin(percentage * 100);
-      
+      const pinData = this.createPin(percentage * 100);
+
       log(`Timeline clicked at ${Math.round(percentage * 100)}%`);
+
+      // 3. Open Note Input immediately
+      this.openNoteInput(pinData);
     }
 
     /**
      * Creates a visual pin on the timeline
      */
     createPin(percentage) {
-        const pin = document.createElement('div');
-        pin.className = 'kairos-pin';
-        pin.style.left = `${percentage}%`;
-        
-        // Add hover/click interactions for the pin here later
-        
-        this.timeline.appendChild(pin);
-        this.pins.push({
-            element: pin,
-            percentage: percentage,
-            timestamp: this.videoElement ? this.videoElement.currentTime : 0
-        });
+      const pin = document.createElement('div');
+      pin.className = 'kairos-pin';
+      pin.style.left = `${percentage}%`;
+
+      // Add hover/click interactions for the pin here later
+
+      this.timeline.appendChild(pin);
+
+      const pinData = {
+        element: pin,
+        percentage: percentage,
+        timestamp: this.videoElement ? this.videoElement.currentTime : 0,
+        note: ''
+      };
+
+      this.pins.push(pinData);
+
+      // Add click listener to re-open note
+      pin.addEventListener('click', (e) => {
+        e.stopPropagation(); // Don't trigger timeline click (which creates new pin)
+        this.openNoteInput(pinData);
+      });
+
+      return pinData;
     }
 
     /**

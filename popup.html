@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      margin: 0;
+      background: #1a1a1a;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .logo {
+      width: 24px;
+      height: 24px;
+      margin-right: 10px;
+      fill: #00f2ff;
+    }
+    
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      background: linear-gradient(90deg, #00f2ff, #bd00ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .video-title {
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: #e0e0e0;
+    }
+
+    .stats {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #00f2ff, #0099ff);
+      color: #000;
+      margin-bottom: 12px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: rgba(255,255,255,0.4);
+      font-size: 13px;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <svg class="logo" viewBox="0 0 24 24">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    </svg>
+    <h1>Kairos</h1>
+  </div>
+
+  <div id="current-video-section" style="display: none;">
+    <div class="card">
+      <div class="video-title" id="video-title">Loading...</div>
+      <div class="stats" id="note-count">0 notes collected</div>
+      <button class="btn btn-primary" id="export-btn">
+        Download Markdown
+      </button>
+    </div>
+  </div>
+
+  <div id="no-video-state" class="empty-state" style="display: none;">
+    No active video detected.
+  </div>
+
+  <button class="btn btn-secondary" id="dashboard-btn">
+    Open Dashboard
+  </button>
+
+  <script src="popup.js"></script>
+</body>
+</html>

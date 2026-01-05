@@ -46,6 +46,9 @@
     getVideoId() {
       const url = new URL(window.location.href);
       if (url.hostname.includes('youtube.com')) {
+        if (url.pathname.startsWith('/shorts/')) {
+            return `yt-${url.pathname.split('/shorts/')[1]}`;
+        }
         return `yt-${url.searchParams.get('v')}`;
       } else if (url.hostname.includes('bilibili.com')) {
         const bvid = url.pathname.split('/').find(p => p.startsWith('BV'));
@@ -78,66 +81,44 @@
   };
 
   /**
-   * StorageManager - Handles IndexedDB persistence
+   * StorageManager - Proxy to Background Service Worker
    */
   class StorageManager {
-    constructor() {
-      this.dbName = 'KairosDB';
-      this.dbVersion = 1;
-      this.storeName = 'notes';
-      this.db = null;
-    }
+    constructor() {}
 
-    async init() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(this.dbName, this.dbVersion);
-
-        request.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(this.storeName)) {
-            const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
-            store.createIndex('videoId', 'videoId', { unique: false });
-          }
-        };
-
-        request.onsuccess = (e) => {
-          this.db = e.target.result;
-          log('Database initialized');
-          resolve();
-        };
-
-        request.onerror = (e) => reject(e.target.error);
-      });
+    // No init needed for proxy, but keeping empty for compatibility
+    async init() { 
+        log('StorageManager initialized (Proxy Mode -> Background Worker)');
+        return Promise.resolve(); 
     }
 
     async saveNote(note) {
       return new Promise((resolve, reject) => {
-        const transaction = this.db.transaction([this.storeName], 'readwrite');
-        const store = transaction.objectStore(this.storeName);
-        const request = store.put(note);
-        request.onsuccess = () => resolve();
-        request.onerror = (e) => reject(e.target.error);
+        chrome.runtime.sendMessage({ type: 'SAVE_NOTE', payload: note }, (response) => {
+          if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+          if (response && response.success) resolve(response.data);
+          else reject(response ? response.error : 'Unknown error');
+        });
       });
     }
 
     async getNotesForVideo(videoId) {
       return new Promise((resolve, reject) => {
-        const transaction = this.db.transaction([this.storeName], 'readonly');
-        const store = transaction.objectStore(this.storeName);
-        const index = store.index('videoId');
-        const request = index.getAll(videoId);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = (e) => reject(e.target.error);
+        chrome.runtime.sendMessage({ type: 'GET_NOTES', payload: { videoId } }, (response) => {
+          if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+          if (response && response.success) resolve(response.data);
+          else reject(response ? response.error : 'Unknown error');
+        });
       });
     }
 
     async deleteNote(id) {
       return new Promise((resolve, reject) => {
-        const transaction = this.db.transaction([this.storeName], 'readwrite');
-        const store = transaction.objectStore(this.storeName);
-        const request = store.delete(id);
-        request.onsuccess = () => resolve();
-        request.onerror = (e) => reject(e.target.error);
+        chrome.runtime.sendMessage({ type: 'DELETE_NOTE', payload: { id } }, (response) => {
+          if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+          if (response && response.success) resolve(response.data);
+          else reject(response ? response.error : 'Unknown error');
+        });
       });
     }
   }

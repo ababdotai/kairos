@@ -26,6 +26,10 @@
     }
   ],
   "action": {
-    "default_title": "Kairos - Your AI notetaker while watching videos."
+    "default_title": "Kairos - Your AI notetaker while watching videos.",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }

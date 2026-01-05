@@ -84,13 +84,14 @@ Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrom
 - [x] 天花板时间轴（The Ceiling Timeline）：实现Pin功能
 - [x] 浏览器本地笔记存储（IndexedDB CRUD）
 - [x] 快捷键仅在Kairos激活时生效
-- [ ] Markdown 导出功能
-- [ ] 里程碑：完整记录 5 条笔记并导出MD
+- [x] Markdown 导出功能
+- [x] Dashboard 管理界面
+- [x] 里程碑：完整记录 5 条笔记并导出MD
 
 ### 阶段 2：AI 大脑接入（Week 4-5）
 - [ ] Gemini API 调用管道（Background Script）
-- [ ] 字幕抓取与解析（YouTube timedtext API）
-- [ ] 多模态内容分析（截图 + 字幕（可能为空） + 用户关键词（可能为空）→ AI 摘要）
+- [ ] 字幕抓取与解析：YouTube timedtext API
+- [ ] 多模态内容分析：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要
 - [ ] Ghost Suggestion 交互
 - [ ] 里程碑：AI 自动提取视频中的代码并生成解释
 

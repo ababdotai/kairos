@@ -299,15 +299,15 @@
           transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
           display: flex;
           align-items: center;
-          overflow: hidden;
-          margin-left: -8px; /* Start hidden/overlapping */
+          /* Removed overflow: hidden so hint can live outside */
+          margin-left: -8px; 
         }
 
         .kairos-note-wrapper.active {
           width: 320px;
           opacity: 1;
           pointer-events: auto;
-          margin-left: 0; /* Snap into fixed gap */
+          margin-left: 0; 
         }
         
         .kairos-orb.active {
@@ -349,6 +349,7 @@
         }
 
         .kairos-note-icon { display: none; }
+        
         .kairos-note-input {
           flex: 1;
           background: transparent;
@@ -358,13 +359,35 @@
           font-size: 15px;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
           font-weight: 500;
-          padding: 0 20px;
+          padding: 0 20px; /* Symmetrical padding */
           height: 100%;
-          min-width: 150px;
+          min-width: 100px;
         }
 
         .kairos-note-input::placeholder {
           color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Input Hint: Positioned Below the Capsule */
+        .kairos-note-hint {
+          position: absolute;
+          bottom: -24px; /* Hang below */
+          left: 20px; /* Align with input text start */
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 11px;
+          font-weight: 500;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transform: translateY(-5px);
+          transition: all 0.3s ease 0.1s; /* Slight delay to appear after expansion */
+        }
+        
+        /* Show hint when active */
+        .kairos-note-wrapper.active .kairos-note-hint {
+          opacity: 1;
+          transform: translateY(0);
         }
 
         /* Input Hint */

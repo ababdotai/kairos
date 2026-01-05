@@ -174,6 +174,7 @@
       this.shadowRoot = null;
       this.overlayElement = null;
       this.isActive = false;
+      this.escListener = null; // Store global esc listener
     }
 
     /**
@@ -348,7 +349,6 @@
         }
 
         .kairos-note-icon { display: none; }
-        
         .kairos-note-input {
           flex: 1;
           background: transparent;
@@ -367,6 +367,25 @@
           color: rgba(255, 255, 255, 0.4);
         }
 
+        /* Input Hint */
+        .kairos-note-hint {
+          margin-right: 20px;
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 11px;
+          font-weight: 500;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transform: translateX(-10px);
+          transition: all 0.3s ease 0.1s;
+        }
+
+        /* Show hint when active */
+        .kairos-note-wrapper.active .kairos-note-hint {
+          opacity: 1;
+          transform: translateX(0);
+        }
 
         /* Footer Hints (Optional, can add later) */
 
@@ -605,7 +624,7 @@
 
       const labelSpan = document.createElement('span');
       labelSpan.className = 'kairos-orb-label';
-      labelSpan.textContent = 'Activate Kairos'; 
+      labelSpan.textContent = 'Activate Kairos';
 
       orb.innerHTML = iconSvg;
       orb.appendChild(labelSpan);
@@ -617,11 +636,17 @@
 
       const noteInput = document.createElement('input');
       noteInput.className = 'kairos-note-input';
-      noteInput.placeholder = 'Type a note, any keywords...';
+      noteInput.placeholder = 'Note/Keywords...';
       noteInput.type = 'text';
 
       noteInput.addEventListener('keydown', (e) => this.handleNoteKeydown(e));
       noteWrapper.appendChild(noteInput);
+
+      // Hint Text
+      const noteHint = document.createElement('div');
+      noteHint.className = 'kairos-note-hint';
+      noteHint.textContent = 'Enter to save • Esc to cancel';
+      noteWrapper.appendChild(noteHint);
 
       // Add members to island
       island.appendChild(orb);
@@ -649,7 +674,7 @@
       this.progressBar = progressBar;
       this.noteWrapper = noteWrapper;
       this.noteInput = noteInput;
-      this.pins = []; 
+      this.pins = [];
 
       this.shadowRoot.appendChild(overlay);
 
@@ -662,18 +687,18 @@
      */
     updatePosition(rect, video) {
       if (!this.overlayElement) return;
-      
+
       // Check if video element changed, if so, attach listeners
       if (video && video !== this.videoElement) {
-          this.videoElement = video;
-          // Remove old listener if exists (not tracking here, but safe to add new)
-          // Ideally we track to remove, but for MVP just adding is okay as long as we don't leak too many.
-          // Better: just add 'play' listener that calls a bound function.
-          video.addEventListener('play', () => {
-              if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
-                  this.closeNoteInput();
-              }
-          });
+        this.videoElement = video;
+        // Remove old listener if exists (not tracking here, but safe to add new)
+        // Ideally we track to remove, but for MVP just adding is okay as long as we don't leak too many.
+        // Better: just add 'play' listener that calls a bound function.
+        video.addEventListener('play', () => {
+          if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
+            this.closeNoteInput();
+          }
+        });
       }
       this.videoElement = video; // Store reference
 
@@ -799,6 +824,20 @@
       this.noteWrapper.classList.add('active');
       this.noteInput.focus();
 
+      // Add Global ESC Listener (Capture Mode to beat YouTube/Browser)
+      if (!this.escListener) {
+        this.escListener = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation(); // Try to be the first and only
+            this.closeNoteInput();
+          }
+        };
+        // Use Capture Phase!
+        document.addEventListener('keydown', this.escListener, true);
+      }
+
       // Pause video if playing
       if (this.videoElement && !this.videoElement.paused) {
         this.wasPlaying = true;
@@ -833,6 +872,12 @@
       this.noteWrapper.classList.remove('active');
       this.noteInput.blur();
       this.activePin = null;
+
+      // Remove Global ESC Listener
+      if (this.escListener) {
+        document.removeEventListener('keydown', this.escListener, true); // match useCapture
+        this.escListener = null;
+      }
 
       // Resume video if it was playing
       if (this.wasPlaying && this.videoElement) {

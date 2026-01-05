@@ -81,9 +81,9 @@ Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrom
 
 ### 阶段 1：实现交互 MVP（Week 2-3）
 - [x] 悬浮球交互组件（The Orb）：鼠标悬浮之上显示“Activate/Deactivate Kairos”
-- [ ] 天花板时间轴（The Ceiling Timeline）：实现Pin功能
-- [ ] 浏览器本地笔记存储（IndexedDB CRUD）
-- [ ] 快捷键仅在Kairos激活时生效
+- [x] 天花板时间轴（The Ceiling Timeline）：实现Pin功能
+- [x] 浏览器本地笔记存储（IndexedDB CRUD）
+- [x] 快捷键仅在Kairos激活时生效
 - [ ] Markdown 导出功能
 - [ ] 里程碑：完整记录 5 条笔记并导出MD
 

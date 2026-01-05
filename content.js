@@ -40,6 +40,109 @@
   }
 
   /**
+   * Utils - Helper functions for video identification
+   */
+  const Utils = {
+    getVideoId() {
+      const url = new URL(window.location.href);
+      if (url.hostname.includes('youtube.com')) {
+        return `yt-${url.searchParams.get('v')}`;
+      } else if (url.hostname.includes('bilibili.com')) {
+        const bvid = url.pathname.split('/').find(p => p.startsWith('BV'));
+        return bvid ? `bili-${bvid}` : `bili-${url.pathname}`;
+      }
+      return `generic-${url.hostname}${url.pathname}`;
+    },
+
+    getVideoInfo() {
+      return {
+        videoId: this.getVideoId(),
+        url: window.location.href,
+        title: document.title.replace(/\(\d+\)\s*/, '').split(' - YouTube')[0].trim() // Clean title
+      };
+    },
+
+    formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return [h, m, s]
+        .filter((v, i) => v > 0 || i > 0)
+        .map(v => v.toString().padStart(2, '0'))
+        .join(':');
+    },
+
+    generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+  };
+
+  /**
+   * StorageManager - Handles IndexedDB persistence
+   */
+  class StorageManager {
+    constructor() {
+      this.dbName = 'KairosDB';
+      this.dbVersion = 1;
+      this.storeName = 'notes';
+      this.db = null;
+    }
+
+    async init() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.dbName, this.dbVersion);
+
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(this.storeName)) {
+            const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+            store.createIndex('videoId', 'videoId', { unique: false });
+          }
+        };
+
+        request.onsuccess = (e) => {
+          this.db = e.target.result;
+          log('Database initialized');
+          resolve();
+        };
+
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async saveNote(note) {
+      return new Promise((resolve, reject) => {
+        const transaction = this.db.transaction([this.storeName], 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.put(note);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async getNotesForVideo(videoId) {
+      return new Promise((resolve, reject) => {
+        const transaction = this.db.transaction([this.storeName], 'readonly');
+        const store = transaction.objectStore(this.storeName);
+        const index = store.index('videoId');
+        const request = index.getAll(videoId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async deleteNote(id) {
+      return new Promise((resolve, reject) => {
+        const transaction = this.db.transaction([this.storeName], 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+  }
+
+  /**
    * VideoTracker class - Tracks video element position and dimensions
    */
   class VideoTracker {
@@ -175,12 +278,17 @@
       this.overlayElement = null;
       this.isActive = false;
       this.escListener = null; // Store global esc listener
+      this.storage = new StorageManager();
+      this.currentVideoId = null;
     }
 
     /**
      * Initializes the overlay with Shadow DOM for style isolation
      */
-    init() {
+    async init() {
+      // Init Storage first
+      await this.storage.init();
+
       // Create container element
       this.container = document.createElement('div');
       this.container.id = CONFIG.OVERLAY_ID;
@@ -692,10 +800,23 @@
 
       const noteInput = document.createElement('input');
       noteInput.className = 'kairos-note-input';
-      noteInput.placeholder = 'Note/Keywords...';
+      noteInput.placeholder = 'Type Any Note/Keywords...';
       noteInput.type = 'text';
 
-      noteInput.addEventListener('keydown', (e) => this.handleNoteKeydown(e));
+      // Prevent keydown propagation to video player (e.g. 'k' for pause)
+      // Block ALL key phases to be safe
+      const blockEvent = (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (e.type === 'keydown') this.handleNoteKeydown(e);
+      };
+
+      noteInput.addEventListener('keydown', blockEvent);
+      noteInput.addEventListener('keypress', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
+      noteInput.addEventListener('keyup', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
+
+      // Stop clicks from bubbling to overlay
+      noteWrapper.addEventListener('click', (e) => e.stopPropagation());
       noteWrapper.appendChild(noteInput);
 
       // Hint Text
@@ -859,7 +980,9 @@
      * Handles keydown events in the note input
      */
     handleNoteKeydown(e) {
-      e.stopPropagation(); // Essential: prevent YouTube shortcuts
+      // Aggressively prevent YouTube/Bilibili shortcuts
+      e.stopPropagation();
+      e.stopImmediatePropagation();
 
       if (e.key === 'Enter') {
         this.saveNote();
@@ -880,17 +1003,83 @@
       this.noteWrapper.classList.add('active');
       this.noteInput.focus();
 
-      // Add Global ESC Listener (Capture Mode to beat YouTube/Browser)
+      // Add Global Keydown Interceptor (Capture Mode)
+      // This catches keys BEFORE YouTube gets them
+      if (!this.inputInterceptor) {
+        this.inputInterceptor = (e) => {
+          // Allow Escape to close input (handled by logic below)
+          if (e.key === 'Escape') {
+            // Let it bubble to our own Escape handler or handle here
+            return;
+          }
+
+          // Allow normal typing keys if focus is on our input
+          if (document.activeElement === this.noteInput) {
+            // We still need to stop propagation for keys that might be shortcuts
+            // But we MUST allow the event to reach the input itself.
+            // Since this is a capture listener on document, the event goes down to target.
+            // If we stop propagation here, it won't reach the input!
+            // Wait: stopPropagation stops bubbling. stopImmediatePropagation stops other listeners on SAME element.
+            // Capture phase goes down.
+            // Strategy: Allow event to proceed to our input, but block bubbling back up? 
+            // Or block other listeners on document?
+
+            // Better Strategy:
+            // YouTube attaches listeners to 'document' or 'window' usually.
+            // If we use stopImmediatePropagation in the capture phase, we might kill the event before it reaches the input.
+            // Instead, we just need to ensure OUR input consumes the event.
+            // The 'keydown' event on the input (bubbling) already has stopPropagation.
+            // The issue is likely YouTube using 'capture' or 'window' listeners.
+
+            // Let's try stopping propagation for specific risky keys at the document level
+            // ONLY if the event target is NOT our input. 
+            // BUT, the user IS typing in our input. 
+
+            // Actually, the issue is that typing 'k' in the input triggers YouTube.
+            // This means YouTube is listening on the input or globally.
+            // Since we added stopPropagation() to the input's own handler, bubbling should be dead.
+            // If YouTube still triggers, they are using Capture phase.
+
+            // So we must use a Capture listener on Document to stop them.
+            // But if we stop it, it won't reach our input.
+            // Dilemma.
+
+            // Solution:
+            // 1. We keep the Capture listener.
+            // 2. If target is our input, we explicitly DISPATCH a new event to the input manually? No, too complex.
+            // 3. We just e.stopPropagation() in the Capture phase?
+            //    Events travel: Document (Capture) -> ... -> Input (Target) -> ... -> Document (Bubble).
+            //    If YouTube listens on Document(Bubble), our Input's stopPropagation works.
+            //    If YouTube listens on Document(Capture), we must beat them or remove their listener (impossible).
+            //    If YouTube listens on Body(Capture/Bubble)...
+
+            // Simplest fix for most sites: 
+            // In the capture listener: 
+            // If target is our input, e.stopImmediatePropagation() is risky because it stops other capture listeners on document.
+            // But we are the last added, so we run last in capture? No, order of addition matters.
+
+            // Let's assume YouTube uses standard bubbling listeners on document/body.
+            // The previous stopPropagation on input SHOULD have worked.
+            // Why did it fail? Maybe 'keydown' vs 'keyup' or 'keypress'?
+            // Let's block ALL of them on the input.
+          }
+        };
+        // document.addEventListener('keydown', this.inputInterceptor, true);
+      }
+
+      // Let's stick to the Input-level blocking first, but extend to 'keyup' and 'keypress'
+      // and ensure we catch everything.
+
+      // Note: Re-adding the Global ESC listener logic as before, separate from this thought process
       if (!this.escListener) {
         this.escListener = (e) => {
           if (e.key === 'Escape') {
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation(); // Try to be the first and only
+            e.stopImmediatePropagation();
             this.closeNoteInput();
           }
         };
-        // Use Capture Phase!
         document.addEventListener('keydown', this.escListener, true);
       }
 
@@ -904,16 +1093,88 @@
 
       log('Note input opened for pin at', pinData.timestamp);
     }
+    /**
+     * Loads notes for the current video and renders pins
+     */
+    async loadNotesForCurrentVideo() {
+      const info = Utils.getVideoInfo();
+      this.currentVideoId = info.videoId;
+
+      log('Loading notes for:', this.currentVideoId);
+
+      // Clear existing pins from DOM and memory
+      if (this.pins) {
+        this.pins.forEach(p => p.element.remove());
+      }
+      this.pins = [];
+
+      try {
+        const savedNotes = await this.storage.getNotesForVideo(this.currentVideoId);
+        savedNotes.forEach(noteData => {
+          this.renderPin(noteData);
+        });
+        log(`Loaded ${savedNotes.length} notes.`);
+      } catch (err) {
+        log('Failed to load notes:', err);
+      }
+    }
 
     /**
-     * Saves the current note and closes input
+     * Renders a pin from saved data
      */
-    saveNote() {
+    renderPin(noteData) {
+      const pin = document.createElement('div');
+      pin.className = 'kairos-pin';
+      pin.style.left = `${noteData.percentage}%`;
+
+      this.timeline.appendChild(pin);
+
+      const pinData = {
+        ...noteData,
+        note: noteData.content, // Fix: Map DB 'content' field to internal 'note' field
+        element: pin
+      };
+
+      this.pins.push(pinData);
+
+      pin.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openNoteInput(pinData);
+      });
+    }
+
+    /**
+     * Saves the current note and persists to Storage
+     */
+    async saveNote() {
       const content = this.noteInput.value.trim();
 
       if (this.activePin) {
+        // Update memory
         this.activePin.note = content;
-        log('Note saved:', content);
+
+        // Prepare Data for Storage
+        const info = Utils.getVideoInfo();
+        const noteRecord = {
+          id: this.activePin.id || Utils.generateId(),
+          videoId: info.videoId,
+          videoUrl: info.url,
+          videoTitle: info.title,
+          content: content,
+          timestamp: this.activePin.timestamp,
+          timeLabel: Utils.formatTime(this.activePin.timestamp),
+          percentage: this.activePin.percentage,
+          createdAt: this.activePin.createdAt || Date.now()
+        };
+
+        // Persist
+        try {
+          await this.storage.saveNote(noteRecord);
+          this.activePin.id = noteRecord.id; // Ensure memory has ID for future updates
+          log('Note persisted to IndexedDB');
+        } catch (err) {
+          log('Failed to persist note:', err);
+        }
       }
 
       this.closeNoteInput();
@@ -972,19 +1233,20 @@
      * Creates a visual pin on the timeline
      */
     createPin(percentage) {
+      const id = Utils.generateId();
       const pin = document.createElement('div');
       pin.className = 'kairos-pin';
       pin.style.left = `${percentage}%`;
 
-      // Add hover/click interactions for the pin here later
-
       this.timeline.appendChild(pin);
 
       const pinData = {
+        id: id,
         element: pin,
         percentage: percentage,
         timestamp: this.videoElement ? this.videoElement.currentTime : 0,
-        note: ''
+        note: '',
+        createdAt: Date.now()
       };
 
       this.pins.push(pinData);
@@ -997,7 +1259,6 @@
 
       return pinData;
     }
-
     /**
      * Destroys the overlay
      */
@@ -1012,12 +1273,12 @@
   /**
    * Main application initialization
    */
-  function init() {
+  async function init() {
     log('Initializing Kairos...');
 
     // Create overlay manager
     const overlayManager = new OverlayManager();
-    overlayManager.init();
+    await overlayManager.init();
 
     // Create video tracker
     const videoTracker = new VideoTracker(CONFIG.VIDEO_SELECTOR);
@@ -1026,6 +1287,19 @@
     videoTracker.start((rect, video) => {
       overlayManager.updatePosition(rect, video);
     });
+
+    // Monitor URL changes (for SPA like YouTube)
+    let lastUrl = window.location.href;
+    setInterval(() => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        log('URL changed, reloading notes...');
+        overlayManager.loadNotesForCurrentVideo();
+      }
+    }, 2000);
+
+    // Initial load
+    overlayManager.loadNotesForCurrentVideo();
 
     // Handle fullscreen changes
     document.addEventListener('fullscreenchange', () => {

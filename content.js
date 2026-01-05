@@ -360,7 +360,7 @@
           font-weight: 500;
           padding: 0 20px;
           height: 100%;
-          min-width: 200px;
+          min-width: 150px;
         }
 
         .kairos-note-input::placeholder {
@@ -389,55 +389,82 @@
 
         /* Footer Hints (Optional, can add later) */
 
-        /* Ceiling Timeline: The Invisible Touch Area */
+        /* Ceiling Timeline: The Hit Area (Invisible Wrapper) */
         .kairos-timeline-container {
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
-          height: 16px; 
+          height: 24px; /* Generous hit area */
           background: transparent;
-          pointer-events: none; /* Disabled by default */
+          pointer-events: none;
           z-index: 30;
-          opacity: 0; 
+          opacity: 0;
           transition: opacity 0.3s ease;
-          overflow: visible; 
-        }
-
-        /* Show and Enable when Overlay is Active (Activated via Orb) */
-        .kairos-overlay.active .kairos-timeline-container {
-          opacity: 1; 
-          pointer-events: auto; /* Enable interaction only when active */
-          /* Subtle track background to indicate presence */
-          background: rgba(255, 255, 255, 0.02);
-          /* Custom Pin Cursor: URL Encoded 📌 Emoji */
+          overflow: visible;
+          /* Custom Cursor */
           cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ctext y='28' x='4' font-size='24' style='transform-origin: 16px 16px; transform: rotate(180deg) scaleX(-1);'%3E%F0%9F%93%8C%3C/text%3E%3C/svg%3E") 12 12, crosshair;
         }
 
-        /* Hover state for the track */
-        .kairos-overlay.active .kairos-timeline-container:hover {
-          background: rgba(255, 255, 255, 0.05);
+        /* Show when active */
+        .kairos-overlay.active .kairos-timeline-container {
+          opacity: 1;
+          pointer-events: auto;
         }
 
-        /* The Progress Glow: Aurora Style */
-        .kairos-progress-bar {
-          height: 3px; /* Thicker line */
-          width: 0%; 
-          /* Stronger Gradient */
-          background: linear-gradient(90deg, 
-            rgba(0, 242, 255, 0) 0%, 
-            rgba(0, 242, 255, 0.8) 50%,
-            rgba(160, 60, 255, 1) 100%
-          );
-          /* Intense glow */
-          box-shadow: 
-            0 0 15px rgba(160, 60, 255, 0.6),
-            2px 0 20px rgba(0, 242, 255, 0.5);
-          transition: width 0.1s linear;
+        /* The Visual Rail: Frosted Glass Fiber */
+        .kairos-timeline-rail {
           position: absolute;
-          top: 0;
-          border-radius: 0 3px 3px 0;
+          top: 50%;
+          left: 0;
+          right: 0;
+          height: 4px; 
+          transform: translateY(-50%);
+          background: rgba(255, 255, 255, 0.15); 
+          border-radius: 2px;
+          backdrop-filter: blur(4px);
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          /* overflow: visible; default */
         }
+
+        /* Hover Effect: Rail "Energizes" */
+        .kairos-timeline-container:hover .kairos-timeline-rail {
+          height: 6px; 
+          background: rgba(255, 255, 255, 0.25);
+          box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); /* Subtle glow on hover */
+        }
+
+        /* The Progress Beam */
+        .kairos-progress-bar {
+          height: 100%;
+          width: 0%;
+          background: linear-gradient(90deg, transparent 0%, #00f2ff 100%);
+          border-radius: 2px;
+          position: relative;
+        }
+
+        /* The Playhead: Glowing Bead */
+        .kairos-progress-bar::after {
+          content: '';
+          position: absolute;
+          right: -4px; /* Center on tip */
+          top: 50%;
+          transform: translateY(-50%);
+          width: 8px;
+          height: 8px;
+          background: #ffffff;
+          border-radius: 50%;
+          box-shadow: 
+            0 0 10px rgba(255, 255, 255, 1),
+            0 0 20px rgba(0, 242, 255, 0.8);
+          transition: transform 0.3s ease;
+        }
+
+        /* Playhead expands on hover */
+        .kairos-timeline-container:hover .kairos-progress-bar::after {
+          transform: translateY(-50%) scale(1.5);
+        }
+
 
         /* The Pin: Visual Emoji Marker */
         .kairos-pin {
@@ -601,9 +628,15 @@
       const timeline = document.createElement('div');
       timeline.className = 'kairos-timeline-container';
 
+      // The Visual Rail
+      const rail = document.createElement('div');
+      rail.className = 'kairos-timeline-rail';
+
       const progressBar = document.createElement('div');
       progressBar.className = 'kairos-progress-bar';
-      timeline.appendChild(progressBar);
+
+      rail.appendChild(progressBar); // Bar goes into rail
+      timeline.appendChild(rail);    // Rail goes into container
 
       timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
       overlay.appendChild(timeline);

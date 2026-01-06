@@ -354,6 +354,10 @@
           will-change: top, left, transform; 
         }
 
+        .kairos-island-container.positioned {
+          transform: none !important;
+        }
+
         /* Note Wrapper: Position handled by Flexbox in 'kairos-island-container' now */
         /* See .kairos-note-wrapper definition below */
 
@@ -1050,6 +1054,7 @@
       if (this.dragHandle) this.dragHandle.classList.add('grabbing');
       // Add dragging class immediately to keep menu expanded
       island.classList.add('dragging');
+      island.classList.add('positioned'); // Permanently disable initial centering transform
     }
 
     drag(e) {

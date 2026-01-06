@@ -339,42 +339,63 @@
           animation: kairos-border-pulse 3s infinite alternate ease-in-out;
         }
 
-        /* The Intelligent Island Container: Managing Orb and Note as a single unit */
+        /* The Intelligent Island Container: Free Floating inside Overlay */
         .kairos-island-container {
           position: absolute;
+          /* Default Start Position (Top Center) */
           top: 12px;
           left: 50%;
-          transform: translateX(-50%);
+          transform: translateX(-50%); 
           display: flex;
           align-items: center;
-          gap: 8px; /* Perfectly fixed tight gap */
-          pointer-events: none;
-          z-index: 20;
-          transition: all 0.5s cubic-bezier(0.3, 1.2, 0.3, 1);
+          gap: 8px; 
+          pointer-events: none; /* Container passes clicks */
+          z-index: 50; /* Ensure above timeline */
+          will-change: top, left, transform; 
         }
 
-        /* Orb: Now a member of the island */
+        /* Orientation: Right Side of Screen (Default) -> Expand Left */
+        .kairos-island-container.orient-right {
+          flex-direction: row-reverse;
+        }
+
+        /* Orientation: Left Side of Screen -> Expand Right */
+        .kairos-island-container.orient-left {
+          flex-direction: row;
+        }
+
+        /* Orb: The Anchor */
         .kairos-orb {
-          position: relative; /* No longer absolute relative to overlay */
+          position: relative;
           height: 48px;
           width: 48px; 
           background: rgba(10, 10, 10, 0.4);
           backdrop-filter: blur(32px) saturate(210%);
           border: 0.5px solid rgba(255, 255, 255, 0.18);
           border-radius: 24px;
-          pointer-events: auto;
-          cursor: pointer;
+          pointer-events: auto; /* Catch events */
+          cursor: grab; /* Drag cursor */
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.5s cubic-bezier(0.3, 1.2, 0.3, 1);
+          transition: width 0.4s cubic-bezier(0.3, 1.2, 0.3, 1), background 0.3s ease;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
           overflow: hidden;
           flex-shrink: 0; 
           padding: 0 16px;
+          user-select: none; /* Prevent text selection while dragging */
+        }
+        
+        .kairos-orb:active {
+          cursor: grabbing;
+        }
+        
+        .kairos-orb.grabbing {
+          cursor: grabbing;
         }
 
-        .kairos-orb:hover {
+        /* Hover expansion: Only if NOT dragging (handled in JS classes) */
+        .kairos-island-container:not(.dragging) .kairos-orb:hover {
           width: 180px; 
           background: rgba(20, 20, 20, 0.55);
         }
@@ -771,77 +792,50 @@
 
       // The Intelligent Island Container (Orb + Note)
       const island = document.createElement('div');
-      island.className = 'kairos-island-container';
-
+      island.className = 'kairos-island-container orient-right'; 
+      
+      // Initialize Drag Offsets (0 means default CSS position)
+      this.xOffset = 0; 
+      this.yOffset = 0;
+      
       // Floating orb
-
       const orb = document.createElement('div');
-
       orb.className = 'kairos-orb';
-
-      orb.title = 'Activate Kairos'; // Tooltip for idle state
-
-
+      orb.title = 'Activate Kairos'; 
 
       const iconSvg = `
-
-              <svg class="kairos-orb-icon" viewBox="0 0 24 24">
-
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-
-              </svg>
-
-            `;
-
-
+        <svg class="kairos-orb-icon" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      `;
 
       const labelSpan = document.createElement('span');
-
       labelSpan.className = 'kairos-orb-label';
-
-
-
+      
       const labelText = document.createElement('span');
-
-      labelText.textContent = '⚡';
-
-      labelText.title = 'Capture Moment'; // Tooltip for capture icon
-
-      this.orbLabelText = labelText;
-
-
+      labelText.textContent = '⚡'; 
+      labelText.title = 'Capture Moment'; 
+      this.orbLabelText = labelText; 
 
       const deactivateBtn = document.createElement('div');
-
       deactivateBtn.className = 'kairos-deactivate-btn';
-
       deactivateBtn.textContent = '✕';
-
-      deactivateBtn.title = 'Deactivate Kairos'; // Tooltip for close
-
+      deactivateBtn.title = 'Deactivate Kairos'; 
       deactivateBtn.addEventListener('click', (e) => {
-
-        e.stopPropagation();
-
-        this.handleDeactivate();
-
+          e.stopPropagation();
+          this.handleDeactivate();
       });
 
-
-
       labelSpan.appendChild(labelText);
-
       labelSpan.appendChild(deactivateBtn);
 
-
-
       orb.innerHTML = iconSvg;
-
       orb.appendChild(labelSpan);
-
-      orb.addEventListener('click', () => this.handleOrbClick());
-
-
+      
+      // Drag & Click Logic
+      orb.addEventListener('mousedown', (e) => this.dragStart(e));
+      document.addEventListener('mousemove', (e) => this.drag(e));
+      document.addEventListener('mouseup', (e) => this.dragEnd(e));
 
       // Spotlight Note Input
 
@@ -937,6 +931,129 @@
 
       // Store references for animation
       this.effectElements = { flash, ripple, glowBorder };
+    }
+
+    /* --- Dragging Logic (Robust Delta Approach) --- */
+
+    dragStart(e) {
+      if (e.target.closest('.kairos-deactivate-btn')) return; 
+      
+      if (!this.overlayElement) return;
+
+      // FIX: Use shadowRoot to find the island
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      if (!island) return;
+
+      const overlayRect = this.overlayElement.getBoundingClientRect();
+      const islandRect = island.getBoundingClientRect();
+
+      // 1. Calculate current position relative to Overlay
+      const currentLeft = islandRect.left - overlayRect.left;
+      const currentTop = islandRect.top - overlayRect.top;
+
+      // 2. Freeze position in pixels (removing transform centering)
+      island.style.transition = 'none'; // Disable smoothing during drag
+      island.style.transform = 'none';  // Remove centering transform
+      island.style.left = `${currentLeft}px`;
+      island.style.top = `${currentTop}px`;
+
+      // 3. Store start state
+      this.startLeft = currentLeft;
+      this.startTop = currentTop;
+      this.startX = e.clientX;
+      this.startY = e.clientY;
+      
+      this.isDragging = false; 
+      
+      if (this.orbElement) this.orbElement.classList.add('grabbing');
+    }
+
+    drag(e) {
+      if (!this.orbElement || !this.orbElement.classList.contains('grabbing')) return;
+      if (!this.overlayElement) return;
+
+      e.preventDefault();
+
+      // 1. Calculate Delta
+      const dx = e.clientX - this.startX;
+      const dy = e.clientY - this.startY;
+
+      // 2. Threshold Check
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          this.isDragging = true;
+          const island = this.shadowRoot.querySelector('.kairos-island-container');
+          if (island) island.classList.add('dragging');
+      }
+
+      // 3. Apply new position
+      let newLeft = this.startLeft + dx;
+      let newTop = this.startTop + dy;
+
+      // Boundary Check (Optional but good)
+      const overlayRect = this.overlayElement.getBoundingClientRect();
+      const islandWidth = 48; // Approx min width
+      newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - islandWidth));
+      newTop = Math.max(0, Math.min(newTop, overlayRect.height - 48));
+
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      if (island) {
+          island.style.left = `${newLeft}px`;
+          island.style.top = `${newTop}px`;
+      }
+      
+      this.updateOrientation(newLeft, overlayRect.width);
+    }
+
+    dragEnd(e) {
+      if (!this.orbElement || !this.orbElement.classList.contains('grabbing')) return;
+      
+      this.orbElement.classList.remove('grabbing');
+      
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      if (island) {
+          island.classList.remove('dragging');
+          // Restore physics/transitions
+          island.style.transition = ''; 
+      }
+
+      if (!this.isDragging) {
+          // It was a click!
+          this.handleOrbClick();
+      }
+      
+      this.isDragging = false;
+    }
+
+    updateOrientation(currentLeft, containerWidth) {
+        if (!this.shadowRoot) return;
+        const island = this.shadowRoot.querySelector('.kairos-island-container');
+        if (!island) return;
+        
+        const middle = containerWidth / 2;
+        
+        if (currentLeft > middle) {
+            island.classList.remove('orient-left');
+            island.classList.add('orient-right');
+        } else {
+            island.classList.remove('orient-right');
+            island.classList.add('orient-left');
+        }
+    }
+
+    updateOrientation(currentLeft, containerWidth) {
+        if (!this.shadowRoot) return;
+        const island = this.shadowRoot.querySelector('.kairos-island-container');
+        if (!island) return;
+        
+        const middle = containerWidth / 2;
+        
+        if (currentLeft > middle) {
+            island.classList.remove('orient-left');
+            island.classList.add('orient-right');
+        } else {
+            island.classList.remove('orient-right');
+            island.classList.add('orient-left');
+        }
     }
 
     /**

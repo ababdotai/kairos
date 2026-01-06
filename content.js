@@ -1104,6 +1104,14 @@
         island.classList.remove('dragging');
         // Restore physics/transitions
         island.style.transition = '';
+
+        // Finalize Orientation (Convert to Left/Right Anchor)
+        if (this.overlayElement) {
+           const overlayRect = this.overlayElement.getBoundingClientRect();
+           const islandRect = island.getBoundingClientRect();
+           const currentLeft = islandRect.left - overlayRect.left;
+           this.updateOrientation(currentLeft, overlayRect.width);
+        }
       }
 
       // Delay reset to prevent 'click' event from firing immediately after drag release
@@ -1118,8 +1126,7 @@
       if (!island) return;
 
       const middle = containerWidth / 2;
-      const overlayRect = this.overlayElement ? this.overlayElement.getBoundingClientRect() : { width: window.innerWidth };
-
+      
       if (currentLeft > middle) {
         // Right Orientation
         island.classList.remove('orient-left');
@@ -1127,7 +1134,8 @@
         
         // Switch to RIGHT positioning if not dragging
         if (!this.activeDrag) {
-            const currentRight = overlayRect.width - (currentLeft + island.offsetWidth);
+            // Recalculate Right based on container width
+            const currentRight = containerWidth - (currentLeft + island.offsetWidth);
             island.style.left = 'auto';
             island.style.right = `${currentRight}px`;
         }

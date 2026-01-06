@@ -47,7 +47,7 @@
       const url = new URL(window.location.href);
       if (url.hostname.includes('youtube.com')) {
         if (url.pathname.startsWith('/shorts/')) {
-            return `yt-${url.pathname.split('/shorts/')[1]}`;
+          return `yt-${url.pathname.split('/shorts/')[1]}`;
         }
         return `yt-${url.searchParams.get('v')}`;
       } else if (url.hostname.includes('bilibili.com')) {
@@ -84,12 +84,12 @@
    * StorageManager - Proxy to Background Service Worker
    */
   class StorageManager {
-    constructor() {}
+    constructor() { }
 
     // No init needed for proxy, but keeping empty for compatibility
-    async init() { 
-        log('StorageManager initialized (Proxy Mode -> Background Worker)');
-        return Promise.resolve(); 
+    async init() {
+      log('StorageManager initialized (Proxy Mode -> Background Worker)');
+      return Promise.resolve();
     }
 
     async saveNote(note) {
@@ -261,6 +261,11 @@
       this.escListener = null; // Store global esc listener
       this.storage = new StorageManager();
       this.currentVideoId = null;
+
+      // Interaction States
+      this.activePin = null;
+      this.isEditing = false; // Locked via click
+      this.wasPlaying = false;
     }
 
     /**
@@ -433,8 +438,35 @@
         .kairos-orb:hover .kairos-orb-label {
           opacity: 1;
           transform: scale(1);
-          max-width: 120px;
+          max-width: 150px; 
           margin-left: 12px;
+          display: flex;
+          align-items: center;
+          gap: 16px; /* Increased gap between Shutter and Off button */
+        }
+
+        /* Power Off Button (Icon Style) */
+        .kairos-deactivate-btn {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(255, 50, 50, 0.2);
+          color: #ff6b6b;
+          border: 1px solid rgba(255, 50, 50, 0.3);
+          transition: all 0.2s;
+          cursor: pointer;
+          pointer-events: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px; /* For emoji/icon */
+        }
+
+        .kairos-deactivate-btn:hover {
+          background: rgba(255, 50, 50, 0.4);
+          color: white;
+          border-color: rgba(255, 50, 50, 0.6);
+          transform: scale(1.1);
         }
 
         .kairos-note-icon { display: none; }
@@ -445,32 +477,34 @@
           border: none;
           outline: none;
           color: white;
-          font-size: 15px;
+          font-size: 16px; /* Slightly larger for clarity */
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-          font-weight: 500;
-          padding: 0 20px; /* Symmetrical padding */
+          font-weight: 400;
+          padding: 0 20px; 
           height: 100%;
           min-width: 100px;
         }
 
         .kairos-note-input::placeholder {
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(255, 255, 255, 0.3);
+          font-style: italic;
         }
         
-        /* Input Hint: Positioned Below the Capsule */
+        /* Input Hint: Symbolic */
         .kairos-note-hint {
           position: absolute;
-          bottom: -24px; /* Hang below */
-          left: 20px; /* Align with input text start */
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 11px;
+          bottom: -24px; 
+          left: 24px; 
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 10px;
           font-weight: 500;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+          font-family: 'Menlo', 'Monaco', 'Courier New', monospace; /* Tech feel for keys */
           white-space: nowrap;
           pointer-events: none;
           opacity: 0;
           transform: translateY(-5px);
-          transition: all 0.3s ease 0.1s; /* Slight delay to appear after expansion */
+          transition: all 0.3s ease 0.1s; 
+          letter-spacing: 0.5px;
         }
         
         /* Show hint when active */
@@ -479,48 +513,30 @@
           transform: translateY(0);
         }
 
-        /* Input Hint */
-        .kairos-note-hint {
-          margin-right: 20px;
-          color: rgba(255, 255, 255, 0.4);
-          font-size: 11px;
-          font-weight: 500;
-          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-          white-space: nowrap;
-          pointer-events: none;
-          opacity: 0;
-          transform: translateX(-10px);
-          transition: all 0.3s ease 0.1s;
-        }
-
-        /* Show hint when active */
-        .kairos-note-wrapper.active .kairos-note-hint {
-          opacity: 1;
-          transform: translateX(0);
-        }
-
         /* Footer Hints (Optional, can add later) */
 
-        /* Ceiling Timeline: The Hit Area (Invisible Wrapper) */
+        /* Ceiling Timeline: Now only a viewer */
         .kairos-timeline-container {
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
-          height: 24px; /* Generous hit area */
+          height: 24px; 
           background: transparent;
-          pointer-events: none;
+          pointer-events: none; /* Disable global clicks */
           z-index: 30;
           opacity: 0;
           transition: opacity 0.3s ease;
           overflow: visible;
-          /* Custom Cursor */
-          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ctext y='28' x='4' font-size='24' style='transform-origin: 16px 16px; transform: rotate(180deg) scaleX(-1);'%3E%F0%9F%93%8C%3C/text%3E%3C/svg%3E") 12 12, crosshair;
         }
 
         /* Show when active */
         .kairos-overlay.active .kairos-timeline-container {
           opacity: 1;
+        }
+
+        /* Pins remain interactive */
+        .kairos-pin {
           pointer-events: auto;
         }
 
@@ -758,52 +774,135 @@
       island.className = 'kairos-island-container';
 
       // Floating orb
+
       const orb = document.createElement('div');
+
       orb.className = 'kairos-orb';
 
+      orb.title = 'Activate Kairos'; // Tooltip for idle state
+
+
+
       const iconSvg = `
-        <svg class="kairos-orb-icon" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        </svg>
-      `;
+
+              <svg class="kairos-orb-icon" viewBox="0 0 24 24">
+
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+
+              </svg>
+
+            `;
+
+
 
       const labelSpan = document.createElement('span');
+
       labelSpan.className = 'kairos-orb-label';
-      labelSpan.textContent = 'Activate Kairos';
+
+
+
+      const labelText = document.createElement('span');
+
+      labelText.textContent = '⚡';
+
+      labelText.title = 'Capture Moment'; // Tooltip for capture icon
+
+      this.orbLabelText = labelText;
+
+
+
+      const deactivateBtn = document.createElement('div');
+
+      deactivateBtn.className = 'kairos-deactivate-btn';
+
+      deactivateBtn.textContent = '✕';
+
+      deactivateBtn.title = 'Deactivate Kairos'; // Tooltip for close
+
+      deactivateBtn.addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        this.handleDeactivate();
+
+      });
+
+
+
+      labelSpan.appendChild(labelText);
+
+      labelSpan.appendChild(deactivateBtn);
+
+
 
       orb.innerHTML = iconSvg;
+
       orb.appendChild(labelSpan);
+
       orb.addEventListener('click', () => this.handleOrbClick());
 
+
+
       // Spotlight Note Input
+
       const noteWrapper = document.createElement('div');
+
       noteWrapper.className = 'kairos-note-wrapper';
 
+
+
       const noteInput = document.createElement('input');
+
       noteInput.className = 'kairos-note-input';
-      noteInput.placeholder = 'Type Any Note/Keywords...';
+
+      noteInput.placeholder = '✨ Capture thought...';
+
       noteInput.type = 'text';
 
+
+
       // Prevent keydown propagation to video player (e.g. 'k' for pause)
+
       // Block ALL key phases to be safe
+
       const blockEvent = (e) => {
+
         e.stopPropagation();
+
         e.stopImmediatePropagation();
+
         if (e.type === 'keydown') this.handleNoteKeydown(e);
+
       };
 
+
+
       noteInput.addEventListener('keydown', blockEvent);
+
       noteInput.addEventListener('keypress', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
+
       noteInput.addEventListener('keyup', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
 
+
+
       // Stop clicks from bubbling to overlay
+
       noteWrapper.addEventListener('click', (e) => e.stopPropagation());
+
+
+
       noteWrapper.appendChild(noteInput);
 
+
+
       // Hint Text
+
       const noteHint = document.createElement('div');
+
       noteHint.className = 'kairos-note-hint';
-      noteHint.textContent = 'Enter to save • Esc to cancel';
+
+      noteHint.textContent = '↵ Save  ⎋ Cancel';
+
       noteWrapper.appendChild(noteHint);
 
       // Add members to island
@@ -873,7 +972,9 @@
     }
 
     /**
-     * Handles click event on the floating orb
+     * Handles click on the Orb. 
+     * If inactive: Activates Kairos.
+     * If active: Captures the current moment (Shutter Mode).
      */
     handleOrbClick() {
       if (!this.effectElements) {
@@ -883,51 +984,7 @@
 
       const { flash, ripple, glowBorder } = this.effectElements;
 
-      if (this.isActive) {
-
-        // --- DEACTIVATE ---
-
-        log('Deactivating Kairos...');
-
-        this.isActive = false;
-
-
-
-        // 1. Fade out the border and Hide Timeline (via overlay active class)
-
-        glowBorder.classList.remove('active');
-
-        if (this.overlayElement) this.overlayElement.classList.remove('active');
-
-
-
-        // Ensure note input is closed
-
-        this.closeNoteInput();
-
-
-
-        // 2. Update Orb State
-
-        if (this.orbElement) this.orbElement.classList.remove('active');
-
-        if (this.orbLabel) this.orbLabel.textContent = 'Activate Kairos';
-
-
-
-        // 3. Trigger "Reverse" Ripple (Contract)        // Clean up previous animations first
-        ripple.classList.remove('animating');
-        ripple.classList.remove('reversing');
-
-        // Force reflow
-        void ripple.offsetWidth;
-
-        // Start reverse animation
-        ripple.classList.add('reversing');
-
-        // Note: We don't flash on deactivation, just smooth exit
-
-      } else {
+      if (!this.isActive) {
         // --- ACTIVATE ---
         log('Activating Kairos (Apple Intelligence style)...');
         this.isActive = true;
@@ -936,11 +993,14 @@
         flash.classList.remove('animating');
         ripple.classList.remove('animating');
         ripple.classList.remove('reversing');
-        glowBorder.classList.remove('active'); // Temporarily remove to ensure transition
+        glowBorder.classList.remove('active');
 
         // 2. Update Orb State
-        if (this.orbElement) this.orbElement.classList.add('active');
-        if (this.orbLabel) this.orbLabel.textContent = 'Deactivate Kairos';
+        if (this.orbElement) {
+          this.orbElement.classList.add('active');
+          this.orbElement.title = 'Capture Moment';
+        }
+        if (this.orbLabelText) this.orbLabelText.textContent = '📌';
 
         // Show Timeline
         if (this.overlayElement) this.overlayElement.classList.add('active');
@@ -952,9 +1012,60 @@
         flash.classList.add('animating');
         ripple.classList.add('animating');
 
-        // Activate the border - it will fade in as the ripple expands
+        // Activate the border
         glowBorder.classList.add('active');
+      } else {
+        // --- CAPTURE (SHUTTER MODE) ---
+        log('Capturing current moment...');
+
+        if (!this.videoElement) return;
+
+        const duration = this.videoElement.duration;
+        if (!duration) return;
+
+        const percentage = (this.videoElement.currentTime / duration) * 100;
+
+        // Trigger a subtle flash to indicate capture
+        flash.classList.remove('animating');
+        void flash.offsetWidth;
+        flash.classList.add('animating');
+
+        // Create Pin and Open Input
+        const pinData = this.createPin(percentage);
+        this.openNoteInput(pinData);
       }
+    }
+
+    /**
+     * Handles Deactivation (Power Off)
+     */
+    handleDeactivate() {
+      if (!this.isActive) return;
+
+      log('Deactivating Kairos...');
+      const { ripple, glowBorder } = this.effectElements;
+
+      this.isActive = false;
+
+      // 1. Fade out the border and Hide Timeline
+      glowBorder.classList.remove('active');
+      if (this.overlayElement) this.overlayElement.classList.remove('active');
+
+      // Ensure note input is closed
+      this.closeNoteInput();
+
+      // 2. Update Orb State
+      if (this.orbElement) {
+        this.orbElement.classList.remove('active');
+        this.orbElement.title = 'Activate Kairos';
+      }
+      if (this.orbLabelText) this.orbLabelText.textContent = '⚡';
+
+      // 3. Trigger "Reverse" Ripple (Contract)
+      ripple.classList.remove('animating');
+      ripple.classList.remove('reversing');
+      void ripple.offsetWidth;
+      ripple.classList.add('reversing');
     }
 
     /**
@@ -972,109 +1083,46 @@
       }
     }
 
-    /**
-     * Opens the note input for a specific pin
-     */
-    openNoteInput(pinData) {
-      if (!this.noteWrapper || !this.noteInput) return;
-
-      this.activePin = pinData;
-      this.noteInput.value = pinData.note || '';
-
-      this.noteWrapper.classList.add('active');
-      this.noteInput.focus();
-
-      // Add Global Keydown Interceptor (Capture Mode)
-      // This catches keys BEFORE YouTube gets them
-      if (!this.inputInterceptor) {
-        this.inputInterceptor = (e) => {
-          // Allow Escape to close input (handled by logic below)
-          if (e.key === 'Escape') {
-            // Let it bubble to our own Escape handler or handle here
-            return;
+        /**
+         * Opens the note input/preview
+         * @param {Object} pinData The pin data
+         * @param {Boolean} isEdit Whether to enter edit mode (pause + focus)
+         */
+        openNoteInput(pinData, isEdit = false) {
+          if (!this.noteWrapper || !this.noteInput) return;
+    
+          this.activePin = pinData;
+          this.noteInput.value = pinData.note || '';
+          this.isEditing = isEdit;
+    
+          this.noteWrapper.classList.add('active');
+    
+          if (isEdit) {
+            this.noteInput.focus();
+            // Pause video if playing
+            if (this.videoElement && !this.videoElement.paused) {
+              this.wasPlaying = true;
+              this.videoElement.pause();
+            } else {
+              this.wasPlaying = false;
+            }
+    
+            // Add Global ESC Listener (Capture Mode)
+            if (!this.escListener) {
+              this.escListener = (e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  this.closeNoteInput(true); // Force close on ESC
+                }
+              };
+              document.addEventListener('keydown', this.escListener, true);
+            }
           }
-
-          // Allow normal typing keys if focus is on our input
-          if (document.activeElement === this.noteInput) {
-            // We still need to stop propagation for keys that might be shortcuts
-            // But we MUST allow the event to reach the input itself.
-            // Since this is a capture listener on document, the event goes down to target.
-            // If we stop propagation here, it won't reach the input!
-            // Wait: stopPropagation stops bubbling. stopImmediatePropagation stops other listeners on SAME element.
-            // Capture phase goes down.
-            // Strategy: Allow event to proceed to our input, but block bubbling back up? 
-            // Or block other listeners on document?
-
-            // Better Strategy:
-            // YouTube attaches listeners to 'document' or 'window' usually.
-            // If we use stopImmediatePropagation in the capture phase, we might kill the event before it reaches the input.
-            // Instead, we just need to ensure OUR input consumes the event.
-            // The 'keydown' event on the input (bubbling) already has stopPropagation.
-            // The issue is likely YouTube using 'capture' or 'window' listeners.
-
-            // Let's try stopping propagation for specific risky keys at the document level
-            // ONLY if the event target is NOT our input. 
-            // BUT, the user IS typing in our input. 
-
-            // Actually, the issue is that typing 'k' in the input triggers YouTube.
-            // This means YouTube is listening on the input or globally.
-            // Since we added stopPropagation() to the input's own handler, bubbling should be dead.
-            // If YouTube still triggers, they are using Capture phase.
-
-            // So we must use a Capture listener on Document to stop them.
-            // But if we stop it, it won't reach our input.
-            // Dilemma.
-
-            // Solution:
-            // 1. We keep the Capture listener.
-            // 2. If target is our input, we explicitly DISPATCH a new event to the input manually? No, too complex.
-            // 3. We just e.stopPropagation() in the Capture phase?
-            //    Events travel: Document (Capture) -> ... -> Input (Target) -> ... -> Document (Bubble).
-            //    If YouTube listens on Document(Bubble), our Input's stopPropagation works.
-            //    If YouTube listens on Document(Capture), we must beat them or remove their listener (impossible).
-            //    If YouTube listens on Body(Capture/Bubble)...
-
-            // Simplest fix for most sites: 
-            // In the capture listener: 
-            // If target is our input, e.stopImmediatePropagation() is risky because it stops other capture listeners on document.
-            // But we are the last added, so we run last in capture? No, order of addition matters.
-
-            // Let's assume YouTube uses standard bubbling listeners on document/body.
-            // The previous stopPropagation on input SHOULD have worked.
-            // Why did it fail? Maybe 'keydown' vs 'keyup' or 'keypress'?
-            // Let's block ALL of them on the input.
-          }
-        };
-        // document.addEventListener('keydown', this.inputInterceptor, true);
-      }
-
-      // Let's stick to the Input-level blocking first, but extend to 'keyup' and 'keypress'
-      // and ensure we catch everything.
-
-      // Note: Re-adding the Global ESC listener logic as before, separate from this thought process
-      if (!this.escListener) {
-        this.escListener = (e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            this.closeNoteInput();
-          }
-        };
-        document.addEventListener('keydown', this.escListener, true);
-      }
-
-      // Pause video if playing
-      if (this.videoElement && !this.videoElement.paused) {
-        this.wasPlaying = true;
-        this.videoElement.pause();
-      } else {
-        this.wasPlaying = false;
-      }
-
-      log('Note input opened for pin at', pinData.timestamp);
-    }
-    /**
+    
+          log(isEdit ? 'Editing note' : 'Previewing note', 'at', pinData.timestamp);
+        }    /**
      * Loads notes for the current video and renders pins
      */
     async loadNotesForCurrentVideo() {
@@ -1118,9 +1166,22 @@
 
       this.pins.push(pinData);
 
+      // --- Interaction Listeners ---
+      
+      // 1. Hover to Preview
+      pin.addEventListener('mouseenter', () => {
+        if (!this.isEditing) this.openNoteInput(pinData, false);
+      });
+
+      // 2. Leave to Hide
+      pin.addEventListener('mouseleave', () => {
+        this.closeNoteInput(false); // Don't force, so it stays if editing
+      });
+
+      // 3. Click to Edit
       pin.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.openNoteInput(pinData);
+        this.openNoteInput(pinData, true);
       });
     }
 
@@ -1152,62 +1213,48 @@
         try {
           await this.storage.saveNote(noteRecord);
           this.activePin.id = noteRecord.id; // Ensure memory has ID for future updates
-          log('Note persisted to IndexedDB');
+          log('Note persisted');
         } catch (err) {
           log('Failed to persist note:', err);
         }
       }
 
-      this.closeNoteInput();
+      this.isEditing = false;
+      this.closeNoteInput(true); // Force close
     }
 
     /**
      * Closes the note input
+     * @param {Boolean} force If true, ignores isEditing state
      */
-    closeNoteInput() {
-      if (!this.noteWrapper) return;
+    closeNoteInput(force = false) {
+      if (!this.noteWrapper || (!force && this.isEditing)) return;
 
       this.noteWrapper.classList.remove('active');
       this.noteInput.blur();
+      
+      // Resume video if it was playing and we are leaving edit mode
+      if (this.isEditing && this.wasPlaying && this.videoElement) {
+        this.videoElement.play();
+      }
+      
       this.activePin = null;
+      this.isEditing = false;
 
       // Remove Global ESC Listener
       if (this.escListener) {
         document.removeEventListener('keydown', this.escListener, true); // match useCapture
         this.escListener = null;
       }
-
-      // Resume video if it was playing
-      if (this.wasPlaying && this.videoElement) {
-        this.videoElement.play();
-      }
     }
 
     /**
-     * Handles clicks on the timeline to seek and add pins
+     * Handles clicks on the timeline area
      */
     handleTimelineClick(e) {
-      if (!this.isActive || !this.videoElement || !this.timeline) return;
-
-      e.stopPropagation(); // Don't trigger underlying elements
-
-      const rect = this.timeline.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const width = rect.width;
-      const percentage = Math.max(0, Math.min(1, clickX / width)); // Clamp 0-1
-
-      // 1. Seek video
-      if (Number.isFinite(this.videoElement.duration)) {
-        this.videoElement.currentTime = percentage * this.videoElement.duration;
-      }
-
-      // 2. Create Pin visual
-      const pinData = this.createPin(percentage * 100);
-
-      log(`Timeline clicked at ${Math.round(percentage * 100)}%`);
-
-      // 3. Open Note Input immediately
-      this.openNoteInput(pinData);
+      // Disabled in Shutter Mode to prevent accidental jumps
+      e.stopPropagation();
+      log('Timeline click ignored (Use Orb to capture)');
     }
 
     /**
@@ -1232,10 +1279,19 @@
 
       this.pins.push(pinData);
 
-      // Add click listener to re-open note
+      // --- Interaction Listeners ---
+      
+      pin.addEventListener('mouseenter', () => {
+        if (!this.isEditing) this.openNoteInput(pinData, false);
+      });
+      
+      pin.addEventListener('mouseleave', () => {
+        this.closeNoteInput(false);
+      });
+
       pin.addEventListener('click', (e) => {
-        e.stopPropagation(); // Don't trigger timeline click (which creates new pin)
-        this.openNoteInput(pinData);
+        e.stopPropagation();
+        this.openNoteInput(pinData, true);
       });
 
       return pinData;

@@ -1052,7 +1052,7 @@
       if (this.overlayElement) this.overlayElement.classList.remove('active');
 
       // Ensure note input is closed
-      this.closeNoteInput();
+      this.closeNoteInput(true); // Force close on deactivation
 
       // 2. Update Orb State
       if (this.orbElement) {
@@ -1097,29 +1097,22 @@
     
           this.noteWrapper.classList.add('active');
     
-          if (isEdit) {
-            this.noteInput.focus();
-            // Pause video if playing
-            if (this.videoElement && !this.videoElement.paused) {
-              this.wasPlaying = true;
-              this.videoElement.pause();
-            } else {
-              this.wasPlaying = false;
-            }
-    
-            // Add Global ESC Listener (Capture Mode)
-            if (!this.escListener) {
-              this.escListener = (e) => {
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.stopImmediatePropagation();
-                  this.closeNoteInput(true); // Force close on ESC
+      // Global ESC for Edit mode only
+      if (isEdit) {
+        // ... (existing ESC logic) ...
+        
+        // Add Click Outside Listener to Save & Close
+        if (!this.clickOutsideListener) {
+            this.clickOutsideListener = (e) => {
+                // If click target is NOT inside note wrapper and NOT the pin that opened it
+                if (!this.noteWrapper.contains(e.target) && !e.target.classList.contains('kairos-pin')) {
+                    this.saveNote(); // Auto-save on click away
                 }
-              };
-              document.addEventListener('keydown', this.escListener, true);
-            }
-          }
+            };
+            // Use capture to ensure we catch clicks on video/other elements
+            document.addEventListener('click', this.clickOutsideListener, true);
+        }
+      }
     
           log(isEdit ? 'Editing note' : 'Previewing note', 'at', pinData.timestamp);
         }    /**
@@ -1178,9 +1171,15 @@
         this.closeNoteInput(false); // Don't force, so it stays if editing
       });
 
-      // 3. Click to Edit
+      // 3. Click to Jump & Edit
       pin.addEventListener('click', (e) => {
         e.stopPropagation();
+        
+        // Seek video to this moment
+        if (this.videoElement) {
+          this.videoElement.currentTime = pinData.timestamp;
+        }
+
         this.openNoteInput(pinData, true);
       });
     }
@@ -1243,8 +1242,14 @@
 
       // Remove Global ESC Listener
       if (this.escListener) {
-        document.removeEventListener('keydown', this.escListener, true); // match useCapture
+        document.removeEventListener('keydown', this.escListener, true);
         this.escListener = null;
+      }
+
+      // Remove Click Outside Listener
+      if (this.clickOutsideListener) {
+        document.removeEventListener('click', this.clickOutsideListener, true);
+        this.clickOutsideListener = null;
       }
     }
 
@@ -1291,6 +1296,12 @@
 
       pin.addEventListener('click', (e) => {
         e.stopPropagation();
+
+        // Seek video to this moment
+        if (this.videoElement) {
+          this.videoElement.currentTime = pinData.timestamp;
+        }
+
         this.openNoteInput(pinData, true);
       });
 

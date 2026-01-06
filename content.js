@@ -858,12 +858,12 @@
 
       // The Intelligent Island Container (Orb + Note)
       const island = document.createElement('div');
-      island.className = 'kairos-island-container orient-right'; 
-      
+      island.className = 'kairos-island-container orient-right';
+
       // Initialize Drag Offsets (0 means default CSS position)
-      this.xOffset = 0; 
+      this.xOffset = 0;
       this.yOffset = 0;
-      
+
       // 1. Drag Handle
       const dragHandle = document.createElement('div');
       dragHandle.className = 'kairos-drag-handle';
@@ -879,17 +879,17 @@
       dragHandle.addEventListener('mousedown', (e) => this.dragStart(e));
       // CRITICAL: Prevent handle clicks from bubbling to Orb and triggering activation/pin
       dragHandle.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.stopImmediatePropagation();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
       });
 
       document.addEventListener('mousemove', (e) => this.drag(e));
       document.addEventListener('mouseup', (e) => this.dragEnd(e));
-      
+
       // Floating orb
       const orb = document.createElement('div');
       orb.className = 'kairos-orb';
-      orb.title = 'Activate Kairos'; 
+      orb.title = 'Activate Kairos';
 
       // Icon Image
       const iconUrl = chrome.runtime.getURL('icons/icon.png');
@@ -901,19 +901,19 @@
 
       const labelSpan = document.createElement('span');
       labelSpan.className = 'kairos-orb-label';
-      
+
       const labelText = document.createElement('span');
-      labelText.textContent = '⚡'; 
-      labelText.title = 'Capture Moment'; 
-      this.orbLabelText = labelText; 
+      labelText.textContent = '📌';
+      labelText.title = 'Capture Moment';
+      this.orbLabelText = labelText;
 
       const deactivateBtn = document.createElement('div');
       deactivateBtn.className = 'kairos-deactivate-btn';
       deactivateBtn.textContent = '✕';
-      deactivateBtn.title = 'Deactivate Kairos'; 
+      deactivateBtn.title = 'Deactivate Kairos';
       deactivateBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.handleDeactivate();
+        e.stopPropagation();
+        this.handleDeactivate();
       });
 
       labelSpan.appendChild(labelText);
@@ -921,17 +921,17 @@
 
       // Construct Orb Content: [Handle, Icon, Label]
       orb.appendChild(dragHandle); // 1. Handle (Left)
-      
+
       // 2. Icon (Middle)
       orb.appendChild(iconImg);
 
       // 3. Label (Right)
       orb.appendChild(labelSpan);
-      
+
       // Click Logic (No drag on Orb anymore)
       orb.addEventListener('click', (e) => {
-          // If a drag just finished, ignore click (handled in dragEnd logic usually, but here separated)
-          if (!this.isDragging) this.handleOrbClick();
+        // If a drag just finished, ignore click (handled in dragEnd logic usually, but here separated)
+        if (!this.isDragging) this.handleOrbClick();
       });
 
       // Spotlight Note Input
@@ -1050,8 +1050,8 @@
       const currentTop = islandRect.top - overlayRect.top;
 
       // 2. Freeze position in pixels
-      island.style.transition = 'none'; 
-      island.style.transform = 'none';  
+      island.style.transition = 'none';
+      island.style.transform = 'none';
       island.style.left = `${currentLeft}px`;
       island.style.top = `${currentTop}px`;
 
@@ -1060,8 +1060,8 @@
       this.startTop = currentTop;
       this.startX = e.clientX;
       this.startY = e.clientY;
-      
-      this.isDragging = false; 
+
+      this.isDragging = false;
       this.activeDrag = true; // Flag to track active drag session
 
       if (this.dragHandle) this.dragHandle.classList.add('grabbing');
@@ -1084,7 +1084,7 @@
 
       // 2. Threshold Check (for click distinction, though less relevant on handle)
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-          this.isDragging = true;
+        this.isDragging = true;
       }
 
       // 3. Apply new position
@@ -1095,29 +1095,29 @@
       const overlayRect = this.overlayElement.getBoundingClientRect();
       // Width includes handle + orb + expanded label potentially
       // Dynamic width check to prevent overflow
-      const islandWidth = island.offsetWidth || 180; 
+      const islandWidth = island.offsetWidth || 180;
       newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - islandWidth));
       newTop = Math.max(0, Math.min(newTop, overlayRect.height - 48));
 
       island.style.left = `${newLeft}px`;
       island.style.top = `${newTop}px`;
-      
+
       this.updateOrientation(newLeft, overlayRect.width);
     }
 
     dragEnd(e) {
       if (!this.activeDrag) return;
-      
+
       this.activeDrag = false;
       if (this.dragHandle) this.dragHandle.classList.remove('grabbing');
-      
+
       const island = this.shadowRoot.querySelector('.kairos-island-container');
       if (island) {
-          island.classList.remove('dragging');
-          // Restore physics/transitions
-          island.style.transition = ''; 
+        island.classList.remove('dragging');
+        // Restore physics/transitions
+        island.style.transition = '';
       }
-      
+
       // Delay reset to prevent 'click' event from firing immediately after drag release
       setTimeout(() => {
         this.isDragging = false;
@@ -1125,35 +1125,35 @@
     }
 
     updateOrientation(currentLeft, containerWidth) {
-        if (!this.shadowRoot) return;
-        const island = this.shadowRoot.querySelector('.kairos-island-container');
-        if (!island) return;
-        
-        const middle = containerWidth / 2;
-        
-        if (currentLeft > middle) {
-            island.classList.remove('orient-left');
-            island.classList.add('orient-right');
-        } else {
-            island.classList.remove('orient-right');
-            island.classList.add('orient-left');
-        }
+      if (!this.shadowRoot) return;
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      if (!island) return;
+
+      const middle = containerWidth / 2;
+
+      if (currentLeft > middle) {
+        island.classList.remove('orient-left');
+        island.classList.add('orient-right');
+      } else {
+        island.classList.remove('orient-right');
+        island.classList.add('orient-left');
+      }
     }
 
     updateOrientation(currentLeft, containerWidth) {
-        if (!this.shadowRoot) return;
-        const island = this.shadowRoot.querySelector('.kairos-island-container');
-        if (!island) return;
-        
-        const middle = containerWidth / 2;
-        
-        if (currentLeft > middle) {
-            island.classList.remove('orient-left');
-            island.classList.add('orient-right');
-        } else {
-            island.classList.remove('orient-right');
-            island.classList.add('orient-left');
-        }
+      if (!this.shadowRoot) return;
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      if (!island) return;
+
+      const middle = containerWidth / 2;
+
+      if (currentLeft > middle) {
+        island.classList.remove('orient-left');
+        island.classList.add('orient-right');
+      } else {
+        island.classList.remove('orient-right');
+        island.classList.add('orient-left');
+      }
     }
 
     /**
@@ -1276,7 +1276,7 @@
         this.orbElement.classList.remove('active');
         this.orbElement.title = 'Activate Kairos';
       }
-      if (this.orbLabelText) this.orbLabelText.textContent = '⚡';
+      if (this.orbLabelText) this.orbLabelText.textContent = '📌';
 
       // 3. Trigger "Reverse" Ripple (Contract)
       ripple.classList.remove('animating');
@@ -1300,39 +1300,39 @@
       }
     }
 
-        /**
-         * Opens the note input/preview
-         * @param {Object} pinData The pin data
-         * @param {Boolean} isEdit Whether to enter edit mode (pause + focus)
-         */
-        openNoteInput(pinData, isEdit = false) {
-          if (!this.noteWrapper || !this.noteInput) return;
-    
-          this.activePin = pinData;
-          this.noteInput.value = pinData.note || '';
-          this.isEditing = isEdit;
-    
-          this.noteWrapper.classList.add('active');
-    
+    /**
+     * Opens the note input/preview
+     * @param {Object} pinData The pin data
+     * @param {Boolean} isEdit Whether to enter edit mode (pause + focus)
+     */
+    openNoteInput(pinData, isEdit = false) {
+      if (!this.noteWrapper || !this.noteInput) return;
+
+      this.activePin = pinData;
+      this.noteInput.value = pinData.note || '';
+      this.isEditing = isEdit;
+
+      this.noteWrapper.classList.add('active');
+
       // Global ESC for Edit mode only
       if (isEdit) {
         // ... (existing ESC logic) ...
-        
+
         // Add Click Outside Listener to Save & Close
         if (!this.clickOutsideListener) {
-            this.clickOutsideListener = (e) => {
-                // If click target is NOT inside note wrapper and NOT the pin that opened it
-                if (!this.noteWrapper.contains(e.target) && !e.target.classList.contains('kairos-pin')) {
-                    this.saveNote(); // Auto-save on click away
-                }
-            };
-            // Use capture to ensure we catch clicks on video/other elements
-            document.addEventListener('click', this.clickOutsideListener, true);
+          this.clickOutsideListener = (e) => {
+            // If click target is NOT inside note wrapper and NOT the pin that opened it
+            if (!this.noteWrapper.contains(e.target) && !e.target.classList.contains('kairos-pin')) {
+              this.saveNote(); // Auto-save on click away
+            }
+          };
+          // Use capture to ensure we catch clicks on video/other elements
+          document.addEventListener('click', this.clickOutsideListener, true);
         }
       }
-    
-          log(isEdit ? 'Editing note' : 'Previewing note', 'at', pinData.timestamp);
-        }    /**
+
+      log(isEdit ? 'Editing note' : 'Previewing note', 'at', pinData.timestamp);
+    }    /**
      * Loads notes for the current video and renders pins
      */
     async loadNotesForCurrentVideo() {
@@ -1377,7 +1377,7 @@
       this.pins.push(pinData);
 
       // --- Interaction Listeners ---
-      
+
       // 1. Hover to Preview
       pin.addEventListener('mouseenter', () => {
         if (!this.isEditing) this.openNoteInput(pinData, false);
@@ -1391,7 +1391,7 @@
       // 3. Click to Jump & Edit
       pin.addEventListener('click', (e) => {
         e.stopPropagation();
-        
+
         // Seek video to this moment
         if (this.videoElement) {
           this.videoElement.currentTime = pinData.timestamp;
@@ -1448,12 +1448,12 @@
 
       this.noteWrapper.classList.remove('active');
       this.noteInput.blur();
-      
+
       // Resume video if it was playing and we are leaving edit mode
       if (this.isEditing && this.wasPlaying && this.videoElement) {
         this.videoElement.play();
       }
-      
+
       this.activePin = null;
       this.isEditing = false;
 
@@ -1502,11 +1502,11 @@
       this.pins.push(pinData);
 
       // --- Interaction Listeners ---
-      
+
       pin.addEventListener('mouseenter', () => {
         if (!this.isEditing) this.openNoteInput(pinData, false);
       });
-      
+
       pin.addEventListener('mouseleave', () => {
         this.closeNoteInput(false);
       });

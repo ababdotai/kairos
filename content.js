@@ -348,20 +348,79 @@
           transform: translateX(-50%); 
           display: flex;
           align-items: center;
-          gap: 8px; 
+          gap: 0; /* Gap handled by positioning now */
           pointer-events: none; /* Container passes clicks */
           z-index: 50; /* Ensure above timeline */
           will-change: top, left, transform; 
         }
 
-        /* Orientation: Right Side of Screen (Default) -> Expand Left */
-        .kairos-island-container.orient-right {
-          flex-direction: row-reverse;
+        /* Note Wrapper: Absolute positioning to pop out without affecting layout flow */
+        .kairos-note-wrapper {
+          position: absolute;
+          top: 0;
+          width: 0;
+          height: 48px;
+          background: rgba(25, 25, 25, 0.7);
+          backdrop-filter: blur(32px) saturate(180%);
+          border: 0.5px solid rgba(255, 255, 255, 0.15);
+          border-radius: 24px;
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+          display: flex;
+          align-items: center;
         }
 
-        /* Orientation: Left Side of Screen -> Expand Right */
-        .kairos-island-container.orient-left {
-          flex-direction: row;
+        /* Orientation Logic: Pop direction based on screen side */
+        
+        /* Left Side: Pop to Right */
+        .kairos-island-container.orient-left .kairos-note-wrapper {
+          left: 100%;
+          margin-left: 12px;
+          right: auto;
+          margin-right: 0;
+        }
+
+        /* Right Side: Pop to Left */
+        .kairos-island-container.orient-right .kairos-note-wrapper {
+          right: 100%;
+          margin-right: 12px;
+          left: auto;
+          margin-left: 0;
+        }
+
+        .kairos-note-wrapper.active {
+          width: 320px;
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .kairos-drag-handle {
+          width: 0;
+          opacity: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: grab;
+          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+          color: rgba(255, 255, 255, 0.4);
+          margin-right: 0;
+          overflow: hidden;
+        }
+        
+        .kairos-drag-handle:hover {
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .kairos-drag-handle:active {
+          cursor: grabbing;
+        }
+
+        /* Show handle when hovering Orb or Dragging */
+        .kairos-orb:hover .kairos-drag-handle,
+        .kairos-island-container.dragging .kairos-drag-handle {
+          width: 24px;
+          opacity: 1;
+          margin-right: auto; /* Push icons and labels to the far right */
         }
 
         /* Orb: The Anchor */
@@ -374,30 +433,37 @@
           border: 0.5px solid rgba(255, 255, 255, 0.18);
           border-radius: 24px;
           pointer-events: auto; /* Catch events */
-          cursor: grab; /* Drag cursor */
+          cursor: pointer; 
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: center; /* Center icon initially */
           transition: width 0.4s cubic-bezier(0.3, 1.2, 0.3, 1), background 0.3s ease;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
           overflow: hidden;
           flex-shrink: 0; 
-          padding: 0 16px;
-          user-select: none; /* Prevent text selection while dragging */
+          padding: 0 12px; 
+          user-select: none; 
         }
         
-        .kairos-orb:active {
-          cursor: grabbing;
-        }
-        
-        .kairos-orb.grabbing {
-          cursor: grabbing;
-        }
-
-        /* Hover expansion: Only if NOT dragging (handled in JS classes) */
-        .kairos-island-container:not(.dragging) .kairos-orb:hover {
-          width: 180px; 
+        /* Orb Hover Expansion */
+        .kairos-island-container:not(.dragging) .kairos-orb:hover,
+        .kairos-island-container.dragging .kairos-orb {
+          width: 190px; /* Increased to provide a better gap */
           background: rgba(20, 20, 20, 0.55);
+          justify-content: flex-start; 
+          padding-left: 10px;
+          padding-right: 14px;
+        }
+        
+        /* Ensure label shows when dragging too */
+        .kairos-island-container.dragging .kairos-orb .kairos-orb-label {
+          opacity: 1;
+          transform: scale(1);
+          max-width: 150px; 
+          margin-left: 12px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
         }
 
         /* Note Wrapper: Now sits next to Orb inside the island */
@@ -798,6 +864,28 @@
       this.xOffset = 0; 
       this.yOffset = 0;
       
+      // 1. Drag Handle
+      const dragHandle = document.createElement('div');
+      dragHandle.className = 'kairos-drag-handle';
+      // Vertical dots grip icon
+      dragHandle.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M9 3H11V5H9V3ZM13 3H15V5H13V3ZM9 7H11V9H9V7ZM13 7H15V9H13V7ZM9 11H11V13H9V11ZM13 11H15V13H13V11ZM9 15H11V17H9V15ZM13 15H15V17H13V15ZM9 19H11V21H9V19ZM13 19H15V21H13V19Z" />
+        </svg>
+      `;
+      dragHandle.title = 'Drag to move';
+
+      // Attach Drag Logic to Handle
+      dragHandle.addEventListener('mousedown', (e) => this.dragStart(e));
+      // CRITICAL: Prevent handle clicks from bubbling to Orb and triggering activation/pin
+      dragHandle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+      });
+
+      document.addEventListener('mousemove', (e) => this.drag(e));
+      document.addEventListener('mouseup', (e) => this.dragEnd(e));
+      
       // Floating orb
       const orb = document.createElement('div');
       orb.className = 'kairos-orb';
@@ -829,13 +917,22 @@
       labelSpan.appendChild(labelText);
       labelSpan.appendChild(deactivateBtn);
 
-      orb.innerHTML = iconSvg;
+      // Construct Orb Content: [Handle, Icon, Label]
+      orb.appendChild(dragHandle); // 1. Handle (Left)
+      
+      // 2. Icon (Middle) - Create element instead of innerHTML to preserve handle
+      const iconWrapper = document.createElement('div'); 
+      iconWrapper.innerHTML = iconSvg;
+      orb.appendChild(iconWrapper.firstElementChild);
+
+      // 3. Label (Right)
       orb.appendChild(labelSpan);
       
-      // Drag & Click Logic
-      orb.addEventListener('mousedown', (e) => this.dragStart(e));
-      document.addEventListener('mousemove', (e) => this.drag(e));
-      document.addEventListener('mouseup', (e) => this.dragEnd(e));
+      // Click Logic (No drag on Orb anymore)
+      orb.addEventListener('click', (e) => {
+          // If a drag just finished, ignore click (handled in dragEnd logic usually, but here separated)
+          if (!this.isDragging) this.handleOrbClick();
+      });
 
       // Spotlight Note Input
 
@@ -900,6 +997,7 @@
       noteWrapper.appendChild(noteHint);
 
       // Add members to island
+      // dragHandle is now inside orb
       island.appendChild(orb);
       island.appendChild(noteWrapper);
       overlay.appendChild(island);
@@ -919,6 +1017,7 @@
       overlay.appendChild(effectContainer);
 
       this.overlayElement = overlay;
+      this.dragHandle = dragHandle;
       this.orbElement = orb;
       this.orbLabel = labelSpan;
       this.timeline = timeline;
@@ -936,11 +1035,10 @@
     /* --- Dragging Logic (Robust Delta Approach) --- */
 
     dragStart(e) {
-      if (e.target.closest('.kairos-deactivate-btn')) return; 
-      
       if (!this.overlayElement) return;
+      // Only allow dragging from the handle
+      if (!e.target.closest('.kairos-drag-handle')) return;
 
-      // FIX: Use shadowRoot to find the island
       const island = this.shadowRoot.querySelector('.kairos-island-container');
       if (!island) return;
 
@@ -951,9 +1049,9 @@
       const currentLeft = islandRect.left - overlayRect.left;
       const currentTop = islandRect.top - overlayRect.top;
 
-      // 2. Freeze position in pixels (removing transform centering)
-      island.style.transition = 'none'; // Disable smoothing during drag
-      island.style.transform = 'none';  // Remove centering transform
+      // 2. Freeze position in pixels
+      island.style.transition = 'none'; 
+      island.style.transform = 'none';  
       island.style.left = `${currentLeft}px`;
       island.style.top = `${currentTop}px`;
 
@@ -964,13 +1062,19 @@
       this.startY = e.clientY;
       
       this.isDragging = false; 
-      
-      if (this.orbElement) this.orbElement.classList.add('grabbing');
+      this.activeDrag = true; // Flag to track active drag session
+
+      if (this.dragHandle) this.dragHandle.classList.add('grabbing');
+      // Add dragging class immediately to keep menu expanded
+      island.classList.add('dragging');
     }
 
     drag(e) {
-      if (!this.orbElement || !this.orbElement.classList.contains('grabbing')) return;
+      if (!this.activeDrag) return;
       if (!this.overlayElement) return;
+
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      if (!island) return;
 
       e.preventDefault();
 
@@ -978,47 +1082,39 @@
       const dx = e.clientX - this.startX;
       const dy = e.clientY - this.startY;
 
-      // 2. Threshold Check
+      // 2. Threshold Check (for click distinction, though less relevant on handle)
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
           this.isDragging = true;
-          const island = this.shadowRoot.querySelector('.kairos-island-container');
-          if (island) island.classList.add('dragging');
       }
 
       // 3. Apply new position
       let newLeft = this.startLeft + dx;
       let newTop = this.startTop + dy;
 
-      // Boundary Check (Optional but good)
+      // Boundary Check
       const overlayRect = this.overlayElement.getBoundingClientRect();
-      const islandWidth = 48; // Approx min width
+      // Width includes handle + orb + expanded label potentially
+      // Dynamic width check to prevent overflow
+      const islandWidth = island.offsetWidth || 180; 
       newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - islandWidth));
       newTop = Math.max(0, Math.min(newTop, overlayRect.height - 48));
 
-      const island = this.shadowRoot.querySelector('.kairos-island-container');
-      if (island) {
-          island.style.left = `${newLeft}px`;
-          island.style.top = `${newTop}px`;
-      }
+      island.style.left = `${newLeft}px`;
+      island.style.top = `${newTop}px`;
       
       this.updateOrientation(newLeft, overlayRect.width);
     }
 
     dragEnd(e) {
-      if (!this.orbElement || !this.orbElement.classList.contains('grabbing')) return;
+      if (!this.activeDrag) return;
       
-      this.orbElement.classList.remove('grabbing');
+      this.activeDrag = false;
+      if (this.dragHandle) this.dragHandle.classList.remove('grabbing');
       
       const island = this.shadowRoot.querySelector('.kairos-island-container');
       if (island) {
           island.classList.remove('dragging');
-          // Restore physics/transitions
           island.style.transition = ''; 
-      }
-
-      if (!this.isDragging) {
-          // It was a click!
-          this.handleOrbClick();
       }
       
       this.isDragging = false;

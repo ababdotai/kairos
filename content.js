@@ -501,12 +501,12 @@
           width: 24px;
           height: 24px;
           min-width: 24px;
-          fill: rgba(255, 255, 255, 0.95);
+          object-fit: contain;
           transition: all 0.4s ease;
         }
 
         .kairos-orb.active .kairos-orb-icon {
-          fill: #00f2ff;
+          filter: drop-shadow(0 0 2px #00f2ff);
         }
 
         .kairos-orb-label {
@@ -891,11 +891,13 @@
       orb.className = 'kairos-orb';
       orb.title = 'Activate Kairos'; 
 
-      const iconSvg = `
-        <svg class="kairos-orb-icon" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        </svg>
-      `;
+      // Icon Image
+      const iconUrl = chrome.runtime.getURL('icons/icon.png');
+      const iconImg = document.createElement('img');
+      iconImg.src = iconUrl;
+      iconImg.className = 'kairos-orb-icon';
+      iconImg.draggable = false;
+
 
       const labelSpan = document.createElement('span');
       labelSpan.className = 'kairos-orb-label';
@@ -920,10 +922,8 @@
       // Construct Orb Content: [Handle, Icon, Label]
       orb.appendChild(dragHandle); // 1. Handle (Left)
       
-      // 2. Icon (Middle) - Create element instead of innerHTML to preserve handle
-      const iconWrapper = document.createElement('div'); 
-      iconWrapper.innerHTML = iconSvg;
-      orb.appendChild(iconWrapper.firstElementChild);
+      // 2. Icon (Middle)
+      orb.appendChild(iconImg);
 
       // 3. Label (Right)
       orb.appendChild(labelSpan);

@@ -441,11 +441,11 @@
 
         .kairos-island-container.orient-right .kairos-note-wrapper {
            margin-left: 0;
-           margin-right: -8px;
+           margin-right: 12px;
         }
 
         .kairos-island-container.orient-right .kairos-note-wrapper.active {
-           margin-right: 0;
+           margin-right: 12px;
         }
 
         /* Note Wrapper: Now sits next to Orb inside the island */
@@ -463,14 +463,14 @@
           display: flex;
           align-items: center;
           /* Removed overflow: hidden so hint can live outside */
-          margin-left: -8px; 
+          margin-left: 12px; 
         }
 
         .kairos-note-wrapper.active {
           width: 320px;
           opacity: 1;
           pointer-events: auto;
-          margin-left: 0; 
+          margin-left: 12px; 
         }
         
         .kairos-orb.active {
@@ -1031,9 +1031,10 @@
       const currentLeft = islandRect.left - overlayRect.left;
       const currentTop = islandRect.top - overlayRect.top;
 
-      // 2. Freeze position in pixels
+      // 2. Freeze position in pixels (Convert everything to Left positioning for Drag)
       island.style.transition = 'none';
       island.style.transform = 'none';
+      island.style.right = 'auto'; // Clear right
       island.style.left = `${currentLeft}px`;
       island.style.top = `${currentTop}px`;
 
@@ -1112,13 +1113,29 @@
       if (!island) return;
 
       const middle = containerWidth / 2;
+      const overlayRect = this.overlayElement ? this.overlayElement.getBoundingClientRect() : { width: window.innerWidth };
 
       if (currentLeft > middle) {
+        // Right Orientation
         island.classList.remove('orient-left');
         island.classList.add('orient-right');
+        
+        // Switch to RIGHT positioning if not dragging
+        if (!this.activeDrag) {
+            const currentRight = overlayRect.width - (currentLeft + island.offsetWidth);
+            island.style.left = 'auto';
+            island.style.right = `${currentRight}px`;
+        }
       } else {
+        // Left Orientation
         island.classList.remove('orient-right');
         island.classList.add('orient-left');
+        
+        // Switch to LEFT positioning if not dragging
+        if (!this.activeDrag) {
+             island.style.right = 'auto';
+             island.style.left = `${currentLeft}px`;
+        }
       }
     }
 

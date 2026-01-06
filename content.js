@@ -448,7 +448,7 @@
         /* Orb Hover Expansion */
         .kairos-island-container:not(.dragging) .kairos-orb:hover,
         .kairos-island-container.dragging .kairos-orb {
-          width: 190px; /* Increased to provide a better gap */
+          width: 145px; /* Reduced for a more harmonious look */
           background: rgba(20, 20, 20, 0.55);
           justify-content: flex-start; 
           padding-left: 10px;
@@ -1114,10 +1114,14 @@
       const island = this.shadowRoot.querySelector('.kairos-island-container');
       if (island) {
           island.classList.remove('dragging');
+          // Restore physics/transitions
           island.style.transition = ''; 
       }
       
-      this.isDragging = false;
+      // Delay reset to prevent 'click' event from firing immediately after drag release
+      setTimeout(() => {
+        this.isDragging = false;
+      }, 50);
     }
 
     updateOrientation(currentLeft, containerWidth) {

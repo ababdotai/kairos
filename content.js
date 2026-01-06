@@ -354,40 +354,9 @@
           will-change: top, left, transform; 
         }
 
-        /* Note Wrapper: Absolute positioning to pop out without affecting layout flow */
-        .kairos-note-wrapper {
-          position: absolute;
-          top: 0;
-          width: 0;
-          height: 48px;
-          background: rgba(25, 25, 25, 0.7);
-          backdrop-filter: blur(32px) saturate(180%);
-          border: 0.5px solid rgba(255, 255, 255, 0.15);
-          border-radius: 24px;
-          opacity: 0;
-          pointer-events: none;
-          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-          display: flex;
-          align-items: center;
-        }
+        /* Note Wrapper: Position handled by Flexbox in 'kairos-island-container' now */
+        /* See .kairos-note-wrapper definition below */
 
-        /* Orientation Logic: Pop direction based on screen side */
-        
-        /* Left Side: Pop to Right */
-        .kairos-island-container.orient-left .kairos-note-wrapper {
-          left: 100%;
-          margin-left: 12px;
-          right: auto;
-          margin-right: 0;
-        }
-
-        /* Right Side: Pop to Left */
-        .kairos-island-container.orient-right .kairos-note-wrapper {
-          right: 100%;
-          margin-right: 12px;
-          left: auto;
-          margin-left: 0;
-        }
 
         .kairos-note-wrapper.active {
           width: 320px;
@@ -464,6 +433,19 @@
           display: flex;
           align-items: center;
           gap: 16px;
+        }
+
+        .kairos-island-container.orient-right {
+          flex-direction: row-reverse;
+        }
+
+        .kairos-island-container.orient-right .kairos-note-wrapper {
+           margin-left: 0;
+           margin-right: -8px;
+        }
+
+        .kairos-island-container.orient-right .kairos-note-wrapper.active {
+           margin-right: 0;
         }
 
         /* Note Wrapper: Now sits next to Orb inside the island */
@@ -1313,6 +1295,7 @@
       this.isEditing = isEdit;
 
       this.noteWrapper.classList.add('active');
+      this.noteInput.focus();
 
       // Global ESC for Edit mode only
       if (isEdit) {

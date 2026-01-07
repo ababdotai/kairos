@@ -563,6 +563,19 @@
       this.noteWrapper.classList.add('active');
       this.noteInput.focus();
 
+      // Register global Esc listener to handle platforms that capture Escape early (e.g., Bilibili)
+      if (!this.escListener) {
+        this.escListener = (e) => {
+          if (e.key === 'Escape' && this.noteWrapper.classList.contains('active')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            this.closeNoteInput();
+          }
+        };
+        document.addEventListener('keydown', this.escListener, true);
+      }
+
       if (isEdit) {
         if (!this.clickOutsideListener) {
           this.clickOutsideListener = (e) => {

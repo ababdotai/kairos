@@ -104,8 +104,22 @@
           }
         }
         return null;
-      } else if (url.includes('bilibili.com')) {
-        return document.querySelector('.right-container, .video-info-container');
+      } else if (url.includes('bilibili.com/video')) {
+        // Bilibili video page - try multiple selectors for right sidebar
+        const selectors = [
+          '.right-container-inner',      // New layout inner container
+          '.right-container',            // New layout container
+          '#reco_list',                  // Recommended list
+          '.video-sections-content-list' // Video sections
+        ];
+
+        for (const selector of selectors) {
+          const el = document.querySelector(selector);
+          if (el && el.offsetParent !== null) {
+            return el;
+          }
+        }
+        return null;
       }
 
       return null;
@@ -143,7 +157,10 @@
       this.retryCount = 0;
       this.injectStyles();
       this.container = this.buildPanel();
+
+      // Insert as first child of target
       target.insertBefore(this.container, target.firstChild);
+
       this.bindEvents();
       this.loadNotes();
       log('SidePanel: Successfully injected into page');
@@ -307,6 +324,17 @@
           margin-bottom: 16px;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
           -webkit-font-smoothing: antialiased;
+          position: relative;
+          z-index: 100;
+          pointer-events: auto;
+        }
+
+        /* Bilibili specific adjustments */
+        .right-container #kairos-sidepanel,
+        .right-container-inner #kairos-sidepanel {
+          margin: 0 0 12px 0;
+          padding: 0 12px;
+          box-sizing: border-box;
         }
 
         .kairos-sp-card {
@@ -316,6 +344,7 @@
           overflow: hidden;
           box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
           backdrop-filter: blur(20px);
+          pointer-events: auto;
         }
 
         .kairos-sp-header {
@@ -855,28 +884,34 @@
           return;
         }
 
-        // Also check if #secondary was recreated (YouTube SPA behavior)
+        // Also check if container was recreated (SPA behavior)
         for (const mutation of mutations) {
           if (mutation.type === 'childList') {
             for (const node of mutation.addedNodes) {
               if (node.nodeType === Node.ELEMENT_NODE) {
                 const el = node;
-                // Check if secondary/related container was added
-                if (el.id === 'secondary' || el.id === 'related' ||
+                // Check if secondary/related container was added (YouTube)
+                const isYouTubeContainer = el.id === 'secondary' || el.id === 'related' ||
                     el.id === 'secondary-inner' ||
-                    el.querySelector?.('#secondary, #related')) {
-                  if (!panelExists) {
-                    pendingReinject = true;
-                    log('SidePanel: Secondary container recreated, injecting panel...');
-                    this.retryCount = 0;
-                    this.container = null;
-                    this.elements = {};
-                    setTimeout(() => {
-                      pendingReinject = false;
-                      this.injectPanel();
-                    }, 500);
-                    return;
-                  }
+                    el.querySelector?.('#secondary, #related');
+                // Check if Bilibili container was added
+                const isBilibiliContainer = el.id === 'reco_list' ||
+                    el.classList?.contains('right-container') ||
+                    el.classList?.contains('right-container-inner') ||
+                    el.classList?.contains('video-sections-content-list') ||
+                    el.querySelector?.('#reco_list, .right-container, .right-container-inner');
+
+                if ((isYouTubeContainer || isBilibiliContainer) && !panelExists) {
+                  pendingReinject = true;
+                  log('SidePanel: Container recreated, injecting panel...');
+                  this.retryCount = 0;
+                  this.container = null;
+                  this.elements = {};
+                  setTimeout(() => {
+                    pendingReinject = false;
+                    this.injectPanel();
+                  }, 500);
+                  return;
                 }
               }
             }

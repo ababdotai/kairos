@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="note-entry">
                         <div class="timestamp-dot"></div>
                         <span class="timestamp">${note.timeLabel}</span>
-                        <div class="content">${note.content}</div>
+                        <div class="content">${Kairos.SimpleMarkdown.parse(note.content)}</div>
                     </div>
                 `).join('')}
             </div>

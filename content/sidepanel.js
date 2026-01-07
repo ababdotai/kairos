@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  const { CONFIG, log, Utils, StorageManager } = window.Kairos;
+  const { CONFIG, log, Utils, StorageManager, SimpleMarkdown } = window.Kairos;
 
   /**
    * Helper to create SVG elements
@@ -318,10 +318,11 @@
       item.appendChild(time);
 
       // Content
+      const contentText = note.content || note.note || '(Empty note)';
       const content = createElement('span', {
-        className: 'kairos-sp-note-content',
-        text: note.content || note.note || '(Empty note)'
+        className: 'kairos-sp-note-content'
       });
+      content.innerHTML = SimpleMarkdown.parse(contentText);
       item.appendChild(content);
 
       // Delete button

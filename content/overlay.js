@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const { CONFIG, log, Utils, StorageManager, getStyles } = window.Kairos;
+  const { CONFIG, log, Utils, StorageManager, getStyles, CaptureEngine, SimpleMarkdown } = window.Kairos;
 
   /**
    * OverlayManager class - Manages the floating overlay UI
@@ -19,6 +19,7 @@
       this.isActive = false;
       this.escListener = null;
       this.storage = new StorageManager();
+      this.captureEngine = new CaptureEngine();
       this.currentVideoId = null;
       this.sidePanel = null; // Reference to SidePanelManager
 
@@ -154,6 +155,16 @@
       const noteWrapper = document.createElement('div');
       noteWrapper.className = 'kairos-note-wrapper';
 
+      // Markdown Preview Div
+      const notePreview = document.createElement('div');
+      notePreview.className = 'kairos-note-preview hidden';
+      notePreview.title = 'Click to edit';
+      
+      notePreview.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.switchToEditMode();
+      });
+
       const noteInput = document.createElement('textarea');
       noteInput.className = 'kairos-note-input';
       noteInput.placeholder = '✨ Capture thought...';
@@ -166,11 +177,20 @@
       };
 
       noteInput.addEventListener('keydown', blockEvent);
+      noteInput.addEventListener('input', () => this.adjustInputHeight());
       noteInput.addEventListener('keypress', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
       noteInput.addEventListener('keyup', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
+      
+      // When blurring (and not clicking something else in the UI), switch to view
+      // We don't do this on simple blur because it might be annoying if user clicks away to copy text
+      // but let's try it for "read mode" feel.
+      // noteInput.addEventListener('blur', () => {
+      //   if (this.noteInput.value.trim()) this.switchToViewMode();
+      // });
 
       noteWrapper.addEventListener('click', (e) => e.stopPropagation());
 
+      noteWrapper.appendChild(notePreview);
       noteWrapper.appendChild(noteInput);
 
       const noteHint = document.createElement('div');
@@ -204,6 +224,7 @@
       this.progressBar = progressBar;
       this.noteWrapper = noteWrapper;
       this.noteInput = noteInput;
+      this.notePreview = notePreview;
       this.pins = [];
 
       this.shadowRoot.appendChild(overlay);
@@ -453,58 +474,6 @@
     }
 
     /**
-     * Handles click on the Orb
-     */
-    handleOrbClick() {
-      if (!this.effectElements) {
-        log('Animation elements missing.');
-        return;
-      }
-
-      const { flash, ripple, glowBorder } = this.effectElements;
-
-      if (!this.isActive) {
-        log('Activating Kairos (Apple Intelligence style)...');
-        this.isActive = true;
-
-        flash.classList.remove('animating');
-        ripple.classList.remove('animating');
-        ripple.classList.remove('reversing');
-        glowBorder.classList.remove('active');
-
-        if (this.orbElement) {
-          this.orbElement.classList.add('active');
-          this.orbElement.title = 'Capture Moment';
-        }
-        if (this.orbLabelText) this.orbLabelText.textContent = '📌';
-
-        if (this.overlayElement) this.overlayElement.classList.add('active');
-
-        void flash.offsetWidth;
-
-        flash.classList.add('animating');
-        ripple.classList.add('animating');
-        glowBorder.classList.add('active');
-      } else {
-        log('Capturing current moment...');
-
-        if (!this.videoElement) return;
-
-        const duration = this.videoElement.duration;
-        if (!duration) return;
-
-        const percentage = (this.videoElement.currentTime / duration) * 100;
-
-        flash.classList.remove('animating');
-        void flash.offsetWidth;
-        flash.classList.add('animating');
-
-        const pinData = this.createPin(percentage);
-        this.openNoteInput(pinData);
-      }
-    }
-
-    /**
      * Handles Deactivation (Power Off)
      */
     handleDeactivate() {
@@ -549,6 +518,164 @@
     }
 
     /**
+     * Handles click on the Orb
+     */
+    async handleOrbClick() {
+      if (!this.effectElements) {
+        log('Animation elements missing.');
+        return;
+      }
+
+      const { flash, ripple, glowBorder } = this.effectElements;
+
+      if (!this.isActive) {
+        log('Activating Kairos (Apple Intelligence style)...');
+        this.isActive = true;
+
+        flash.classList.remove('animating');
+        ripple.classList.remove('animating');
+        ripple.classList.remove('reversing');
+        glowBorder.classList.remove('active');
+
+        if (this.orbElement) {
+          this.orbElement.classList.add('active');
+          this.orbElement.title = 'Capture Moment';
+        }
+        if (this.orbLabelText) this.orbLabelText.textContent = '📌';
+
+        if (this.overlayElement) this.overlayElement.classList.add('active');
+
+        void flash.offsetWidth;
+
+        flash.classList.add('animating');
+        ripple.classList.add('animating');
+        glowBorder.classList.add('active');
+      } else {
+        log('Capturing current moment...');
+
+        if (!this.videoElement) return;
+
+        const duration = this.videoElement.duration;
+        if (!duration) return;
+
+        const percentage = (this.videoElement.currentTime / duration) * 100;
+
+        // Visual Feedback
+        flash.classList.remove('animating');
+        void flash.offsetWidth;
+        flash.classList.add('animating');
+
+        const pinData = this.createPin(percentage);
+        
+        // 1. Capture Frame Immediately
+        try {
+          const screenshot = await this.captureEngine.captureFrame(this.videoElement);
+          pinData.isAnalyzing = true;
+          this.openNoteInput(pinData);
+
+          // 2. Request AI Analysis
+          this.requestAIAnalysis(pinData, screenshot);
+        } catch (err) {
+          log('Capture failed:', err);
+          this.openNoteInput(pinData);
+        }
+      }
+    }
+
+    /**
+     * Switches the note input to edit mode (textarea)
+     */
+    switchToEditMode() {
+      if (!this.noteInput || !this.notePreview) return;
+      
+      this.isEditing = true;
+      this.notePreview.classList.add('hidden');
+      this.noteInput.classList.remove('hidden');
+      this.noteInput.focus();
+      this.adjustInputHeight();
+    }
+
+    /**
+     * Switches the note input to view mode (markdown preview)
+     * @param {string} content - Content to render (defaults to input value)
+     */
+    switchToViewMode(content) {
+      if (!this.noteInput || !this.notePreview) return;
+      
+      const text = content !== undefined ? content : this.noteInput.value;
+      if (!text.trim()) {
+        this.switchToEditMode();
+        return;
+      }
+
+      this.isEditing = false;
+      this.noteInput.classList.add('hidden');
+      this.notePreview.classList.remove('hidden');
+      this.notePreview.innerHTML = SimpleMarkdown.parse(text);
+      
+      // Adjust wrapper height to fit preview
+      // We can reuse adjustInputHeight logic but for preview
+      this.noteWrapper.style.maxHeight = `${Math.min(this.notePreview.scrollHeight, 250) + 40}px`;
+    }
+
+    /**
+     * Requests AI analysis for a captured frame
+     * @param {Object} pinData - The pin data
+     * @param {string} screenshot - Base64 screenshot
+     */
+    async requestAIAnalysis(pinData, screenshot) {
+      const videoInfo = Utils.getVideoInfo();
+      
+      chrome.runtime.sendMessage({
+        type: 'ANALYZE_FRAME',
+        payload: {
+          image: screenshot,
+          videoTitle: videoInfo.title,
+          promptType: 'manual'
+        }
+      }, (response) => {
+        pinData.isAnalyzing = false;
+        
+        if (response && response.success) {
+          const aiText = response.data.text;
+          pinData.note = aiText;
+          
+          // Update UI if this pin is still active in the input
+          if (this.activePin === pinData && this.noteInput) {
+            this.noteInput.value = aiText;
+            this.noteInput.classList.remove('ai-loading');
+            this.switchToViewMode(aiText);
+          }
+        } else {
+          log('AI Analysis failed:', response ? response.error : 'Unknown error');
+          if (this.activePin === pinData && this.noteInput) {
+            this.noteInput.classList.remove('ai-loading');
+            this.noteInput.placeholder = 'AI Analysis failed. Type note...';
+          }
+        }
+      });
+    }
+
+    /**
+     * Adjusts the height of the note input based on content
+     */
+    adjustInputHeight() {
+      if (!this.noteInput || !this.noteWrapper) return;
+      
+      // If in preview mode, do nothing (handled by switchToViewMode)
+      if (this.noteInput.classList.contains('hidden')) return;
+
+      // Reset height to calculate scrollHeight correctly
+      this.noteInput.style.height = 'auto';
+      
+      const newHeight = Math.min(this.noteInput.scrollHeight, 180);
+      this.noteInput.style.height = `${newHeight}px`;
+      
+      // Also update wrapper max-height to avoid clipping during animation
+      this.noteWrapper.style.maxHeight = `${newHeight + 40}px`;
+    }
+
+    /**
      * Opens the note input/preview
      * @param {Object} pinData - The pin data
      * @param {boolean} isEdit - Whether to enter edit mode
@@ -560,8 +687,25 @@
       this.noteInput.value = pinData.note || '';
       this.isEditing = isEdit;
 
+      if (pinData.isAnalyzing) {
+        this.noteInput.placeholder = '✨ AI is thinking...';
+        this.noteInput.classList.add('ai-loading');
+        this.switchToEditMode(); // Show loading input
+      } else {
+        this.noteInput.placeholder = '✨ Capture thought...';
+        this.noteInput.classList.remove('ai-loading');
+        
+        if (!isEdit && pinData.note) {
+          this.switchToViewMode(pinData.note);
+        } else {
+          this.switchToEditMode();
+        }
+      }
+
       this.noteWrapper.classList.add('active');
-      this.noteInput.focus();
+      if (this.isEditing) {
+        this.noteInput.focus();
+      }
 
       // Register global Esc listener to handle platforms that capture Escape early (e.g., Bilibili)
       if (!this.escListener) {

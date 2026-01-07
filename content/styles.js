@@ -185,22 +185,22 @@
         position: relative;
         width: 320px;
         max-height: 0;
-        background: rgba(25, 25, 25, 0.7);
+        background: rgba(25, 25, 25, 0.85);
         backdrop-filter: blur(32px) saturate(180%);
         border: 0.5px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px;
+        border-radius: 12px;
         opacity: 0;
         pointer-events: none;
         transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         display: flex;
         align-items: center;
         margin-top: 0;
-        overflow: hidden;
+        overflow: visible; /* Changed to visible to allow hints outside */
       }
 
       .kairos-note-wrapper.active {
         max-height: 200px;
-        min-height: 48px;
+        min-height: 36px;
         opacity: 1;
         pointer-events: auto;
       }
@@ -277,11 +277,11 @@
         border: none;
         outline: none;
         color: white;
-        font-size: 16px;
+        font-size: 13px; /* Reduced from 16px */
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
         font-weight: 400;
-        padding: 12px 100px 12px 20px;
-        min-height: 48px;
+        padding: 10px 14px; /* Reduced padding */
+        min-height: 36px;
         max-height: 150px;
         min-width: 100px;
         resize: none;
@@ -294,21 +294,77 @@
         font-style: italic;
       }
 
-      /* Input Hint: Symbolic */
+      /* AI Loading Shimmer */
+      .kairos-note-input.ai-loading {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.05) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        background-size: 200% 100%;
+        animation: kairos-shimmer 2s infinite linear;
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      @keyframes kairos-shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+      
+      /* Markdown Preview Mode */
+      .kairos-note-preview {
+        flex: 1;
+        background: transparent;
+        color: white;
+        font-size: 13px; /* Reduced from 16px */
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        font-weight: 400;
+        padding: 10px 14px;
+        min-height: 36px;
+        max-height: 150px;
+        min-width: 100px;
+        line-height: 1.5;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        cursor: text;
+      }
+      
+      .kairos-note-preview strong { font-weight: 700; color: #fff; }
+      .kairos-note-preview em { font-style: italic; color: #ddd; }
+      .kairos-note-preview code { 
+        background: rgba(255,255,255,0.15); 
+        padding: 2px 4px; 
+        border-radius: 4px; 
+        font-family: 'Menlo', 'Monaco', monospace; 
+        font-size: 12px; 
+        color: #00f2ff;
+      }
+      .kairos-note-preview ul { padding-left: 16px; margin: 4px 0; }
+      .kairos-note-preview li { margin-bottom: 2px; }
+      .kairos-note-preview h1, .kairos-note-preview h2, .kairos-note-preview h3 {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 8px 0 4px 0;
+        color: #00f2ff;
+      }
+      
+      .hidden { display: none !important; }
+
+      /* Input Hint: Now outside the box */
       .kairos-note-hint {
         position: absolute;
-        right: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.4);
+        right: 0;
+        bottom: -20px; /* Position below */
+        color: rgba(255, 255, 255, 0.5);
         font-size: 10px;
         font-weight: 500;
-        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
         white-space: nowrap;
         pointer-events: none;
         opacity: 0;
         transition: all 0.3s ease 0.1s;
-        letter-spacing: 0.5px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
       }
 
       /* Show hint when active */

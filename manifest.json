@@ -17,6 +17,12 @@
         "*://www.bilibili.com/*"
       ],
       "js": [
+        "content/config.js",
+        "content/utils.js",
+        "content/storage.js",
+        "content/tracker.js",
+        "content/styles.js",
+        "content/overlay.js",
         "content.js"
       ],
       "css": [

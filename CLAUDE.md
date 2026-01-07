@@ -6,7 +6,7 @@
 
 **项目名称**：Kairos
 **项目类型**：Chrome Extension (Manifest V3)
-**核心定位**：基于 Gemini 3 Flash 的视频笔记工具，遵循Granola的设计哲学，将AI融入心流模式
+**核心定位**：基于 Gemini 3 Flash 的视频笔记工具，遵循 Granola 的设计哲学，将 AI 融入心流模式
 
 ### 核心价值主张
 - 将线性视频转化为可查询的知识库
@@ -22,14 +22,20 @@
 
 ## 🏗️ 技术架构
 
-### 技术栈
+### 当前技术栈（阶段 0-1：Vanilla 实现）
+```
+前端框架：Vanilla ES6+ JavaScript（无构建工具）
+样式方案：Vanilla CSS3 + Shadow DOM 内联样式
+AI 能力：Gemini 3 Flash API（多模态理解）- 待接入
+存储方案：IndexedDB（通过 Background Script 代理）
+扩展架构：Manifest V3 (Chrome Extension)
+```
+
+### 未来技术栈（阶段 2+：可能迁移）
 ```
 前端框架：React 18 + TypeScript
 构建工具：Vite + CRXJS Vite Plugin
 样式方案：Tailwind CSS + Framer Motion
-AI 能力：Gemini 3 Flash API（多模态理解）
-存储方案：IndexedDB + FileSystemAccess API
-扩展架构：Manifest V3 (Chrome Extension)
 ```
 
 ### 架构设计原则
@@ -42,159 +48,224 @@ AI 能力：Gemini 3 Flash API（多模态理解）
 
 #### 2. 权限管理（Manifest V3）
 - **必需权限**：
-  - `scripting`：注入 Content Script
   - `storage`：存储用户配置和笔记数据
   - `host_permissions`：`*://www.youtube.com/*`, `*://www.bilibili.com/*`
 - **可选权限**：
   - `fileSystem`：Obsidian 本地直连（需用户授权）
 
 #### 3. 数据架构
-```typescript
-// IndexedDB Schema
-interface NoteEntry {
-  id: string;                    // UUID
-  videoId: string;               // YouTube Video ID
-  timestamp: number;             // 视频时间戳（秒）
-  screenshotBlob: Blob;          // 截图二进制数据
-  noteText: string;              // 用户笔记/AI 生成内容
-  context?: {                    // 上下文信息
-    subtitle: string;            // 字幕片段
-    aiSummary: string;           // AI 摘要
-    detectedObjects: string[];   // 检测到的对象（代码、公式等）
-  };
-  createdAt: number;             // 创建时间戳
-  updatedAt: number;             // 更新时间戳
-}
+```javascript
+// IndexedDB Schema (background.js 中实现)
+const NoteEntry = {
+  id: String,           // UUID
+  videoId: String,      // 平台前缀 + Video ID (如 "yt-xxxxx")
+  videoUrl: String,     // 完整视频 URL
+  videoTitle: String,   // 视频标题
+  timestamp: Number,    // 视频时间戳（秒）
+  timeLabel: String,    // 格式化时间 "MM:SS"
+  percentage: Number,   // 时间轴百分比位置
+  content: String,      // 用户笔记内容
+  createdAt: Number     // 创建时间戳
+};
+```
+
+## 📁 项目文件结构
+
+```
+kairos/
+├── manifest.json           # Manifest V3 配置
+├── content.js              # Content Script 入口点（~60 行）
+├── content.css             # 外部 CSS（仅 Shadow Host 样式）
+├── content/                # Content Script 模块化目录
+│   ├── config.js           # 配置常量 + log() 函数（~50 行）
+│   ├── utils.js            # 工具函数：getVideoId, formatTime 等（~70 行）
+│   ├── storage.js          # StorageManager 类：IndexedDB 代理（~75 行）
+│   ├── tracker.js          # VideoTracker 类：视频位置追踪（~145 行）
+│   ├── styles.js           # getStyles() 函数：CSS 样式字符串（~540 行）
+│   └── overlay.js          # OverlayManager 类：UI 核心逻辑（~770 行）
+├── background.js           # Background Service Worker（IndexedDB 操作）
+├── popup.html              # 扩展弹窗 HTML
+├── popup.js                # 扩展弹窗逻辑
+├── dashboard.html          # 笔记管理页面 HTML
+├── dashboard.js            # 笔记管理页面逻辑
+├── icons/                  # 图标资源
+│   └── icon.png
+├── doc/                    # 文档目录
+├── test/                   # 测试文件
+└── temp/                   # 临时文件
+```
+
+### 模块依赖关系
+```
+content.js (入口)
+    ├── content/config.js     (无依赖，定义 window.Kairos 命名空间)
+    ├── content/utils.js      (依赖 config.js)
+    ├── content/storage.js    (依赖 config.js)
+    ├── content/tracker.js    (依赖 config.js)
+    ├── content/styles.js     (依赖 config.js)
+    └── content/overlay.js    (依赖以上所有模块)
+```
+
+### 模块通信机制
+所有模块通过 `window.Kairos` 全局命名空间共享：
+```javascript
+// config.js 初始化
+window.Kairos = window.Kairos || {};
+window.Kairos.CONFIG = CONFIG;
+window.Kairos.log = log;
+
+// 其他模块导出
+window.Kairos.Utils = Utils;
+window.Kairos.StorageManager = StorageManager;
+window.Kairos.VideoTracker = VideoTracker;
+window.Kairos.getStyles = getStyles;
+window.Kairos.OverlayManager = OverlayManager;
+
+// content.js 入口使用
+const { CONFIG, log, OverlayManager, VideoTracker } = window.Kairos;
 ```
 
 ## 🎯 开发阶段与任务
 
-### 当前阶段：阶段 0 - 技术验证（Week 1）
+### ✅ 阶段 0 - 技术验证（已完成）
+- [x] 避免过度工程化，使用 Vanilla ES6+ JavaScript 实现
+- [x] 全局悬浮层实现（Shadow DOM）
+- [x] 视频坐标实时追踪（YouTube/Bilibili）
+- [x] 里程碑：指示框紧贴视频播放器，支持全屏和滚动
 
-#### 核心任务
-0. **可行性验证**
-  - 避免过度工程化，先使用Vanilla ES6+ JavaScript和Vanilla CSS3实现第一版
+### ✅ 阶段 1 - 交互 MVP（已完成）
+- [x] 悬浮球交互组件（The Orb）：灵动岛风格展开
+- [x] 天花板时间轴（The Ceiling Timeline）：Pin 功能
+- [x] 浏览器本地笔记存储（IndexedDB CRUD）
+- [x] Apple Intelligence 风格边框动效
+- [x] Markdown 导出功能
+- [x] Dashboard 管理界面
+- [x] 里程碑：完整记录笔记并导出 MD
 
-1. **项目初始化**
-   - 使用 Vite + CRXJS Plugin 搭建项目脚手架
-   - 配置 TypeScript + ESLint + Prettier
-   - 设置 Tailwind CSS
+### 🚧 阶段 2 - AI 大脑接入（当前）
+- [ ] Gemini API 调用管道（Background Script）
+- [ ] 字幕抓取与解析：YouTube timedtext API
+- [ ] 多模态内容分析：截图 + 字幕 + 用户笔记 → AI 摘要
+- [ ] 自动发现关键点，以 💡 形式显示在 Timeline 上
+- [ ] 里程碑：AI 自动提取视频中的代码并生成解释
 
-2. **全局悬浮层实现**
-   - 编写 Content Script，注入 `<div id="kairos-root">`
-   - 使用 Shadow DOM 封装 React Root
-   - 确保样式完全隔离（不受宿主页面 CSS 影响）
+### 📅 阶段 3 - 护城河建设
+- [ ] Obsidian 本地直连（FileSystemAccess API）
+- [ ] Notion Integration 同步
+- [ ] Deep Link 回跳支持
 
-3. **视频坐标追踪**
-   - 实现 `useVideoTracker` Hook
-   - 实时读取 `<video>` 元素的位置和尺寸
-   - 处理边界情况：全屏、画中画、页面滚动
-
-4. **里程碑验证**
-   - 在 YouTube/B站 上能看到红色边框紧贴视频
-   - 滚动页面时边框跟随视频移动
-   - 全屏模式下边框依然贴合
-   - 点击边框内部能穿透到视频（暂停/播放）
+### 📅 阶段 4 - 品质打磨与发布
+- [ ] UI/UX 精细化
+- [ ] Sound Design（截图音效、保存音效）
+- [ ] Product Hunt 发布准备
 
 ## 💻 代码规范
 
-### 文件组织
-```
-src/
-├── content/
-│   ├── index.tsx              # Content Script 入口
-│   ├── App.tsx                # 主应用组件
-│   ├── components/
-│   │   ├── Overlay.tsx        # 悬浮层容器
-│   │   ├── Orb.tsx            # 悬浮球组件
-│   │   ├── Timeline.tsx       # 语义化进度条
-│   │   └── NoteInput.tsx      # 笔记输入框
-│   └── hooks/
-│       ├── useVideoTracker.ts # 视频追踪 Hook
-│       └── useGemini.ts       # Gemini API Hook
-├── background/
-│   ├── index.ts               # Background Script 入口
-│   └── gemini-proxy.ts        # API 代理（解决跨域）
-├── utils/
-│   ├── storage.ts             # IndexedDB 封装
-│   ├── capture.ts             # 视频截图引擎
-│   └── markdown.ts            # Markdown 导出工具
-└── manifest.json
-```
-
 ### 命名规范
-- **组件文件**：PascalCase（如 `Overlay.tsx`）
-- **工具函数**：camelCase（如 `captureVideoFrame.ts`）
-- **Hook 文件**：`use` 前缀（如 `useVideoTracker.ts`）
-- **常量**：UPPER_SNAKE_CASE（如 `MAX_Z_INDEX`）
+- **模块文件**：camelCase（如 `config.js`, `overlay.js`）
+- **类名**：PascalCase（如 `OverlayManager`, `VideoTracker`）
+- **函数名**：camelCase（如 `getVideoId`, `formatTime`）
+- **常量**：UPPER_SNAKE_CASE（如 `CONFIG`, `Z_INDEX`）
+- **CSS 类名**：kebab-case 带 `kairos-` 前缀（如 `kairos-overlay`, `kairos-orb`）
 
 ### 代码风格
 - **语言**：所有代码和注释使用英文
-- **注释规范**：函数级英文注释，遵守 Google 开源规范
-- **TypeScript**：优先使用接口（`interface`）而非类型别名（`type`）
-- **组件**：优先使用函数组件和 Hooks
+- **注释规范**：函数级英文注释，遵守 Google 开源规范（JSDoc 风格）
+- **模块封装**：使用 IIFE 防止全局污染
+- **严格模式**：所有模块开头使用 `'use strict'`
 
 ### 示例代码
 
-#### Hook 实现示例
-```typescript
+#### 模块定义示例
+```javascript
 /**
- * Tracks the position and dimensions of the video element in real-time.
- * @param videoSelector - CSS selector for the video element
- * @returns Video bounding rectangle or null if not found
+ * Kairos Utils Module
+ * Helper functions for video identification and formatting
  */
-export function useVideoTracker(videoSelector: string) {
-  const [rect, setRect] = useState<DOMRect | null>(null);
 
-  useEffect(() => {
-    let animationFrameId: number;
+(function () {
+  'use strict';
 
-    const updateRect = () => {
-      const videoElement = document.querySelector<HTMLVideoElement>(videoSelector);
-      if (videoElement) {
-        setRect(videoElement.getBoundingClientRect());
+  const { log } = window.Kairos;
+
+  /**
+   * Utility functions for video operations
+   */
+  const Utils = {
+    /**
+     * Extracts video ID from current URL based on platform
+     * @returns {string} Platform-prefixed video ID
+     */
+    getVideoId() {
+      const url = new URL(window.location.href);
+      if (url.hostname.includes('youtube.com')) {
+        return `yt-${url.searchParams.get('v')}`;
+      } else if (url.hostname.includes('bilibili.com')) {
+        const bvid = url.pathname.split('/').find(p => p.startsWith('BV'));
+        return bvid ? `bili-${bvid}` : `bili-${url.pathname}`;
       }
-      animationFrameId = requestAnimationFrame(updateRect);
-    };
+      return `generic-${url.hostname}${url.pathname}`;
+    },
 
-    updateRect();
+    /**
+     * Formats seconds into HH:MM:SS or MM:SS string
+     * @param {number} seconds - Time in seconds
+     * @returns {string} Formatted time string
+     */
+    formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return [h, m, s]
+        .filter((v, i) => v > 0 || i > 0)
+        .map(v => v.toString().padStart(2, '0'))
+        .join(':');
+    }
+  };
 
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [videoSelector]);
+  // Export to global namespace
+  window.Kairos.Utils = Utils;
 
-  return rect;
-}
+})();
 ```
 
-#### 组件实现示例
-```typescript
+#### 类定义示例
+```javascript
 /**
- * Global overlay component that renders on top of the video player.
- * Uses Shadow DOM for style isolation.
+ * VideoTracker class - Tracks video element position and dimensions
  */
-export function Overlay() {
-  const videoRect = useVideoTracker('video');
+class VideoTracker {
+  /**
+   * Creates a VideoTracker instance
+   * @param {string} videoSelector - CSS selector for video elements
+   */
+  constructor(videoSelector) {
+    this.videoSelector = videoSelector;
+    this.videoElement = null;
+    this.animationFrameId = null;
+    this.callbacks = [];
+  }
 
-  if (!videoRect) return null;
+  /**
+   * Starts tracking the video element
+   * @param {Function} callback - Callback function receiving (rect, video)
+   */
+  start(callback) {
+    this.callbacks.push(callback);
+    if (!this.animationFrameId) {
+      this.update();
+    }
+  }
 
-  return (
-    <div
-      className="kairos-overlay"
-      style={{
-        position: 'fixed',
-        top: videoRect.top,
-        left: videoRect.left,
-        width: videoRect.width,
-        height: videoRect.height,
-        pointerEvents: 'none',
-        zIndex: 2147483647,
-      }}
-    >
-      {/* Overlay content */}
-    </div>
-  );
+  /**
+   * Stops tracking the video element
+   */
+  stop() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
 }
 ```
 
@@ -205,111 +276,102 @@ export function Overlay() {
 /* 背景色 */
 --bg-primary: #0A0A0A;        /* 黑曜石 */
 --bg-secondary: #1A1A1A;      /* 浅黑 */
+--bg-glass: rgba(25, 25, 25, 0.7);  /* 玻璃背景 */
 
 /* 文本色 */
---text-primary: #D4D4D4;      /* 高级灰 */
---text-secondary: #8A8A8A;    /* 次要文本 */
+--text-primary: #FFFFFF;      /* 主文本 */
+--text-secondary: rgba(255, 255, 255, 0.4);  /* 次要文本 */
 
 /* 强调色 */
---accent-green: #39FF14;      /* 磷光绿 */
---accent-violet: #8A2BE2;     /* 电紫色 */
+--accent-cyan: #00f2ff;       /* 青色高亮 */
+--accent-purple: #7000ff;     /* 紫色 */
+--accent-pink: #ff0095;       /* 粉色 */
 
 /* 玻璃质感 */
---glass-bg: rgba(26, 26, 26, 0.6);
---glass-blur: 20px;
---glass-border: rgba(255, 255, 255, 0.1);
+--glass-blur: 32px;
+--glass-border: rgba(255, 255, 255, 0.15);
 ```
 
 ### 字体规范
 ```css
-/* 英文字体 */
-font-family: 'Inter', 'Geist Sans', system-ui, sans-serif;
+/* UI 字体 */
+font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
 
 /* 代码字体 */
-font-family: 'JetBrains Mono', 'Fira Code', monospace;
+font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 ```
 
 ### 动效规范
-- **悬浮球呼吸效果**：`scale` 动画，周期 2s，easing: `ease-in-out`
-- **输入框展开**：`scaleY` + `opacity`，持续 200ms，easing: `cubic-bezier(0.4, 0, 0.2, 1)`
-- **笔记保存**：抛物线动画（贝塞尔曲线），持续 400ms
+- **边框脉冲**：`kairos-border-pulse` 动画，周期 3s，alternate
+- **输入框展开**：`max-height` + `opacity`，持续 500ms，easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`
+- **Orb 展开**：`width` 动画，持续 400ms，easing: `cubic-bezier(0.3, 1.2, 0.3, 1)`
+- **涟漪效果**：`scale` 从 0 到 100，持续 1.6s
 
 ## 🔧 关键技术实现要点
 
-### 1. Shadow DOM 样式隔离
-```typescript
-// 创建 Shadow Root 并注入样式
-const shadowRoot = container.attachShadow({ mode: 'open' });
-const styleElement = document.createElement('style');
-styleElement.textContent = `
-  /* Tailwind CSS 编译后的样式 */
-  @layer base, components, utilities;
-`;
-shadowRoot.appendChild(styleElement);
-
-// 渲染 React 应用到 Shadow DOM
-const root = createRoot(shadowRoot);
-root.render(<App />);
-```
-
-### 2. 视频截图引擎
-```typescript
-/**
- * Captures the current frame of the video element.
- * @param videoElement - The video element to capture
- * @returns Base64-encoded image data URL
- */
-export function captureVideoFrame(videoElement: HTMLVideoElement): string {
-  const canvas = document.createElement('canvas');
-  canvas.width = videoElement.videoWidth;
-  canvas.height = videoElement.videoHeight;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Failed to get canvas context');
-
-  ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-  return canvas.toDataURL('image/jpeg', 0.85);
+### 1. Shadow DOM 样式注入
+```javascript
+// overlay.js 中的实现
+injectStyles() {
+  const style = document.createElement('style');
+  style.textContent = getStyles();  // 从 styles.js 获取 CSS 字符串
+  this.shadowRoot.appendChild(style);
 }
 ```
 
-### 3. Gemini API 调用（通过 Background Script）
-```typescript
-// background/gemini-proxy.ts
+### 2. Content Script 与 Background Script 通信
+```javascript
+// content/storage.js - 发送消息
+async saveNote(note) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: 'SAVE_NOTE', payload: note }, (response) => {
+      if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+      if (response && response.success) resolve(response.data);
+      else reject(response ? response.error : 'Unknown error');
+    });
+  });
+}
 
-/**
- * Proxies Gemini API calls to avoid CORS issues in Content Script.
- */
+// background.js - 接收消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'GEMINI_ANALYZE') {
-    analyzeWithGemini(request.data)
-      .then(sendResponse)
-      .catch(error => sendResponse({ error: error.message }));
-    return true; // Keep message channel open for async response
+  if (request.type === 'SAVE_NOTE') {
+    saveNote(request.payload)
+      .then(data => sendResponse({ success: true, data }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;  // 保持消息通道开放
   }
 });
+```
 
-async function analyzeWithGemini(data: {
-  screenshot: string;
-  subtitle: string;
-}) {
-  const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-3-pro:generateContent', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: `Summarize the key insights from this video frame. Context: ${data.subtitle}` },
-          { inline_data: { mime_type: 'image/jpeg', data: data.screenshot.split(',')[1] } }
-        ]
-      }]
-    }),
+### 3. 视频元素过滤逻辑
+```javascript
+// tracker.js 中的实现
+findVideoElement() {
+  const allVideos = Array.from(document.querySelectorAll(this.videoSelector));
+
+  const validCandidates = allVideos.filter(video => {
+    // 1. 可见性检查
+    if (video.offsetParent === null) return false;
+
+    // 2. 最小尺寸检查
+    const rect = video.getBoundingClientRect();
+    if (rect.width < CONFIG.MIN_WIDTH || rect.height < CONFIG.MIN_HEIGHT) return false;
+
+    // 3. 忽略列表检查（Banner、预览等）
+    const isIgnored = CONFIG.IGNORE_SELECTORS.some(sel => video.matches(sel));
+    if (isIgnored) return false;
+
+    return true;
   });
 
-  return response.json();
+  // 选择最大面积的视频
+  validCandidates.sort((a, b) => {
+    const areaA = a.getBoundingClientRect().width * a.getBoundingClientRect().height;
+    const areaB = b.getBoundingClientRect().width * b.getBoundingClientRect().height;
+    return areaB - areaA;
+  });
+
+  return validCandidates[0] || null;
 }
 ```
 
@@ -317,97 +379,76 @@ async function analyzeWithGemini(data: {
 
 ### 避坑指南
 
-1. **不要过度设计**
-   - 当前阶段专注于核心功能验证，不要引入复杂的状态管理（如 Redux）
-   - 保持代码简洁，优先使用 React Context + Hooks
+1. **模块加载顺序**
+   - `manifest.json` 中的 JS 文件顺序很重要
+   - 必须按依赖关系排列：config → utils → storage → tracker → styles → overlay → content
 
-2. **不要支持 DRM 保护的视频**
-   - Netflix、Disney+ 等平台的视频无法截图（会得到黑屏）
-   - 专注于 UGC 平台：YouTube、Bilibili、Coursera
+2. **Shadow DOM 事件冒泡**
+   - Shadow DOM 内的事件不会自动冒泡到外部
+   - 需要手动 `stopPropagation()` 防止影响视频播放器的快捷键
 
-3. **不要一次性分析整个视频**
-   - 采用 On-Demand 策略：只在用户点击时调用 Gemini API
-   - 避免高昂的 Token 成本和缓慢的响应速度
+3. **视频平台差异**
+   - YouTube 和 Bilibili 的视频元素选择器不同
+   - 使用 `CONFIG.IGNORE_SELECTORS` 过滤非主视频元素
 
-4. **注意 Chrome 扩展审核要求**
-   - `host_permissions` 必须在审核时说明用途
-   - 示例说明：*"本插件的核心功能是视频笔记，需要自动检测视频播放器状态以渲染笔记层"*
+4. **Chrome 扩展审核要求**
+   - `host_permissions` 必须说明用途
+   - 不要请求不必要的权限
 
 ### 性能优化
 
 1. **视频追踪优化**
    - 使用 `requestAnimationFrame` 而非 `setInterval`
-   - 当用户不在视频页面时停止追踪（通过 Intersection Observer）
+   - 在视频元素稳定后减少重绘频率
 
-2. **截图优化**
-   - 使用 `canvas.toDataURL('image/jpeg', 0.85)` 而非 PNG（减少 60% 体积）
-   - 存储到 IndexedDB 时使用 Blob 而非 Base64
-
-3. **渲染优化**
-   - 悬浮层组件使用 `React.memo` 避免不必要的重渲染
-   - 输入框使用 `debounce` 延迟 AI 调用
+2. **DOM 操作优化**
+   - 批量更新样式，避免重排
+   - 使用 CSS transform 代替 top/left 进行动画
 
 ## 📦 构建与部署
 
-### 开发模式
-```bash
-npm run dev
-```
-- 自动重载 Content Script 和 Background Script
-- 支持 React Fast Refresh
-
-### 生产构建
-```bash
-npm run build
-```
-- 输出目录：`dist/`
-- 自动压缩和优化资源
-- 生成 Manifest V3 兼容的扩展包
-
-### 加载到 Chrome
+### 开发模式（当前）
+由于使用 Vanilla JS，无需构建步骤：
 1. 打开 `chrome://extensions/`
 2. 开启"开发者模式"
 3. 点击"加载已解压的扩展程序"
-4. 选择 `dist/` 目录
+4. 选择项目根目录（不是 dist/）
+5. 修改代码后点击刷新图标重新加载
 
-## 🔄 版本迭代策略
-
-### 护城河建设原则
-- **版本领先策略**：始终保持 2 周的功能领先，当竞品抄袭 V1 时，我们已发布 V2
-- **深度绑定工作流**：通过 Obsidian/Notion 集成增加用户迁移成本
-- **设计驱动增长**：极致的 UI/UX 是最难被抄袭的壁垒
-
-### 功能迭代顺序
-1. **V1.0（MVP）**：手动截图 + 本地笔记
-2. **V2.0（AI）**：Gemini 自动摘要 + 代码提取
-3. **V3.0（集成）**：Obsidian/Notion 深度集成
-4. **V4.0（高级）**：知识图谱 + 语义搜索
+### 调试技巧
+- Content Script 日志：在视频页面的 Console 中查看 `[Kairos]` 前缀的日志
+- Background Script 日志：在 `chrome://extensions/` 点击 "Service Worker" 查看
+- Shadow DOM 检查：在 DevTools Elements 面板展开 `#kairos-overlay-root` 下的 `#shadow-root`
 
 ## 📞 常见问题
 
-### Q: 如何处理视频跨域问题？
-A: YouTube 等平台默认允许同源 Canvas 截图。若遇到跨域污染（Tainted Canvas），需在 Background Script 中转发请求。
+### Q: 如何添加新的 Content Script 模块？
+A:
+1. 在 `content/` 目录创建新文件
+2. 使用 IIFE 封装，通过 `window.Kairos` 导出
+3. 在 `manifest.json` 的 `content_scripts.js` 数组中按依赖顺序添加
 
-### Q: 如何优雅地处理全屏模式？
-A: 监听 `fullscreenchange` 事件，动态调整悬浮层的父容器（从 `document.body` 切换到 `document.fullscreenElement`）。
+### Q: 如何修改 CSS 样式？
+A: 编辑 `content/styles.js` 中的 `getStyles()` 函数返回的 CSS 字符串。
 
-### Q: 如何确保 Gemini API Key 安全？
-A: 存储在 `chrome.storage.local` 中，仅在 Background Script 中使用，永远不要暴露到 Content Script。
+### Q: 如何处理新的视频平台？
+A:
+1. 在 `manifest.json` 的 `host_permissions` 和 `matches` 中添加域名
+2. 在 `content/utils.js` 的 `getVideoId()` 中添加解析逻辑
+3. 在 `content/config.js` 的 `IGNORE_SELECTORS` 中添加需要忽略的元素选择器
 
-### Q: 如何测试 Shadow DOM 内的组件？
-A: 使用 Testing Library 的 `container.shadowRoot` 访问 Shadow DOM 内部元素。
+### Q: IndexedDB 操作失败怎么办？
+A: 检查 `background.js` 的 Service Worker 日志，确保数据库已正确初始化。
 
 ---
 
 ## 🎯 当前开发目标
 
-**阶段 0 - 可行性验证**：
-- [x] 避免过度工程化，先使用Vanilla ES6+ JavaScript和Vanilla CSS3实现插件
-- [x] 在视频周围渲染边框，紧贴视频播放器
-- [x] 支持滚动和全屏模式下的坐标同步
-- [x] 点击边框内部能穿透到视频（pointer-events 正确处理）
-
-完成此里程碑后，立即进入阶段 1 的悬浮球交互开发。
+**阶段 2 - AI 大脑接入**：
+- [ ] 在 `background.js` 中实现 Gemini API 调用
+- [ ] 实现字幕抓取功能
+- [ ] 设计多模态分析的 Prompt 模板
+- [ ] 在 Timeline 上显示 AI 发现的关键点
 
 ---
 

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,14 +30,14 @@
         .sidebar {
             width: 350px;
             background-color: var(--sidebar-bg);
-            border-right: 1px solid rgba(255,255,255,0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
             flex-direction: column;
         }
 
         .header {
             padding: 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
         }
@@ -128,7 +129,7 @@
         .note-header {
             margin-bottom: 40px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .note-title {
@@ -144,7 +145,7 @@
         }
 
         .action-btn {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             padding: 8px 16px;
             border-radius: 6px;
@@ -155,7 +156,7 @@
         }
 
         .action-btn:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .action-btn.primary {
@@ -167,7 +168,7 @@
         .timeline {
             position: relative;
             padding-left: 24px;
-            border-left: 2px solid rgba(255,255,255,0.1);
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
         }
 
         .note-entry {
@@ -177,7 +178,8 @@
 
         .timestamp-dot {
             position: absolute;
-            left: -31px; /* 24px padding + 2px border + 5px radius */
+            left: -31px;
+            /* 24px padding + 2px border + 5px radius */
             top: 4px;
             width: 12px;
             height: 12px;
@@ -200,28 +202,257 @@
             color: #ddd;
             white-space: pre-wrap;
         }
+
+        /* Nav Tabs */
+        .nav-tabs {
+            padding: 0 12px;
+            margin-bottom: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background-color: rgba(0, 242, 255, 0.1);
+            color: var(--accent);
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            fill: currentColor;
+        }
+
+        /* Settings Styles */
+        .settings-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-section h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .radio-option:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .radio-option.selected {
+            border-color: var(--accent);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .radio-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .radio-option input {
+            margin-right: 12px;
+            margin-top: 4px;
+        }
+
+        .radio-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .radio-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .radio-desc {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            font-family: monospace;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent);
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            position: absolute;
+            right: 8px;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+        }
+
+        .icon-btn:hover {
+            color: var(--text);
+        }
+
+        .status-message {
+            margin-top: 12px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .status-message.success {
+            color: #4caf50;
+        }
+
+        .status-message.error {
+            color: #ff4d4d;
+        }
     </style>
 </head>
+
 <body>
     <div class="sidebar">
         <div class="header">
             <svg class="logo" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
             </svg>
-            <h1>Kairos Library</h1>
+            <h1>Kairos</h1>
         </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-item active" data-tab="library">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z" />
+                </svg>
+                My Library
+            </div>
+            <div class="nav-item" data-tab="settings">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L5.09 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.04.64.09.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.08-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                </svg>
+                Settings
+            </div>
+        </div>
+
         <div class="video-list" id="videoList">
             <!-- Video Items injected here -->
         </div>
     </div>
 
     <div class="main" id="mainContent">
-        <div class="empty-state">
-            <svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
-            <p>Select a video to view notes</p>
+        <div id="libraryView">
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                </svg>
+                <p>Select a video to view notes</p>
+            </div>
+        </div>
+
+        <div id="settingsView" style="display: none; max-width: 600px; margin: 0 auto;">
+            <div class="note-header">
+                <div class="note-title">Settings</div>
+            </div>
+
+            <div class="settings-section">
+                <h3>AI Model Provider</h3>
+                <div class="radio-group">
+                    <label class="radio-option disabled">
+                        <input type="radio" name="provider" value="kairos" disabled>
+                        <div class="radio-content">
+                            <span class="radio-title">Kairos Cloud (Coming Soon)</span>
+                            <span class="radio-desc">Zero-config, cloud save&sync. Managed high-speed access.</span>
+                        </div>
+                    </label>
+                    <label class="radio-option selected">
+                        <input type="radio" name="provider" value="gemini" checked>
+                        <div class="radio-content">
+                            <span class="radio-title">Bring Your Own Key (BYOK)</span>
+                            <span class="radio-desc">Use your own Google Gemini API Key. Free tier available.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section" id="geminiConfig">
+                <h3>Gemini API Key</h3>
+                <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 12px;">
+                    Get your free API key from <a href="https://aistudio.google.com/" target="_blank"
+                        style="color: var(--accent);">Google AI Studio</a>.
+                </p>
+                <div class="input-group">
+                    <input type="password" id="apiKeyInput" placeholder="Paste your API key here (AIza...)"
+                        spellcheck="false">
+                    <button id="toggleKeyVisibility" class="icon-btn" title="Show/Hide">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path
+                                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="statusMessage" class="status-message"></div>
+                <button id="saveSettingsBtn" class="action-btn primary" style="width: 100%; margin-top: 16px;">Save
+                    Settings</button>
+            </div>
         </div>
     </div>
 
     <script src="dashboard.js"></script>
 </body>
+
 </html>

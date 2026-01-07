@@ -1,9 +1,95 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const videoListEl = document.getElementById('videoList');
-    const mainContentEl = document.getElementById('mainContent');
+    const libraryViewEl = document.getElementById('libraryView');
+    const settingsViewEl = document.getElementById('settingsView');
+    const navItems = document.querySelectorAll('.nav-item');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const statusMessageEl = document.getElementById('statusMessage');
+    const toggleKeyVisibilityBtn = document.getElementById('toggleKeyVisibility');
 
-    // Load Data via Background
+    // State
+    let currentTab = 'library';
+
+    // Init
     loadVideoList();
+    loadSettings();
+    setupNavigation();
+
+    function setupNavigation() {
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const tab = item.dataset.tab;
+                switchTab(tab);
+            });
+        });
+
+        toggleKeyVisibilityBtn.addEventListener('click', () => {
+            const type = apiKeyInput.type === 'password' ? 'text' : 'password';
+            apiKeyInput.type = type;
+        });
+
+        saveSettingsBtn.addEventListener('click', saveSettings);
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Update Nav UI
+        navItems.forEach(item => {
+            if (item.dataset.tab === tab) item.classList.add('active');
+            else item.classList.remove('active');
+        });
+
+        // Update View UI
+        if (tab === 'library') {
+            libraryViewEl.style.display = 'block';
+            settingsViewEl.style.display = 'none';
+            videoListEl.style.display = 'block'; // Show sidebar list
+        } else {
+            libraryViewEl.style.display = 'none';
+            settingsViewEl.style.display = 'block';
+            videoListEl.style.display = 'none'; // Hide sidebar list for cleaner look
+        }
+    }
+
+    // --- Settings Logic ---
+
+    function loadSettings() {
+        chrome.storage.sync.get(['geminiApiKey'], (result) => {
+            if (result.geminiApiKey) {
+                apiKeyInput.value = result.geminiApiKey;
+            }
+        });
+    }
+
+    function saveSettings() {
+        const apiKey = apiKeyInput.value.trim();
+        
+        if (!apiKey) {
+            showStatus('Please enter a valid API Key', 'error');
+            return;
+        }
+
+        if (!apiKey.startsWith('AIza')) {
+             showStatus('Warning: Key typically starts with "AIza". Check if correct.', 'error');
+             // We don't block it, just warn
+        }
+
+        chrome.storage.sync.set({ geminiApiKey: apiKey }, () => {
+            showStatus('Settings saved successfully!', 'success');
+            setTimeout(() => {
+                statusMessageEl.textContent = '';
+            }, 3000);
+        });
+    }
+
+    function showStatus(msg, type) {
+        statusMessageEl.textContent = msg;
+        statusMessageEl.className = 'status-message ' + type;
+    }
+
+    // --- Library Logic ---
 
     function loadVideoList() {
         chrome.runtime.sendMessage({ type: 'GET_ALL_NOTES' }, (response) => {
@@ -52,6 +138,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 `;
                 item.addEventListener('click', () => {
+                    // Switch to library tab if not active
+                    if (currentTab !== 'library') switchTab('library');
+
                     // Highlight active
                     document.querySelectorAll('.video-item').forEach(i => i.classList.remove('active'));
                     item.classList.add('active');
@@ -65,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Sort notes by timestamp
         video.notes.sort((a, b) => a.timestamp - b.timestamp);
 
-        mainContentEl.innerHTML = `
+        libraryViewEl.innerHTML = `
             <div class="note-header">
                 <div class="note-meta" style="color: #aaa; font-size: 13px; margin-bottom: 8px;">
                     <a href="${video.url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #aaa;">View Source Video ↗</a>
@@ -123,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 deletedCount++;
                 if (deletedCount === notes.length) {
                     loadVideoList(); // Refresh sidebar
-                    mainContentEl.innerHTML = `
+                    libraryViewEl.innerHTML = `
                         <div class="empty-state">
                             <svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
                             <p>Notes deleted.</p>

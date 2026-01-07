@@ -110,6 +110,7 @@ Kairos 重新定义了看视频做笔记的交互方式：
 
 ### 阶段 4：品质打磨与发布（Week 8+）
 - [ ] UI/UX 精细化（Glassmorphism + 动效）
+- [ ] 记录上次拖动位置，切换视频依然生效
 - [ ] Sound Design（截图音效、保存音效）
 - [ ] 录制 Demo 视频
 - [ ] Product Hunt 发布准备

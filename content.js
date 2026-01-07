@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const { CONFIG, log, OverlayManager, VideoTracker } = window.Kairos;
+  const { CONFIG, log, OverlayManager, VideoTracker, SidePanelManager } = window.Kairos;
 
   /**
    * Main application initialization
@@ -14,8 +14,13 @@
   async function init() {
     log('Initializing Kairos...');
 
-    // Create overlay manager
+    // Create side panel manager
+    const sidePanelManager = new SidePanelManager();
+    await sidePanelManager.init();
+
+    // Create overlay manager with side panel reference
     const overlayManager = new OverlayManager();
+    overlayManager.sidePanel = sidePanelManager;
     await overlayManager.init();
 
     // Create video tracker
@@ -33,6 +38,7 @@
         lastUrl = window.location.href;
         log('URL changed, reloading notes...');
         overlayManager.loadNotesForCurrentVideo();
+        sidePanelManager.refresh();
       }
     }, 2000);
 

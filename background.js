@@ -89,6 +89,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'DELETE_NOTE':
           response = await deleteNote(message.payload.id);
           break;
+        case 'OPEN_DASHBOARD':
+          chrome.tabs.create({ url: 'dashboard.html' });
+          response = { status: 'opened' };
+          break;
         default:
           throw new Error('Unknown message type');
       }

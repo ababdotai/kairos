@@ -20,6 +20,7 @@
       this.escListener = null;
       this.storage = new StorageManager();
       this.currentVideoId = null;
+      this.sidePanel = null; // Reference to SidePanelManager
 
       // Interaction States
       this.activePin = null;
@@ -665,6 +666,11 @@
           await this.storage.saveNote(noteRecord);
           this.activePin.id = noteRecord.id;
           log('Note persisted');
+
+          // Notify SidePanel to add the new note
+          if (this.sidePanel) {
+            this.sidePanel.addNote(noteRecord);
+          }
         } catch (err) {
           log('Failed to persist note:', err);
         }

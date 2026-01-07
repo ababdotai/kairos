@@ -23,6 +23,7 @@
         "content/tracker.js",
         "content/styles.js",
         "content/overlay.js",
+        "content/sidepanel.js",
         "content.js"
       ],
       "css": [

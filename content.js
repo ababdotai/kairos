@@ -345,17 +345,28 @@
           /* Default Start Position (Top Center) */
           top: 12px;
           left: 50%;
-          transform: translateX(-50%); 
+          transform: translateX(-50%);
           display: flex;
-          align-items: center;
-          gap: 0; /* Gap handled by positioning now */
+          flex-direction: column; /* Vertical stacking for top/bottom orientation */
+          align-items: flex-start; /* Align to start so orb position = container position */
+          gap: 0;
           pointer-events: none; /* Container passes clicks */
           z-index: 50; /* Ensure above timeline */
-          will-change: top, left, transform; 
+          will-change: top, left, transform;
         }
 
         .kairos-island-container.positioned {
           transform: none !important;
+        }
+
+        /* Bottom orientation: note appears below orb (default for center/bottom positions) */
+        .kairos-island-container.orient-bottom {
+          flex-direction: column;
+        }
+
+        /* Top orientation: note appears above orb (when orb is near bottom edge) */
+        .kairos-island-container.orient-top {
+          flex-direction: column-reverse;
         }
 
         /* Note Wrapper: Position handled by Flexbox in 'kairos-island-container' now */
@@ -439,42 +450,52 @@
           gap: 16px;
         }
 
-        .kairos-island-container.orient-right {
-          flex-direction: row-reverse;
+        /* Note positioning for vertical orientations */
+        .kairos-island-container.orient-bottom .kairos-note-wrapper {
+          margin-top: 12px;
         }
 
-        .kairos-island-container.orient-right .kairos-note-wrapper {
-           margin-left: 0;
-           margin-right: 12px;
+        .kairos-island-container.orient-top .kairos-note-wrapper {
+          margin-bottom: 12px;
         }
 
-        .kairos-island-container.orient-right .kairos-note-wrapper.active {
-           margin-right: 12px;
+        /* Note alignment classes - dynamically applied */
+        .kairos-note-wrapper.align-center {
+          margin-left: calc((48px - 320px) / 2); /* Center: -136px */
         }
 
-        /* Note Wrapper: Now sits next to Orb inside the island */
+        .kairos-note-wrapper.align-left {
+          margin-left: 0; /* Left edge aligned with orb */
+        }
+
+        .kairos-note-wrapper.align-right {
+          margin-left: calc(48px - 320px); /* Right edge aligned with orb: -272px */
+        }
+
+        /* Note Wrapper: Now sits below/above Orb inside the island */
         .kairos-note-wrapper {
           position: relative;
-          width: 0;
-          height: 48px;
+          width: 320px;
+          max-height: 0;
           background: rgba(25, 25, 25, 0.7);
           backdrop-filter: blur(32px) saturate(180%);
           border: 0.5px solid rgba(255, 255, 255, 0.15);
-          border-radius: 24px;
+          border-radius: 16px;
           opacity: 0;
           pointer-events: none;
           transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
           display: flex;
           align-items: center;
           /* Removed overflow: hidden so hint can live outside */
-          margin-left: 12px; 
+          margin-top: 0;
+          overflow: hidden;
         }
 
         .kairos-note-wrapper.active {
-          width: 320px;
+          max-height: 200px; /* Allow for multiline expansion */
+          min-height: 48px;
           opacity: 1;
           pointer-events: auto;
-          margin-left: 12px; 
         }
         
         .kairos-orb.active {
@@ -553,9 +574,13 @@
           font-size: 16px; /* Slightly larger for clarity */
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
           font-weight: 400;
-          padding: 0 20px; 
-          height: 100%;
+          padding: 12px 100px 12px 20px; /* Right padding for hint */
+          min-height: 48px;
+          max-height: 150px;
           min-width: 100px;
+          resize: none;
+          line-height: 1.5;
+          overflow-y: auto;
         }
 
         .kairos-note-input::placeholder {
@@ -566,8 +591,9 @@
         /* Input Hint: Symbolic */
         .kairos-note-hint {
           position: absolute;
-          bottom: -24px; 
-          left: 24px; 
+          right: 16px;
+          top: 50%;
+          transform: translateY(-50%);
           color: rgba(255, 255, 255, 0.4);
           font-size: 10px;
           font-weight: 500;
@@ -575,15 +601,13 @@
           white-space: nowrap;
           pointer-events: none;
           opacity: 0;
-          transform: translateY(-5px);
-          transition: all 0.3s ease 0.1s; 
+          transition: all 0.3s ease 0.1s;
           letter-spacing: 0.5px;
         }
-        
+
         /* Show hint when active */
         .kairos-note-wrapper.active .kairos-note-hint {
           opacity: 1;
-          transform: translateY(0);
         }
 
         /* Footer Hints (Optional, can add later) */
@@ -844,7 +868,7 @@
 
       // The Intelligent Island Container (Orb + Note)
       const island = document.createElement('div');
-      island.className = 'kairos-island-container orient-right';
+      island.className = 'kairos-island-container orient-bottom';
 
       // Initialize Drag Offsets (0 means default CSS position)
       this.xOffset = 0;
@@ -928,13 +952,13 @@
 
 
 
-      const noteInput = document.createElement('input');
+      const noteInput = document.createElement('textarea');
 
       noteInput.className = 'kairos-note-input';
 
       noteInput.placeholder = '✨ Capture thought...';
 
-      noteInput.type = 'text';
+      noteInput.rows = 1;
 
 
 
@@ -978,7 +1002,7 @@
 
       noteHint.className = 'kairos-note-hint';
 
-      noteHint.textContent = '↵ Save  ⎋ Cancel';
+      noteHint.textContent = '⌘↵ Save  ⎋ Cancel';
 
       noteWrapper.appendChild(noteHint);
 
@@ -1026,35 +1050,35 @@
       if (!e.target.closest('.kairos-drag-handle')) return;
 
       const island = this.shadowRoot.querySelector('.kairos-island-container');
-      if (!island) return;
+      const orb = this.shadowRoot.querySelector('.kairos-orb');
+      if (!island || !orb) return;
 
       const overlayRect = this.overlayElement.getBoundingClientRect();
-      const islandRect = island.getBoundingClientRect();
+      const orbRect = orb.getBoundingClientRect();
 
-      // 1. Calculate current position relative to Overlay
-      const currentLeft = islandRect.left - overlayRect.left;
-      const currentTop = islandRect.top - overlayRect.top;
+      // 1. Calculate orb's current position relative to Overlay
+      const orbLeft = orbRect.left - overlayRect.left;
+      const orbTop = orbRect.top - overlayRect.top;
 
-      // 2. Freeze position in pixels (Convert everything to Left positioning for Drag)
+      // 2. Freeze position in pixels based on orb position
       island.style.transition = 'none';
       island.style.transform = 'none';
-      island.style.right = 'auto'; // Clear right
-      island.style.left = `${currentLeft}px`;
-      island.style.top = `${currentTop}px`;
+      island.style.right = 'auto';
+      island.style.left = `${orbLeft}px`;
+      island.style.top = `${orbTop}px`;
 
-      // 3. Store start state
-      this.startLeft = currentLeft;
-      this.startTop = currentTop;
+      // 3. Store start state (based on orb position)
+      this.startLeft = orbLeft;
+      this.startTop = orbTop;
       this.startX = e.clientX;
       this.startY = e.clientY;
 
       this.isDragging = false;
-      this.activeDrag = true; // Flag to track active drag session
+      this.activeDrag = true;
 
       if (this.dragHandle) this.dragHandle.classList.add('grabbing');
-      // Add dragging class immediately to keep menu expanded
       island.classList.add('dragging');
-      island.classList.add('positioned'); // Permanently disable initial centering transform
+      island.classList.add('positioned');
     }
 
     drag(e) {
@@ -1062,7 +1086,8 @@
       if (!this.overlayElement) return;
 
       const island = this.shadowRoot.querySelector('.kairos-island-container');
-      if (!island) return;
+      const orb = this.shadowRoot.querySelector('.kairos-orb');
+      if (!island || !orb) return;
 
       e.preventDefault();
 
@@ -1079,18 +1104,18 @@
       let newLeft = this.startLeft + dx;
       let newTop = this.startTop + dy;
 
-      // Boundary Check
+      // Boundary Check - use actual orb dimensions (expanded during drag)
       const overlayRect = this.overlayElement.getBoundingClientRect();
-      // Width includes handle + orb + expanded label potentially
-      // Dynamic width check to prevent overflow
-      const islandWidth = island.offsetWidth || 180;
-      newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - islandWidth));
-      newTop = Math.max(0, Math.min(newTop, overlayRect.height - 48));
+      const orbWidth = orb.offsetWidth;
+      const orbHeight = orb.offsetHeight;
+      const BOTTOM_SAFE_MARGIN = 80; // Avoid progress bar area
+      newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - orbWidth));
+      newTop = Math.max(0, Math.min(newTop, overlayRect.height - orbHeight - BOTTOM_SAFE_MARGIN));
 
       island.style.left = `${newLeft}px`;
       island.style.top = `${newTop}px`;
 
-      this.updateOrientation(newLeft, overlayRect.width);
+      this.updateOrientation(newTop, overlayRect.height);
     }
 
     dragEnd(e) {
@@ -1100,18 +1125,36 @@
       if (this.dragHandle) this.dragHandle.classList.remove('grabbing');
 
       const island = this.shadowRoot.querySelector('.kairos-island-container');
-      if (island) {
+      const orb = this.shadowRoot.querySelector('.kairos-orb');
+      if (island && orb && this.overlayElement) {
         island.classList.remove('dragging');
+
+        const overlayRect = this.overlayElement.getBoundingClientRect();
+        const orbRect = orb.getBoundingClientRect();
+
+        // Get current position
+        let currentLeft = orbRect.left - overlayRect.left;
+        let currentTop = orbRect.top - overlayRect.top;
+
+        // Use collapsed orb size (48px) for final boundary check
+        const collapsedSize = 48;
+
+        // Clamp to boundaries with collapsed size
+        const maxLeft = overlayRect.width - collapsedSize;
+        const maxTop = overlayRect.height - collapsedSize;
+
+        if (currentLeft > maxLeft || currentTop > maxTop) {
+          currentLeft = Math.min(currentLeft, maxLeft);
+          currentTop = Math.min(currentTop, maxTop);
+          island.style.left = `${currentLeft}px`;
+          island.style.top = `${currentTop}px`;
+        }
+
         // Restore physics/transitions
         island.style.transition = '';
 
-        // Finalize Orientation (Convert to Left/Right Anchor)
-        if (this.overlayElement) {
-           const overlayRect = this.overlayElement.getBoundingClientRect();
-           const islandRect = island.getBoundingClientRect();
-           const currentLeft = islandRect.left - overlayRect.left;
-           this.updateOrientation(currentLeft, overlayRect.width);
-        }
+        // Finalize Orientation based on Y position
+        this.updateOrientation(currentTop, overlayRect.height);
       }
 
       // Delay reset to prevent 'click' event from firing immediately after drag release
@@ -1120,51 +1163,28 @@
       }, 50);
     }
 
-    updateOrientation(currentLeft, containerWidth) {
+    /**
+     * Updates the orientation based on Y position.
+     * If orb is in upper 40% of container: note appears below (orient-bottom)
+     * If orb is in lower 40% of container: note appears above (orient-top)
+     * Middle 20%: defaults to bottom orientation
+     */
+    updateOrientation(currentTop, containerHeight) {
       if (!this.shadowRoot) return;
       const island = this.shadowRoot.querySelector('.kairos-island-container');
       if (!island) return;
 
-      const middle = containerWidth / 2;
-      
-      if (currentLeft > middle) {
-        // Right Orientation
-        island.classList.remove('orient-left');
-        island.classList.add('orient-right');
-        
-        // Switch to RIGHT positioning if not dragging
-        if (!this.activeDrag) {
-            // Recalculate Right based on container width
-            const currentRight = containerWidth - (currentLeft + island.offsetWidth);
-            island.style.left = 'auto';
-            island.style.right = `${currentRight}px`;
-        }
+      // Calculate position ratio (0 = top, 1 = bottom)
+      const positionRatio = currentTop / containerHeight;
+
+      if (positionRatio > 0.6) {
+        // Near bottom edge: note appears above orb
+        island.classList.remove('orient-bottom');
+        island.classList.add('orient-top');
       } else {
-        // Left Orientation
-        island.classList.remove('orient-right');
-        island.classList.add('orient-left');
-        
-        // Switch to LEFT positioning if not dragging
-        if (!this.activeDrag) {
-             island.style.right = 'auto';
-             island.style.left = `${currentLeft}px`;
-        }
-      }
-    }
-
-    updateOrientation(currentLeft, containerWidth) {
-      if (!this.shadowRoot) return;
-      const island = this.shadowRoot.querySelector('.kairos-island-container');
-      if (!island) return;
-
-      const middle = containerWidth / 2;
-
-      if (currentLeft > middle) {
-        island.classList.remove('orient-left');
-        island.classList.add('orient-right');
-      } else {
-        island.classList.remove('orient-right');
-        island.classList.add('orient-left');
+        // Default (center or top): note appears below orb
+        island.classList.remove('orient-top');
+        island.classList.add('orient-bottom');
       }
     }
 
@@ -1177,16 +1197,13 @@
       // Check if video element changed, if so, attach listeners
       if (video && video !== this.videoElement) {
         this.videoElement = video;
-        // Remove old listener if exists (not tracking here, but safe to add new)
-        // Ideally we track to remove, but for MVP just adding is okay as long as we don't leak too many.
-        // Better: just add 'play' listener that calls a bound function.
         video.addEventListener('play', () => {
           if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
             this.closeNoteInput();
           }
         });
       }
-      this.videoElement = video; // Store reference
+      this.videoElement = video;
 
       this.overlayElement.style.top = `${rect.top}px`;
       this.overlayElement.style.left = `${rect.left}px`;
@@ -1197,6 +1214,91 @@
       if (this.isActive && this.progressBar && video && video.duration) {
         const progress = (video.currentTime / video.duration) * 100;
         this.progressBar.style.width = `${progress}%`;
+      }
+
+      // Enforce island bounds within video area
+      this.enforceIslandBounds(rect.width, rect.height);
+    }
+
+    /**
+     * Enforces that the entire island (orb + note) stays within video boundaries.
+     * Dynamically adjusts note alignment based on orb position.
+     * Called on every frame update to handle any state changes.
+     */
+    enforceIslandBounds(containerWidth, containerHeight) {
+      if (this.activeDrag) return; // Skip during active drag
+
+      const island = this.shadowRoot?.querySelector('.kairos-island-container');
+      const orb = this.shadowRoot?.querySelector('.kairos-orb');
+      const noteWrapper = this.shadowRoot?.querySelector('.kairos-note-wrapper');
+      if (!island || !orb) return;
+
+      // Safety margins to avoid video controls
+      const BOTTOM_SAFE_MARGIN = 80; // Avoid progress bar area
+
+      // Only adjust position if island has been positioned (dragged at least once)
+      if (island.classList.contains('positioned')) {
+        const orbRect = orb.getBoundingClientRect();
+        const overlayRect = this.overlayElement.getBoundingClientRect();
+
+        // Get orb position relative to overlay
+        const orbLeft = orbRect.left - overlayRect.left;
+        const orbTop = orbRect.top - overlayRect.top;
+        const orbWidth = orb.offsetWidth;
+        const orbHeight = orb.offsetHeight;
+
+        // Calculate max positions for orb (with bottom safety margin)
+        const maxLeft = containerWidth - orbWidth;
+        const maxTop = containerHeight - orbHeight - BOTTOM_SAFE_MARGIN;
+
+        // Check if orb needs repositioning
+        let newLeft = orbLeft;
+        let newTop = orbTop;
+        let needsAdjust = false;
+
+        if (orbLeft < 0) { newLeft = 0; needsAdjust = true; }
+        if (orbLeft > maxLeft) { newLeft = maxLeft; needsAdjust = true; }
+        if (orbTop < 0) { newTop = 0; needsAdjust = true; }
+        if (orbTop > maxTop) { newTop = maxTop; needsAdjust = true; }
+
+        if (needsAdjust) {
+          island.style.left = `${newLeft}px`;
+          island.style.top = `${newTop}px`;
+        }
+
+        // Update note alignment based on orb position
+        this.updateNoteAlignment(newLeft, containerWidth, noteWrapper);
+      }
+    }
+
+    /**
+     * Updates note wrapper alignment based on orb horizontal position.
+     * Ensures note stays within video bounds.
+     */
+    updateNoteAlignment(orbLeft, containerWidth, noteWrapper) {
+      if (!noteWrapper) return;
+
+      const orbWidth = 48; // Collapsed orb width
+      const noteWidth = 320;
+      const centerOffset = (noteWidth - orbWidth) / 2; // 136px
+
+      // Calculate where note edges would be with different alignments
+      const noteLeftIfCentered = orbLeft - centerOffset;
+      const noteRightIfCentered = orbLeft + orbWidth + centerOffset;
+
+      // Remove existing alignment classes
+      noteWrapper.classList.remove('align-left', 'align-center', 'align-right');
+
+      // Determine best alignment
+      if (noteLeftIfCentered < 0) {
+        // Too close to left edge - align left
+        noteWrapper.classList.add('align-left');
+      } else if (noteRightIfCentered > containerWidth) {
+        // Too close to right edge - align right
+        noteWrapper.classList.add('align-right');
+      } else {
+        // Enough space - center align
+        noteWrapper.classList.add('align-center');
       }
     }
 
@@ -1298,14 +1400,18 @@
     }
 
     /**
-     * Handles keydown events in the note input
+     * Handles keydown events in the note input.
+     * Enter: New line (default textarea behavior)
+     * Cmd/Ctrl+Enter: Save note
+     * Escape: Cancel and close
      */
     handleNoteKeydown(e) {
       // Aggressively prevent YouTube/Bilibili shortcuts
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
         this.saveNote();
       } else if (e.key === 'Escape') {
         this.closeNoteInput();

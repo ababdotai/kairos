@@ -105,20 +105,29 @@
         }
         return null;
       } else if (url.includes('bilibili.com/video')) {
-        // Bilibili video page - try multiple selectors for right sidebar
-        const selectors = [
-          '.right-container-inner',      // New layout inner container
-          '.right-container',            // New layout container
-          '#reco_list',                  // Recommended list
-          '.video-sections-content-list' // Video sections
-        ];
+        // Bilibili video page - insert after UP info, before danmuku
+        // Structure: .right-container-inner > .up-panel-container > #danmukuBox
+        // We want to insert after .up-panel-container
 
-        for (const selector of selectors) {
-          const el = document.querySelector(selector);
-          if (el && el.offsetParent !== null) {
-            return el;
-          }
+        const upPanel = document.querySelector('.up-panel-container');
+        if (upPanel && upPanel.parentElement) {
+          // Return special object for "insert after" behavior
+          return { insertAfter: upPanel };
         }
+
+        // Fallback: insert before #danmukuBox
+        const danmuku = document.querySelector('#danmukuBox');
+        if (danmuku && danmuku.parentElement) {
+          return { insertBefore: danmuku, container: danmuku.parentElement };
+        }
+
+        // Last fallback: just use right-container-inner
+        const rightContainer = document.querySelector('.right-container-inner') ||
+                               document.querySelector('.right-container');
+        if (rightContainer) {
+          return rightContainer;
+        }
+
         return null;
       }
 
@@ -158,8 +167,20 @@
       this.injectStyles();
       this.container = this.buildPanel();
 
-      // Insert as first child of target
-      target.insertBefore(this.container, target.firstChild);
+      // Handle different injection strategies
+      if (target.insertAfter) {
+        // Insert after a specific element (Bilibili: after UP panel)
+        target.insertAfter.parentElement.insertBefore(
+          this.container,
+          target.insertAfter.nextSibling
+        );
+      } else if (target.insertBefore && target.container) {
+        // Insert before a specific element
+        target.container.insertBefore(this.container, target.insertBefore);
+      } else {
+        // Default: insert as first child
+        target.insertBefore(this.container, target.firstChild);
+      }
 
       this.bindEvents();
       this.loadNotes();
@@ -896,10 +917,11 @@
                     el.querySelector?.('#secondary, #related');
                 // Check if Bilibili container was added
                 const isBilibiliContainer = el.id === 'reco_list' ||
+                    el.id === 'danmukuBox' ||
                     el.classList?.contains('right-container') ||
                     el.classList?.contains('right-container-inner') ||
-                    el.classList?.contains('video-sections-content-list') ||
-                    el.querySelector?.('#reco_list, .right-container, .right-container-inner');
+                    el.classList?.contains('up-panel-container') ||
+                    el.querySelector?.('.up-panel-container, #danmukuBox, .right-container-inner');
 
                 if ((isYouTubeContainer || isBilibiliContainer) && !panelExists) {
                   pendingReinject = true;

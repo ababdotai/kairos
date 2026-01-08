@@ -107,10 +107,18 @@
         cursor: grabbing;
       }
 
-      /* Show handle when dragging */
+      /* Show handle when hovering collapsed orb or dragging */
+      .kairos-orb:not(.expanded):hover .kairos-drag-handle,
       .kairos-island-container.dragging .kairos-drag-handle {
         width: 24px;
         opacity: 1;
+      }
+
+      /* Collapsed orb expands slightly on hover to show drag handle */
+      .kairos-orb:not(.expanded):hover {
+        width: 72px;
+        justify-content: flex-start;
+        padding-left: 4px;
       }
 
       /* Orb: The Anchor */

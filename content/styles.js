@@ -107,12 +107,10 @@
         cursor: grabbing;
       }
 
-      /* Show handle when hovering Orb or Dragging */
-      .kairos-orb:hover .kairos-drag-handle,
+      /* Show handle when dragging */
       .kairos-island-container.dragging .kairos-drag-handle {
         width: 24px;
         opacity: 1;
-        margin-right: auto;
       }
 
       /* Orb: The Anchor */
@@ -137,25 +135,33 @@
         user-select: none;
       }
 
-      /* Orb Hover Expansion */
-      .kairos-island-container:not(.dragging) .kairos-orb:hover,
-      .kairos-island-container.dragging .kairos-orb {
-        width: 145px;
+      /* Orb Expanded State (click to toggle) */
+      .kairos-orb.expanded {
+        width: auto;
+        min-width: 130px;
         background: rgba(20, 20, 20, 0.55);
-        justify-content: flex-start;
-        padding-left: 10px;
-        padding-right: 14px;
+        justify-content: center;
+        padding: 0 8px;
+        gap: 0;
       }
 
-      /* Ensure label shows when dragging too */
-      .kairos-island-container.dragging .kairos-orb .kairos-orb-label {
+      /* Ensure menu shows when expanded */
+      .kairos-orb.expanded .kairos-orb-menu {
         opacity: 1;
-        transform: scale(1);
-        max-width: 150px;
-        margin-left: 12px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
+        max-width: 200px;
+        pointer-events: auto;
+      }
+
+      /* Hide icon in expanded state */
+      .kairos-orb.expanded .kairos-orb-icon {
+        display: none;
+      }
+
+      /* Show drag handle when expanded */
+      .kairos-orb.expanded .kairos-drag-handle {
+        width: 24px;
+        opacity: 1;
+        margin-right: 0;
       }
 
       /* Note positioning for vertical orientations */
@@ -222,51 +228,61 @@
         filter: drop-shadow(0 0 2px #00f2ff);
       }
 
-      .kairos-orb-label {
-        margin-left: 0;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-        font-size: 13px;
-        font-weight: 600;
-        white-space: nowrap;
-        opacity: 0;
-        transform: scale(0.9);
-        transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        max-width: 0;
-      }
-
-      .kairos-orb:hover .kairos-orb-label {
-        opacity: 1;
-        transform: scale(1);
-        max-width: 150px;
-        margin-left: 12px;
+      /* Orb Menu Container (hidden by default) */
+      .kairos-orb-menu {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 4px;
+        opacity: 0;
+        max-width: 0;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        pointer-events: none;
       }
 
-      /* Power Off Button (Icon Style) */
-      .kairos-deactivate-btn {
-        width: 24px;
-        height: 24px;
+      /* Orb Menu Button */
+      .kairos-orb-btn {
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
-        background: rgba(255, 50, 50, 0.2);
-        color: #ff6b6b;
-        border: 1px solid rgba(255, 50, 50, 0.3);
-        transition: all 0.2s;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        border: none;
         cursor: pointer;
-        pointer-events: auto;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
       }
 
-      .kairos-deactivate-btn:hover {
-        background: rgba(255, 50, 50, 0.4);
+      .kairos-orb-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
         color: white;
-        border-color: rgba(255, 50, 50, 0.6);
         transform: scale(1.1);
+      }
+
+      /* Pin button special styling */
+      .kairos-orb-btn.pin-btn {
+        background: rgba(0, 242, 255, 0.2);
+        color: #00f2ff;
+      }
+
+      .kairos-orb-btn.pin-btn:hover {
+        background: rgba(0, 242, 255, 0.4);
+        color: white;
+        box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
+      }
+
+      /* Orb Icon Button (center, for collapsing) */
+      .kairos-orb-btn.orb-icon-btn {
+        background: transparent;
+      }
+
+      .kairos-orb-btn.orb-icon-btn img {
+        width: 24px;
+        height: 24px;
       }
 
       .kairos-note-icon { display: none; }

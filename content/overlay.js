@@ -115,7 +115,7 @@
       // Floating orb
       const orb = document.createElement('div');
       orb.className = 'kairos-orb';
-      orb.title = 'Activate Kairos';
+      orb.title = 'Click to expand menu';
 
       const iconUrl = chrome.runtime.getURL('icons/icon.png');
       const iconImg = document.createElement('img');
@@ -123,32 +123,46 @@
       iconImg.className = 'kairos-orb-icon';
       iconImg.draggable = false;
 
-      const labelSpan = document.createElement('span');
-      labelSpan.className = 'kairos-orb-label';
+      // Expanded Menu Container (Move - Orb - Pin)
+      const orbMenu = document.createElement('div');
+      orbMenu.className = 'kairos-orb-menu';
 
-      const labelText = document.createElement('span');
-      labelText.textContent = '📌';
-      labelText.title = 'Capture Moment';
-      this.orbLabelText = labelText;
+      // Move Button (drag handle styled as button)
+      orb.appendChild(dragHandle);
 
-      const deactivateBtn = document.createElement('div');
-      deactivateBtn.className = 'kairos-deactivate-btn';
-      deactivateBtn.textContent = '✕';
-      deactivateBtn.title = 'Deactivate Kairos';
-      deactivateBtn.addEventListener('click', (e) => {
+      // Center Orb Icon Button (click to collapse)
+      const orbIconBtn = document.createElement('button');
+      orbIconBtn.className = 'kairos-orb-btn orb-icon-btn';
+      orbIconBtn.title = 'Click to collapse';
+      const orbIconImg = document.createElement('img');
+      orbIconImg.src = iconUrl;
+      orbIconImg.draggable = false;
+      orbIconBtn.appendChild(orbIconImg);
+      orbIconBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.handleDeactivate();
+        this.collapseOrb();
       });
 
-      labelSpan.appendChild(labelText);
-      labelSpan.appendChild(deactivateBtn);
+      // Pin Button
+      const pinBtn = document.createElement('button');
+      pinBtn.className = 'kairos-orb-btn pin-btn';
+      pinBtn.innerHTML = '📌';
+      pinBtn.title = 'Capture Moment';
+      pinBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handlePinCapture();
+      });
 
-      orb.appendChild(dragHandle);
+      orbMenu.appendChild(orbIconBtn);
+      orbMenu.appendChild(pinBtn);
+
       orb.appendChild(iconImg);
-      orb.appendChild(labelSpan);
+      orb.appendChild(orbMenu);
 
       orb.addEventListener('click', (e) => {
-        if (!this.isDragging) this.handleOrbClick();
+        if (!this.isDragging && !orb.classList.contains('expanded')) {
+          this.expandOrb();
+        }
       });
 
       // Spotlight Note Input
@@ -219,7 +233,7 @@
       this.overlayElement = overlay;
       this.dragHandle = dragHandle;
       this.orbElement = orb;
-      this.orbLabel = labelSpan;
+      this.orbMenu = orbMenu;
       this.timeline = timeline;
       this.progressBar = progressBar;
       this.noteWrapper = noteWrapper;
@@ -474,31 +488,93 @@
     }
 
     /**
-     * Handles Deactivation (Power Off)
+     * Expands the Orb to show menu (activates Kairos)
      */
-    handleDeactivate() {
-      if (!this.isActive) return;
+    expandOrb() {
+      if (!this.orbElement || !this.effectElements) return;
 
-      log('Deactivating Kairos...');
+      log('Expanding Orb (Activating Kairos)...');
+      const { flash, ripple, glowBorder } = this.effectElements;
+
+      this.isActive = true;
+      this.orbElement.classList.add('expanded');
+      this.orbElement.classList.add('active');
+      this.orbElement.title = 'Kairos Active';
+
+      if (this.overlayElement) this.overlayElement.classList.add('active');
+
+      // Animation effects
+      flash.classList.remove('animating');
+      ripple.classList.remove('animating');
+      ripple.classList.remove('reversing');
+      glowBorder.classList.remove('active');
+
+      void flash.offsetWidth;
+
+      flash.classList.add('animating');
+      ripple.classList.add('animating');
+      glowBorder.classList.add('active');
+    }
+
+    /**
+     * Collapses the Orb to single icon (deactivates Kairos)
+     */
+    collapseOrb() {
+      if (!this.orbElement || !this.effectElements) return;
+
+      log('Collapsing Orb (Deactivating Kairos)...');
       const { ripple, glowBorder } = this.effectElements;
 
       this.isActive = false;
+      this.orbElement.classList.remove('expanded');
+      this.orbElement.classList.remove('active');
+      this.orbElement.title = 'Click to expand menu';
 
       glowBorder.classList.remove('active');
       if (this.overlayElement) this.overlayElement.classList.remove('active');
 
       this.closeNoteInput(true);
 
-      if (this.orbElement) {
-        this.orbElement.classList.remove('active');
-        this.orbElement.title = 'Activate Kairos';
-      }
-      if (this.orbLabelText) this.orbLabelText.textContent = '📌';
-
+      // Reverse ripple animation
       ripple.classList.remove('animating');
       ripple.classList.remove('reversing');
       void ripple.offsetWidth;
       ripple.classList.add('reversing');
+    }
+
+    /**
+     * Handles Pin capture button click
+     */
+    async handlePinCapture() {
+      if (!this.videoElement) return;
+
+      log('Capturing current moment...');
+      const { flash } = this.effectElements;
+
+      const duration = this.videoElement.duration;
+      if (!duration) return;
+
+      const percentage = (this.videoElement.currentTime / duration) * 100;
+
+      // Visual Feedback
+      flash.classList.remove('animating');
+      void flash.offsetWidth;
+      flash.classList.add('animating');
+
+      const pinData = this.createPin(percentage);
+
+      // Capture Frame
+      try {
+        const screenshot = await this.captureEngine.captureFrame(this.videoElement);
+        pinData.isAnalyzing = true;
+        this.openNoteInput(pinData);
+
+        // Request AI Analysis
+        this.requestAIAnalysis(pinData, screenshot);
+      } catch (err) {
+        log('Capture failed:', err);
+        this.openNoteInput(pinData);
+      }
     }
 
     /**
@@ -514,71 +590,6 @@
         this.saveNote();
       } else if (e.key === 'Escape') {
         this.closeNoteInput();
-      }
-    }
-
-    /**
-     * Handles click on the Orb
-     */
-    async handleOrbClick() {
-      if (!this.effectElements) {
-        log('Animation elements missing.');
-        return;
-      }
-
-      const { flash, ripple, glowBorder } = this.effectElements;
-
-      if (!this.isActive) {
-        log('Activating Kairos (Apple Intelligence style)...');
-        this.isActive = true;
-
-        flash.classList.remove('animating');
-        ripple.classList.remove('animating');
-        ripple.classList.remove('reversing');
-        glowBorder.classList.remove('active');
-
-        if (this.orbElement) {
-          this.orbElement.classList.add('active');
-          this.orbElement.title = 'Capture Moment';
-        }
-        if (this.orbLabelText) this.orbLabelText.textContent = '📌';
-
-        if (this.overlayElement) this.overlayElement.classList.add('active');
-
-        void flash.offsetWidth;
-
-        flash.classList.add('animating');
-        ripple.classList.add('animating');
-        glowBorder.classList.add('active');
-      } else {
-        log('Capturing current moment...');
-
-        if (!this.videoElement) return;
-
-        const duration = this.videoElement.duration;
-        if (!duration) return;
-
-        const percentage = (this.videoElement.currentTime / duration) * 100;
-
-        // Visual Feedback
-        flash.classList.remove('animating');
-        void flash.offsetWidth;
-        flash.classList.add('animating');
-
-        const pinData = this.createPin(percentage);
-        
-        // 1. Capture Frame Immediately
-        try {
-          const screenshot = await this.captureEngine.captureFrame(this.videoElement);
-          pinData.isAnalyzing = true;
-          this.openNoteInput(pinData);
-
-          // 2. Request AI Analysis
-          this.requestAIAnalysis(pinData, screenshot);
-        } catch (err) {
-          log('Capture failed:', err);
-          this.openNoteInput(pinData);
-        }
       }
     }
 

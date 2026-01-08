@@ -207,10 +207,31 @@
       noteWrapper.appendChild(notePreview);
       noteWrapper.appendChild(noteInput);
 
-      const noteHint = document.createElement('div');
-      noteHint.className = 'kairos-note-hint';
-      noteHint.textContent = '⌘↵ Save  ⎋ Cancel';
-      noteWrapper.appendChild(noteHint);
+      // Action buttons container (Save & Cancel)
+      const noteActions = document.createElement('div');
+      noteActions.className = 'kairos-note-actions';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'kairos-note-action-btn save-btn';
+      saveBtn.innerHTML = '✓';
+      saveBtn.title = 'Save (⌘↵)';
+      saveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.saveNote();
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'kairos-note-action-btn cancel-btn';
+      cancelBtn.innerHTML = '✕';
+      cancelBtn.title = 'Cancel (⎋)';
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.cancelNote();
+      });
+
+      noteActions.appendChild(saveBtn);
+      noteActions.appendChild(cancelBtn);
+      noteWrapper.appendChild(noteActions);
 
       island.appendChild(orb);
       island.appendChild(noteWrapper);
@@ -589,7 +610,8 @@
         e.preventDefault();
         this.saveNote();
       } else if (e.key === 'Escape') {
-        this.closeNoteInput();
+        e.preventDefault();
+        this.cancelNote();
       }
     }
 
@@ -725,7 +747,7 @@
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            this.closeNoteInput();
+            this.cancelNote();
           }
         };
         document.addEventListener('keydown', this.escListener, true);
@@ -784,7 +806,8 @@
       const pinData = {
         ...noteData,
         note: noteData.content,
-        element: pin
+        element: pin,
+        savedToStorage: true
       };
 
       this.pins.push(pinData);
@@ -833,6 +856,7 @@
         try {
           await this.storage.saveNote(noteRecord);
           this.activePin.id = noteRecord.id;
+          this.activePin.savedToStorage = true;
           log('Note persisted');
 
           // Notify SidePanel to add the new note
@@ -874,6 +898,32 @@
         document.removeEventListener('click', this.clickOutsideListener, true);
         this.clickOutsideListener = null;
       }
+    }
+
+    /**
+     * Cancels the current note without saving, removes unsaved pin
+     */
+    cancelNote() {
+      if (this.activePin) {
+        // If this is a new unsaved pin (no id saved to storage yet), remove it
+        if (!this.activePin.savedToStorage) {
+          // Remove pin element from timeline
+          if (this.activePin.element && this.activePin.element.parentNode) {
+            this.activePin.element.parentNode.removeChild(this.activePin.element);
+          }
+          // Remove from pins array
+          const index = this.pins.indexOf(this.activePin);
+          if (index > -1) {
+            this.pins.splice(index, 1);
+          }
+          log('Cancelled: Pin removed');
+        } else {
+          log('Cancelled: Existing pin unchanged');
+        }
+      }
+
+      this.noteInput.value = '';
+      this.closeNoteInput(true);
     }
 
     /**

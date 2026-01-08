@@ -375,25 +375,52 @@
       
       .hidden { display: none !important; }
 
-      /* Input Hint: Now outside the box */
-      .kairos-note-hint {
-        position: absolute;
-        right: 0;
-        bottom: -20px; /* Position below */
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 10px;
-        font-weight: 500;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-        white-space: nowrap;
-        pointer-events: none;
-        opacity: 0;
-        transition: all 0.3s ease 0.1s;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      /* Note Action Buttons (Save & Cancel) */
+      .kairos-note-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 8px 8px 0;
+        flex-shrink: 0;
       }
 
-      /* Show hint when active */
-      .kairos-note-wrapper.active .kairos-note-hint {
-        opacity: 1;
+      .kairos-note-action-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .kairos-note-action-btn:hover {
+        transform: scale(1.1);
+      }
+
+      .kairos-note-action-btn.save-btn {
+        background: rgba(0, 200, 100, 0.2);
+        color: #00c864;
+      }
+
+      .kairos-note-action-btn.save-btn:hover {
+        background: rgba(0, 200, 100, 0.4);
+        color: white;
+      }
+
+      .kairos-note-action-btn.cancel-btn {
+        background: rgba(255, 80, 80, 0.2);
+        color: #ff6b6b;
+      }
+
+      .kairos-note-action-btn.cancel-btn:hover {
+        background: rgba(255, 80, 80, 0.4);
+        color: white;
       }
 
       /* Ceiling Timeline: Now only a viewer */

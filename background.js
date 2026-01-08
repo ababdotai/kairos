@@ -116,7 +116,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * @returns {Promise<Object>} AI Response
  */
 async function callGeminiAI(payload) {
-  const { image, text, videoTitle, promptType } = payload;
+  const { image, context, videoTitle, promptType } = payload;
   
   // 1. Get API Key from storage
   const settings = await chrome.storage.sync.get(['geminiApiKey']);
@@ -127,23 +127,21 @@ async function callGeminiAI(payload) {
   }
 
   // 2. Prepare the prompt
-  // promptType can be 'auto' (automatic discovery) or 'manual' (user clicked Pin)
   let systemPrompt = "You are Kairos, a minimalist AI video notetaker. ";
-  systemPrompt += "Analyze the video frame and context. Create a VERY CONCISE note. ";
+  systemPrompt += "Analyze the video frame (visuals) and the recent transcript (audio context) to create a VERY CONCISE note. ";
   systemPrompt += "Rules:\n";
+  systemPrompt += "- Synthesize the visual information on the slide with the speaker's explanation.\n";
   systemPrompt += "- Limit to 1-3 short bullet points or one single sentence.\n";
   systemPrompt += "- Use Markdown (bold key terms).\n";
   systemPrompt += "- Focus only on high-value info (code, facts, definitions).\n";
   systemPrompt += "- No conversational filler (no 'This video explains...').";
   
   if (videoTitle) systemPrompt += `\nVideo Title: ${videoTitle}`;
+  if (context) systemPrompt += `\nTranscript (last 60s): "${context}"`;
 
-  const userPrompt = text 
-    ? `Context: "${text}"\n\nGenerate note:`
-    : "Summarize this moment in 1-2 lines:";
+  const userPrompt = "Generate note for this moment:";
 
   // 3. Construct Gemini API Request
-  // Using gemini-3-flash-preview as requested
   const MODEL_ID = 'gemini-3-flash-preview';
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
 

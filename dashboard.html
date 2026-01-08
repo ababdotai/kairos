@@ -344,6 +344,73 @@
             color: var(--text);
         }
 
+        /* Note Extras (Screenshot & Context) */
+        details.note-extras {
+            margin-top: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+
+        details.note-extras summary {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 500;
+            user-select: none;
+            outline: none;
+            transition: color 0.2s;
+        }
+
+        details.note-extras summary:hover {
+            color: var(--text);
+        }
+
+        .extras-content {
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .note-screenshot-container {
+            max-width: 100%;
+        }
+
+        .note-screenshot {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            object-fit: contain;
+        }
+
+        .note-context-block {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .note-context-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            color: var(--accent);
+            opacity: 0.8;
+        }
+
+        .note-context-text {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ddd;
+        }
+
         .status-message {
             margin-top: 12px;
             font-size: 14px;
@@ -423,14 +490,15 @@
                         <input type="radio" name="provider" value="gemini" checked>
                         <div class="radio-content">
                             <span class="radio-title">Bring Your Own Key (BYOK)</span>
-                            <span class="radio-desc">Use your own Google Gemini API Key. Free tier available.</span>
+                            <span class="radio-desc">Use your own Google Gemini API Key, local storage&no sync. Free
+                                tier available.</span>
                         </div>
                     </label>
                 </div>
             </div>
 
             <div class="settings-section" id="geminiConfig">
-                <h3>Gemini API Key</h3>
+                <h3></h3>
                 <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 12px;">
                     Get your free API key from <a href="https://aistudio.google.com/" target="_blank"
                         style="color: var(--accent);">Google AI Studio</a>.

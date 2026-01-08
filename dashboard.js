@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function switchTab(tab) {
         currentTab = tab;
-        
+
         // Update Nav UI
         navItems.forEach(item => {
             if (item.dataset.tab === tab) item.classList.add('active');
@@ -65,15 +65,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function saveSettings() {
         const apiKey = apiKeyInput.value.trim();
-        
+
         if (!apiKey) {
             showStatus('Please enter a valid API Key', 'error');
             return;
         }
 
         if (!apiKey.startsWith('AIza')) {
-             showStatus('Warning: Key typically starts with "AIza". Check if correct.', 'error');
-             // We don't block it, just warn
+            showStatus('Warning: Key typically starts with "AIza". Check if correct.', 'error');
+            // We don't block it, just warn
         }
 
         chrome.storage.sync.set({ geminiApiKey: apiKey }, () => {
@@ -171,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="timestamp-dot"></div>
                         <span class="timestamp">${note.timeLabel}</span>
                         <div class="content">${Kairos.SimpleMarkdown.parse(note.content)}</div>
+                        ${renderExtras(note)}
                     </div>
                 `).join('')}
             </div>
@@ -180,18 +181,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('btnDelete').onclick = () => deleteVideoNotes(video.videoId, video.notes);
     }
 
+    function renderExtras(note) {
+        if (!note.imageUrl && !note.context) return '';
+
+        let html = '<details class="note-extras"><summary>Referenced Context</summary><div class="extras-content">';
+
+        if (note.imageUrl) {
+            html += `
+                <div class="note-screenshot-container">
+                    <div class="note-context-label">Visual Snapshot</div>
+                    <img src="${note.imageUrl}" class="note-screenshot" loading="lazy" alt="Visual Snapshot">
+                </div>
+            `;
+        }
+
+        if (note.context) {
+            html += `
+                <div class="note-context-block">
+                    <div class="note-context-label">Audio Transcript</div>
+                    <div class="note-context-text">"${note.context}"</div>
+                </div>
+            `;
+        }
+
+        html += '</div></details>';
+        return html;
+    }
+
     function exportMarkdown(video) {
         const date = new Date().toLocaleDateString();
         let md = `# ${video.title}\n\n`;
         md += `**Source**: [${video.url}](${video.url})\n`;
         md += `**Captured**: ${date}\n\n`;
         md += `---\n\n`;
-        
+
         video.notes.forEach(note => {
             md += `### ${note.timeLabel}\n`;
             md += `${note.content}\n\n`;
+
+            if (note.context) {
+                md += `> **Transcript**: "${note.context}"\n\n`;
+            }
         });
-        
+
         const blob = new Blob([md], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

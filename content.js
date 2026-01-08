@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const { CONFIG, log, OverlayManager, VideoTracker, SidePanelManager } = window.Kairos;
+  const { CONFIG, log, OverlayManager, VideoTracker, SidePanelManager, SubtitleManager } = window.Kairos;
 
   /**
    * Main application initialization
@@ -18,9 +18,14 @@
     const sidePanelManager = new SidePanelManager();
     await sidePanelManager.init();
 
+    // Create subtitle manager
+    const subtitleManager = new SubtitleManager();
+    subtitleManager.init();
+
     // Create overlay manager with side panel reference
     const overlayManager = new OverlayManager();
     overlayManager.sidePanel = sidePanelManager;
+    overlayManager.subtitleManager = subtitleManager;
     await overlayManager.init();
 
     // Create video tracker

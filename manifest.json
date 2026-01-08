@@ -23,6 +23,7 @@
         "content/markdown.js",
         "content/tracker.js",
         "content/capture.js",
+        "content/subtitles.js",
         "content/styles.js",
         "content/overlay.js",
         "content/sidepanel.js",

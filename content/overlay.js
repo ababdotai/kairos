@@ -587,6 +587,7 @@
       // Capture Frame
       try {
         const screenshot = await this.captureEngine.captureFrame(this.videoElement);
+        pinData.imageUrl = screenshot; // Store screenshot for persistence
         pinData.isAnalyzing = true;
         this.openNoteInput(pinData);
 
@@ -659,11 +660,21 @@
     async requestAIAnalysis(pinData, screenshot) {
       const videoInfo = Utils.getVideoInfo();
       
+      let context = '';
+      if (this.subtitleManager) {
+        context = this.subtitleManager.getContext();
+        log('Including subtitle context length:', context.length);
+      }
+      
+      // Store context for persistence
+      pinData.context = context;
+
       chrome.runtime.sendMessage({
         type: 'ANALYZE_FRAME',
         payload: {
           image: screenshot,
           videoTitle: videoInfo.title,
+          context: context,
           promptType: 'manual'
         }
       }, (response) => {
@@ -850,6 +861,8 @@
           timestamp: this.activePin.timestamp,
           timeLabel: Utils.formatTime(this.activePin.timestamp),
           percentage: this.activePin.percentage,
+          imageUrl: this.activePin.imageUrl || null,
+          context: this.activePin.context || null,
           createdAt: this.activePin.createdAt || Date.now()
         };
 

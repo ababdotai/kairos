@@ -88,7 +88,7 @@
 
       // The Intelligent Island Container (Orb + Note)
       const island = document.createElement('div');
-      island.className = 'kairos-island-container orient-bottom';
+      island.className = 'kairos-island-container orient-top';
 
       // Initialize Drag Offsets
       this.xOffset = 0;

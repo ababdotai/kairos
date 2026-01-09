@@ -69,14 +69,15 @@
         bottom: auto;
       }
 
-      /* Bottom orientation: note appears below orb */
-      .kairos-island-container.orient-bottom {
-        flex-direction: column;
+      /* Note positioning relative to orb */
+      .kairos-island-container.orient-bottom .kairos-note-wrapper {
+        top: calc(100% + 12px);
+        bottom: auto;
       }
 
-      /* Top orientation: note appears above orb */
-      .kairos-island-container.orient-top {
-        flex-direction: column-reverse;
+      .kairos-island-container.orient-top .kairos-note-wrapper {
+        bottom: calc(100% + 12px);
+        top: auto;
       }
 
       .kairos-note-wrapper.active {
@@ -171,31 +172,22 @@
         margin-right: 0;
       }
 
-      /* Note positioning for vertical orientations */
-      .kairos-island-container.orient-bottom .kairos-note-wrapper {
-        margin-top: 12px;
-      }
-
-      .kairos-island-container.orient-top .kairos-note-wrapper {
-        margin-bottom: 12px;
-      }
-
       /* Note alignment classes - dynamically applied */
       .kairos-note-wrapper.align-center {
-        margin-left: calc((48px - 320px) / 2);
+        left: calc((48px - 320px) / 2);
       }
 
       .kairos-note-wrapper.align-left {
-        margin-left: 0;
+        left: 0;
       }
 
       .kairos-note-wrapper.align-right {
-        margin-left: calc(48px - 320px);
+        left: calc(48px - 320px);
       }
 
-      /* Note Wrapper */
+      /* Note Wrapper - absolutely positioned relative to island */
       .kairos-note-wrapper {
-        position: relative;
+        position: absolute;
         width: 320px;
         max-height: 0;
         background: rgba(25, 25, 25, 0.85);
@@ -207,8 +199,7 @@
         transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         display: flex;
         align-items: center;
-        margin-top: 0;
-        overflow: visible; /* Changed to visible to allow hints outside */
+        overflow: visible;
       }
 
       .kairos-note-wrapper.active {

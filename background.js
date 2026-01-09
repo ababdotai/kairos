@@ -117,17 +117,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function callGeminiAI(payload) {
   const { image, context, videoTitle, promptType } = payload;
-  
+
   // 1. Get API Key from storage
   const settings = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = settings.geminiApiKey;
-  
+
   if (!apiKey) {
     throw new Error('Gemini API Key not found. Please configure it in Settings.');
   }
 
   // 2. Prepare the prompt
-  let systemPrompt = "You are Kairos, a minimalist AI video notetaker. ";
+  let systemPrompt = "You are Kairos, a minimalist AI video secretary. ";
   systemPrompt += "Analyze the video frame (visuals) and the recent transcript (audio context) to create a VERY CONCISE note. ";
   systemPrompt += "Rules:\n";
   systemPrompt += "- Synthesize the visual information on the slide with the speaker's explanation.\n";
@@ -135,7 +135,7 @@ async function callGeminiAI(payload) {
   systemPrompt += "- Use Markdown (bold key terms).\n";
   systemPrompt += "- Focus only on high-value info (code, facts, definitions).\n";
   systemPrompt += "- No conversational filler (no 'This video explains...').";
-  
+
   if (videoTitle) systemPrompt += `\nVideo Title: ${videoTitle}`;
   if (context) systemPrompt += `\nTranscript (last 60s): "${context}"`;
 
@@ -184,7 +184,7 @@ async function callGeminiAI(payload) {
   }
 
   const result = await response.json();
-  
+
   // Extract text from Gemini response structure
   try {
     const aiText = result.candidates[0].content.parts[0].text;

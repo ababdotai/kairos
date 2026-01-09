@@ -1,6 +1,6 @@
 # Kairos
 
-> **Your AI notetaker while watching videos.**
+> **Your AI secretary while watching videos.**
 
 如何让观看视频学习的过程更有价值和互动?
 

@@ -887,7 +887,13 @@
       if (isEdit) {
         if (!this.clickOutsideListener) {
           this.clickOutsideListener = (e) => {
-            if (!this.noteWrapper.contains(e.target) && !e.target.classList.contains('kairos-pin')) {
+            // Use composedPath to correctly detect clicks inside Shadow DOM
+            const path = e.composedPath();
+            const clickedInsideNote = path.some(el =>
+              el === this.noteWrapper ||
+              (el.classList && el.classList.contains('kairos-pin'))
+            );
+            if (!clickedInsideNote) {
               this.saveNote();
             }
           };

@@ -580,29 +580,39 @@
 
     /**
      * Updates note wrapper alignment based on orb position
-     * @param {number} orbLeft - Orb left position
+     * @param {number} orbLeft - Orb left position in container
      * @param {number} containerWidth - Container width
      * @param {HTMLElement} noteWrapper - Note wrapper element
      */
     updateNoteAlignment(orbLeft, containerWidth, noteWrapper) {
       if (!noteWrapper) return;
 
-      const orbWidth = 48;
+      const orb = this.shadowRoot?.querySelector('.kairos-orb');
+      const orbWidth = orb ? orb.offsetWidth : 48;
       const noteWidth = 320;
-      const centerOffset = (noteWidth - orbWidth) / 2;
 
-      const noteLeftIfCentered = orbLeft - centerOffset;
-      const noteRightIfCentered = orbLeft + orbWidth + centerOffset;
+      // Calculate where note would be if centered on orb
+      const orbCenter = orbLeft + orbWidth / 2;
+      const noteLeftIfCentered = orbCenter - noteWidth / 2;
+      const noteRightIfCentered = noteLeftIfCentered + noteWidth;
 
-      noteWrapper.classList.remove('align-left', 'align-center', 'align-right');
+      let noteLeft;
 
       if (noteLeftIfCentered < 0) {
-        noteWrapper.classList.add('align-left');
+        // Left edge would go out of bounds - align left edges
+        noteLeft = 0;
       } else if (noteRightIfCentered > containerWidth) {
-        noteWrapper.classList.add('align-right');
+        // Right edge would go out of bounds - align right edges
+        noteLeft = orbLeft + orbWidth - noteWidth;
       } else {
-        noteWrapper.classList.add('align-center');
+        // Center note on orb
+        noteLeft = noteLeftIfCentered;
       }
+
+      // Convert to position relative to island container (which starts at orbLeft)
+      const relativeLeft = noteLeft - orbLeft;
+      noteWrapper.style.left = `${relativeLeft}px`;
+      noteWrapper.style.right = 'auto';
     }
 
     /**
@@ -844,6 +854,19 @@
       }
 
       this.noteWrapper.classList.add('active');
+
+      // Update note alignment based on current orb position
+      if (this.overlayElement) {
+        const island = this.shadowRoot?.querySelector('.kairos-island-container');
+        const orb = this.shadowRoot?.querySelector('.kairos-orb');
+        if (island && orb) {
+          const overlayRect = this.overlayElement.getBoundingClientRect();
+          const orbRect = orb.getBoundingClientRect();
+          const orbLeft = orbRect.left - overlayRect.left;
+          this.updateNoteAlignment(orbLeft, overlayRect.width, this.noteWrapper);
+        }
+      }
+
       if (this.isEditing) {
         this.noteInput.focus();
       }

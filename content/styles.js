@@ -172,19 +172,6 @@
         margin-right: 0;
       }
 
-      /* Note alignment classes - dynamically applied */
-      .kairos-note-wrapper.align-center {
-        left: calc((48px - 320px) / 2);
-      }
-
-      .kairos-note-wrapper.align-left {
-        left: 0;
-      }
-
-      .kairos-note-wrapper.align-right {
-        left: calc(48px - 320px);
-      }
-
       /* Note Wrapper - absolutely positioned relative to island */
       .kairos-note-wrapper {
         position: absolute;

@@ -23,17 +23,28 @@
      * @param {number} quality - JPEG quality (0 to 1)
      * @returns {Promise<string>} Base64 encoded image (JPEG)
      */
-    async captureFrame(video, quality = 0.8) {
+    async captureFrame(video, quality = 0.6) {
       if (!video || video.readyState < 2) {
         throw new Error('Video not ready for capture');
       }
 
-      // Set canvas dimensions to match video
-      this.canvas.width = video.videoWidth;
-      this.canvas.height = video.videoHeight;
+      // Calculate target dimensions (Max 1920 width)
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      const MAX_WIDTH = 1920;
+
+      if (width > MAX_WIDTH) {
+        const scale = MAX_WIDTH / width;
+        width = MAX_WIDTH;
+        height = Math.round(height * scale);
+      }
+
+      // Set canvas dimensions
+      this.canvas.width = width;
+      this.canvas.height = height;
 
       // Draw the current video frame to canvas
-      this.ctx.drawImage(video, 0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.drawImage(video, 0, 0, width, height);
 
       // Convert to base64
       // We use image/jpeg for smaller payload size compared to png

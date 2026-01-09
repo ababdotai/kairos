@@ -22,6 +22,9 @@
     const subtitleManager = new SubtitleManager();
     subtitleManager.init();
 
+    // Link subtitle manager to side panel
+    sidePanelManager.subtitleManager = subtitleManager;
+
     // Create overlay manager with side panel reference
     const overlayManager = new OverlayManager();
     overlayManager.sidePanel = sidePanelManager;

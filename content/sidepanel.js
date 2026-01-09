@@ -239,6 +239,16 @@
 
       const title = createElement('span', { className: 'kairos-sp-title', text: 'Kairos' });
       brand.appendChild(title);
+
+      // Subtitle Badge
+      const subBadge = createElement('span', { 
+        className: 'kairos-sp-subtitle-badge', 
+        text: 'CC',
+        title: 'Captions available for better AI notes'
+      });
+      brand.appendChild(subBadge);
+      this.elements.subBadge = subBadge;
+
       header.appendChild(brand);
 
       // Toggle button
@@ -414,6 +424,33 @@
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+        }
+
+        .kairos-sp-subtitle-badge {
+          font-size: 10px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          transition: all 0.3s ease;
+          display: none; /* Hidden by default */
+        }
+
+        .kairos-sp-subtitle-badge.available {
+          display: inline-block;
+          background: rgba(0, 242, 255, 0.05);
+          color: rgba(0, 242, 255, 0.6);
+          border-color: rgba(0, 242, 255, 0.2);
+        }
+
+        .kairos-sp-subtitle-badge.active {
+          background: rgba(0, 242, 255, 0.15);
+          color: #00f2ff;
+          border-color: rgba(0, 242, 255, 0.4);
+          box-shadow: 0 0 8px rgba(0, 242, 255, 0.2);
         }
 
         .kairos-sp-toggle {
@@ -674,6 +711,33 @@
       this.elements.dashboardBtn?.addEventListener('click', () => {
         chrome.runtime.sendMessage({ type: 'OPEN_DASHBOARD' });
       });
+
+      // Periodically update subtitle badge
+      setInterval(() => this.updateSubtitleBadge(), 3000);
+    }
+
+    /**
+     * Updates the subtitle badge state
+     */
+    updateSubtitleBadge() {
+      if (!this.elements.subBadge || !this.subtitleManager) return;
+
+      const available = this.subtitleManager.isAvailable();
+      const active = this.subtitleManager.buffer && this.subtitleManager.buffer.length > 0;
+
+      if (available) {
+        this.elements.subBadge.classList.add('available');
+        this.elements.subBadge.title = 'Captions available - Turn them on for best AI results';
+        
+        if (active) {
+          this.elements.subBadge.classList.add('active');
+          this.elements.subBadge.title = 'Captions active - Kairos is listening';
+        } else {
+          this.elements.subBadge.classList.remove('active');
+        }
+      } else {
+        this.elements.subBadge.classList.remove('available', 'active');
+      }
     }
 
     /**
@@ -686,6 +750,8 @@
       if (this.elements.videoTitle) {
         this.elements.videoTitle.textContent = info.title || 'Current Video';
       }
+
+      this.updateSubtitleBadge();
 
       try {
         this.notes = await this.storage.getNotesForVideo(this.currentVideoId);

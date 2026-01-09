@@ -96,8 +96,8 @@ Kairos 重新定义了看视频做笔记的交互方式：
 - [x] 里程碑：完整记录 5 条笔记并导出MD
 
 ### 阶段 2：AI Agent实现（Week 4-5）
-- [ ] 在Dashboard中实现Settings，支持Subscribe Kairos AI和BYOK两种模式提供AI API Key
-- [ ] Gemini API 调用管道（Background Script）
+- [x] 在Dashboard中实现Settings，支持Subscribe Kairos AI和BYOK两种模式提供AI API Key
+- [x] Gemini API 调用管道（Background Script）
 - [ ] 只在真正重要的时候调用 AI：通过Subtitle(timedtext API)/VoiceOver筛选发现可能的重点
 - [ ] 激活时同时视频在播放时，自动发现关键点和重点，并以💡的形式显示在Timeline上，并显示文字
 - [ ] 多模态内容分析：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要

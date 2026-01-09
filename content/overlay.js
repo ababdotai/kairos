@@ -174,7 +174,7 @@
       const notePreview = document.createElement('div');
       notePreview.className = 'kairos-note-preview hidden';
       notePreview.title = 'Click to edit';
-      
+
       notePreview.addEventListener('click', (e) => {
         e.stopPropagation();
         this.switchToEditMode();
@@ -195,7 +195,7 @@
       noteInput.addEventListener('input', () => this.adjustInputHeight());
       noteInput.addEventListener('keypress', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
       noteInput.addEventListener('keyup', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); });
-      
+
       // When blurring (and not clicking something else in the UI), switch to view
       // We don't do this on simple blur because it might be annoying if user clicks away to copy text
       // but let's try it for "read mode" feel.
@@ -407,7 +407,7 @@
       this.savedOrbPosition = position;
 
       chrome.storage.local.set({ orbPosition: position }, () => {
-        log('Orb position saved:', position);
+        // log('Orb position saved:', position);
       });
     }
 
@@ -747,7 +747,7 @@
      */
     switchToEditMode() {
       if (!this.noteInput || !this.notePreview) return;
-      
+
       this.isEditing = true;
       this.notePreview.classList.add('hidden');
       this.noteInput.classList.remove('hidden');
@@ -761,7 +761,7 @@
      */
     switchToViewMode(content) {
       if (!this.noteInput || !this.notePreview) return;
-      
+
       const text = content !== undefined ? content : this.noteInput.value;
       if (!text.trim()) {
         this.switchToEditMode();
@@ -772,7 +772,7 @@
       this.noteInput.classList.add('hidden');
       this.notePreview.classList.remove('hidden');
       this.notePreview.innerHTML = SimpleMarkdown.parse(text);
-      
+
       // Adjust wrapper height to fit preview
       // We can reuse adjustInputHeight logic but for preview
       this.noteWrapper.style.maxHeight = `${Math.min(this.notePreview.scrollHeight, 250) + 40}px`;
@@ -785,13 +785,13 @@
      */
     async requestAIAnalysis(pinData, screenshot) {
       const videoInfo = Utils.getVideoInfo();
-      
+
       let context = '';
       if (this.subtitleManager) {
         context = this.subtitleManager.getContext();
         log('Including subtitle context length:', context.length);
       }
-      
+
       // Store context for persistence
       pinData.context = context;
 
@@ -805,11 +805,11 @@
         }
       }, (response) => {
         pinData.isAnalyzing = false;
-        
+
         if (response && response.success) {
           const aiText = response.data.text;
           pinData.note = aiText;
-          
+
           // Update UI if this pin is still active in the input
           if (this.activePin === pinData && this.noteInput) {
             this.noteInput.value = aiText;
@@ -831,16 +831,16 @@
      */
     adjustInputHeight() {
       if (!this.noteInput || !this.noteWrapper) return;
-      
+
       // If in preview mode, do nothing (handled by switchToViewMode)
       if (this.noteInput.classList.contains('hidden')) return;
 
       // Reset height to calculate scrollHeight correctly
       this.noteInput.style.height = 'auto';
-      
+
       const newHeight = Math.min(this.noteInput.scrollHeight, 180);
       this.noteInput.style.height = `${newHeight}px`;
-      
+
       // Also update wrapper max-height to avoid clipping during animation
       this.noteWrapper.style.maxHeight = `${newHeight + 40}px`;
     }
@@ -864,7 +864,7 @@
       } else {
         this.noteInput.placeholder = '✨ Capture thought...';
         this.noteInput.classList.remove('ai-loading');
-        
+
         if (!isEdit && pinData.note) {
           this.switchToViewMode(pinData.note);
         } else {

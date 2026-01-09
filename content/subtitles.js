@@ -128,6 +128,10 @@
       this.buffer = this.buffer.filter(item => (now - item.timestamp) < this.maxAge);
     }
 
+    /**
+     * Checks if subtitles are available for the current video
+     * @returns {boolean} True if subtitle button exists
+     */
     isAvailable() {
       if (this.platform === 'youtube') {
         const btn = document.querySelector('.ytp-subtitles-button');
@@ -140,6 +144,38 @@
         // Old player fallback
         const oldBtn = document.querySelector('.bilibili-player-video-btn-subtitle');
         return !!oldBtn;
+      }
+      return false;
+    }
+
+    /**
+     * Checks if subtitles are currently active (enabled by user)
+     * @returns {boolean} True if subtitles are turned on
+     */
+    isActive() {
+      if (this.platform === 'youtube') {
+        const btn = document.querySelector('.ytp-subtitles-button');
+        // YouTube uses aria-pressed="true" when subtitles are on
+        return btn && btn.getAttribute('aria-pressed') === 'true';
+      } else if (this.platform === 'bilibili') {
+        // Bilibili modern player - check if subtitle panel is visible
+        const panel = document.querySelector('.bpx-player-subtitle-panel');
+        if (panel) {
+          // Check if panel has content or is not hidden
+          const hasContent = panel.textContent.trim().length > 0;
+          const isVisible = window.getComputedStyle(panel).display !== 'none';
+          return hasContent || isVisible;
+        }
+
+        // Old player fallback - check if subtitle container exists and has content
+        const oldPanel = document.querySelector('.bilibili-player-video-subtitle');
+        if (oldPanel) {
+          const hasContent = oldPanel.textContent.trim().length > 0;
+          const isVisible = window.getComputedStyle(oldPanel).display !== 'none';
+          return hasContent || isVisible;
+        }
+
+        return false;
       }
       return false;
     }

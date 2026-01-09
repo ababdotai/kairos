@@ -723,12 +723,12 @@
       if (!this.elements.subBadge || !this.subtitleManager) return;
 
       const available = this.subtitleManager.isAvailable();
-      const active = this.subtitleManager.buffer && this.subtitleManager.buffer.length > 0;
+      const active = this.subtitleManager.isActive();
 
       if (available) {
         this.elements.subBadge.classList.add('available');
         this.elements.subBadge.title = 'Captions available - Turn them on for best AI results';
-        
+
         if (active) {
           this.elements.subBadge.classList.add('active');
           this.elements.subBadge.title = 'Captions active - Kairos is listening';

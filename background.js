@@ -118,15 +118,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function callGeminiAI(payload) {
   const { image, context, videoTitle, promptType } = payload;
 
-  // 1. Get API Key from storage
-  const settings = await chrome.storage.sync.get(['geminiApiKey']);
+  // 1. Get API Key and Language Preference from storage
+  const settings = await chrome.storage.sync.get(['geminiApiKey', 'noteLanguage']);
   const apiKey = settings.geminiApiKey;
+  const noteLanguage = settings.noteLanguage || 'auto';
 
   if (!apiKey) {
     throw new Error('Gemini API Key not found. Please configure it in Settings.');
   }
 
-  // 2. Prepare the prompt
+  // 2. Prepare language instruction
+  const languageMap = {
+    'en': 'English',
+    'zh': 'Chinese (中文)',
+    'ja': 'Japanese (日本語)',
+    'es': 'Spanish (Español)',
+    'fr': 'French (Français)'
+  };
+
+  let languageInstruction = '';
+  if (noteLanguage !== 'auto') {
+    languageInstruction = `\n- IMPORTANT: Generate the note in ${languageMap[noteLanguage]} language.`;
+  } else {
+    languageInstruction = '\n- Use the video\'s primary language (detected from title/subtitles).';
+  }
+
+  // 3. Prepare the prompt
   let systemPrompt = "You are Kairos, a minimalist AI video secretary. ";
   systemPrompt += "Analyze the video frame (visuals) and the recent transcript (audio context) to create a VERY CONCISE note. ";
   systemPrompt += "Rules:\n";
@@ -134,14 +151,15 @@ async function callGeminiAI(payload) {
   systemPrompt += "- Limit to 1-3 short bullet points or one single sentence.\n";
   systemPrompt += "- Use Markdown (bold key terms).\n";
   systemPrompt += "- Focus only on high-value info (code, facts, definitions).\n";
-  systemPrompt += "- No conversational filler (no 'This video explains...').";
+  systemPrompt += "- No conversational filler (no 'This video explains...')."
+  systemPrompt += languageInstruction;
 
   if (videoTitle) systemPrompt += `\nVideo Title: ${videoTitle}`;
   if (context) systemPrompt += `\nTranscript (last 60s): "${context}"`;
 
   const userPrompt = "Generate note for this moment:";
 
-  // 3. Construct Gemini API Request
+  // 4. Construct Gemini API Request
   const MODEL_ID = 'gemini-3-flash-preview';
   const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
 

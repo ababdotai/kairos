@@ -100,16 +100,16 @@ Kairos 重新定义了看视频做笔记的交互方式：
 ### 阶段 2：AI Agent实现（Week 4-5）
 - [x] 在Dashboard中实现Settings，支持Subscribe Kairos AI和BYOK两种模式提供AI API Key
 - [x] Gemini API 调用管道（Background Script）
+- [x] 激活时同时视频在播放时，自动发现关键点和重点，并以💡的形式显示在Timeline上
 - [ ] 多模态内容分析：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要
-- [ ] 自适应语言：优先使用设置中的笔记语言，默认使用视频本身/标题/字幕中的主要语言
+- [x] 自适应语言：优先使用设置中的笔记语言，默认使用视频本身/标题/字幕中的主要语言
 - [ ] 只在真正重要的时候调用 AI：通过Subtitle(timedtext API)/VoiceOver筛选发现可能的重点
-- [ ] 激活时同时视频在播放时，自动发现关键点和重点，并以💡的形式显示在Timeline上
 - [ ] 里程碑：AI 自动发现视频重点，提取视频中的代码并生成解释
 
 ### 阶段 3：护城河建设（Week 6-7）
 - [ ] Obsidian 本地直连（FileSystemAccess API）
 - [ ] Notion Integration 同步
-- [ ] Deep Link 回跳支持
+- [ ] Deep Link 回跳支持 (生成的笔记带有直接跳转到视频特定时间的链接)
 - [ ] 里程碑：卸载插件后，笔记仍完整保留在 Obsidian
 
 ### 阶段 4：品质打磨与发布（Week 8+）

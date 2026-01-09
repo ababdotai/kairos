@@ -21,8 +21,8 @@
       } else if (hostname.includes('bilibili.com')) {
         this.platform = 'bilibili';
         // Bilibili uses bpx-player usually now
-        this.containerSelector = '.bpx-player-subtitle-panel';
-        this.segmentSelector = '.bpx-player-subtitle-content'; 
+        this.containerSelector = '.bili-subtitle-x-subtitle-panel-text, .bpx-player-subtitle-panel-text';
+        this.segmentSelector = '.bili-subtitle-item, .bpx-player-subtitle-content'; 
       } else {
         this.platform = 'unknown';
       }
@@ -47,12 +47,21 @@
             // Try primary selector
             let c = document.querySelector(this.containerSelector);
             
-            // Bilibili Fallback (Old Player)
+            // Bilibili Fallback - try multiple selectors
             if (!c && this.platform === 'bilibili') {
-               c = document.querySelector('.bilibili-player-video-subtitle');
-               if (c) {
-                 this.containerSelector = '.bilibili-player-video-subtitle'; // Update selector
-                 this.segmentSelector = 'span'; // Usually spans in old player
+               const fallbackSelectors = [
+                 '.bili-subtitle-x-subtitle-panel-text',
+                 '.bpx-player-subtitle-panel-text',
+                 '.bpx-player-subtitle-panel',
+                 '.bilibili-player-video-subtitle'
+               ];
+               for (const sel of fallbackSelectors) {
+                 c = document.querySelector(sel);
+                 if (c) {
+                   this.containerSelector = sel;
+                   this.segmentSelector = '.bili-subtitle-item, .bpx-player-subtitle-content, span';
+                   break;
+                 }
                }
             }
 
@@ -158,21 +167,27 @@
         // YouTube uses aria-pressed="true" when subtitles are on
         return btn && btn.getAttribute('aria-pressed') === 'true';
       } else if (this.platform === 'bilibili') {
-        // Bilibili modern player - check if subtitle panel is visible
-        const panel = document.querySelector('.bpx-player-subtitle-panel');
-        if (panel) {
-          // Check if panel has content or is not hidden
-          const hasContent = panel.textContent.trim().length > 0;
-          const isVisible = window.getComputedStyle(panel).display !== 'none';
-          return hasContent || isVisible;
-        }
+        // Check multiple possible subtitle panel selectors
+        const panelSelectors = [
+          '.bili-subtitle-x-subtitle-panel-text',
+          '.bpx-player-subtitle-panel-text',
+          '.bpx-player-subtitle-panel',
+          '.bilibili-player-video-subtitle'
+        ];
 
-        // Old player fallback - check if subtitle container exists and has content
-        const oldPanel = document.querySelector('.bilibili-player-video-subtitle');
-        if (oldPanel) {
-          const hasContent = oldPanel.textContent.trim().length > 0;
-          const isVisible = window.getComputedStyle(oldPanel).display !== 'none';
-          return hasContent || isVisible;
+        for (const selector of panelSelectors) {
+          const panel = document.querySelector(selector);
+          if (panel) {
+            // Check if panel has visible text content
+            const text = panel.textContent.trim();
+            if (text.length > 0) {
+              // Also verify it's actually visible
+              const style = window.getComputedStyle(panel);
+              if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+                return true;
+              }
+            }
+          }
         }
 
         return false;

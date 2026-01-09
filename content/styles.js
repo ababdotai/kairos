@@ -54,9 +54,8 @@
       /* The Intelligent Island Container: Free Floating inside Overlay */
       .kairos-island-container {
         position: absolute;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
+        bottom: 80px;
+        left: 16px;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -67,7 +66,7 @@
       }
 
       .kairos-island-container.positioned {
-        transform: none !important;
+        bottom: auto;
       }
 
       /* Bottom orientation: note appears below orb */

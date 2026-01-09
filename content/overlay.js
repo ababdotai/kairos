@@ -27,6 +27,7 @@
       this.activePin = null;
       this.isEditing = false;
       this.wasPlaying = false;
+      this.positionLoaded = false;
     }
 
     /**
@@ -377,11 +378,88 @@
 
         island.style.transition = '';
         this.updateOrientation(currentTop, overlayRect.height);
+
+        // Save relative position if actually dragged
+        if (this.isDragging) {
+          this.saveOrbPosition(currentLeft, currentTop, overlayRect.width, overlayRect.height);
+        }
       }
 
       setTimeout(() => {
         this.isDragging = false;
       }, 50);
+    }
+
+    /**
+     * Saves the Orb position as relative coordinates (0-1)
+     * @param {number} left - Left position in pixels
+     * @param {number} top - Top position in pixels
+     * @param {number} containerWidth - Container width
+     * @param {number} containerHeight - Container height
+     */
+    saveOrbPosition(left, top, containerWidth, containerHeight) {
+      const relativeX = left / containerWidth;
+      const relativeY = top / containerHeight;
+
+      const position = { x: relativeX, y: relativeY };
+
+      // Cache in memory for resize handling
+      this.savedOrbPosition = position;
+
+      chrome.storage.local.set({ orbPosition: position }, () => {
+        log('Orb position saved:', position);
+      });
+    }
+
+    /**
+     * Loads and applies saved Orb position
+     */
+    async loadOrbPosition() {
+      return new Promise((resolve) => {
+        chrome.storage.local.get(['orbPosition'], (result) => {
+          if (result.orbPosition) {
+            // Cache in memory for resize handling
+            this.savedOrbPosition = result.orbPosition;
+            this.applySavedPosition(result.orbPosition);
+            resolve(result.orbPosition);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
+
+    /**
+     * Applies saved relative position to current video dimensions
+     * @param {Object} position - Saved position {x, y} as ratios (0-1)
+     */
+    applySavedPosition(position) {
+      if (!this.overlayElement || !this.shadowRoot) return;
+
+      const island = this.shadowRoot.querySelector('.kairos-island-container');
+      const orb = this.shadowRoot.querySelector('.kairos-orb');
+      if (!island || !orb) return;
+
+      const overlayRect = this.overlayElement.getBoundingClientRect();
+      const orbWidth = orb.offsetWidth || 48;
+      const orbHeight = orb.offsetHeight || 48;
+      const BOTTOM_SAFE_MARGIN = 80;
+
+      // Calculate pixel position from relative coordinates
+      let newLeft = position.x * overlayRect.width;
+      let newTop = position.y * overlayRect.height;
+
+      // Clamp to valid bounds
+      newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - orbWidth));
+      newTop = Math.max(0, Math.min(newTop, overlayRect.height - orbHeight - BOTTOM_SAFE_MARGIN));
+
+      // Apply position
+      island.style.left = `${newLeft}px`;
+      island.style.top = `${newTop}px`;
+      island.classList.add('positioned');
+
+      this.updateOrientation(newTop, overlayRect.height);
+      log('Orb position restored:', { left: newLeft, top: newTop });
     }
 
     /**
@@ -413,7 +491,8 @@
     updatePosition(rect, video) {
       if (!this.overlayElement) return;
 
-      if (video && video !== this.videoElement) {
+      const isNewVideo = video && video !== this.videoElement;
+      if (isNewVideo) {
         this.videoElement = video;
         video.addEventListener('play', () => {
           if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
@@ -423,10 +502,28 @@
       }
       this.videoElement = video;
 
+      // Detect size change
+      const prevWidth = this.lastOverlayWidth || 0;
+      const prevHeight = this.lastOverlayHeight || 0;
+      const sizeChanged = Math.abs(rect.width - prevWidth) > 5 || Math.abs(rect.height - prevHeight) > 5;
+
       this.overlayElement.style.top = `${rect.top}px`;
       this.overlayElement.style.left = `${rect.left}px`;
       this.overlayElement.style.width = `${rect.width}px`;
       this.overlayElement.style.height = `${rect.height}px`;
+
+      // Load saved position on first update
+      if (!this.positionLoaded) {
+        this.positionLoaded = true;
+        this.loadOrbPosition();
+      } else if (sizeChanged && this.savedOrbPosition) {
+        // Re-apply saved position when size changes (e.g., fullscreen toggle)
+        this.applySavedPosition(this.savedOrbPosition);
+      }
+
+      // Store current size for comparison
+      this.lastOverlayWidth = rect.width;
+      this.lastOverlayHeight = rect.height;
 
       if (this.isActive && this.progressBar && video && video.duration) {
         const progress = (video.currentTime / video.duration) * 100;

@@ -72,11 +72,25 @@
      */
     async init() {
       await this.storage.init();
-      this.injectPanel();
-      this.setupUrlChangeListener();
-      this.setupMutationObserver();
-      this.setupPresenceCheck();
-      log('SidePanel initialized');
+
+      // For Bilibili: delay injection to allow lazy-loaded images to render first
+      const isBilibili = window.location.href.includes('bilibili.com');
+      if (isBilibili) {
+        // Wait for page to stabilize before injecting
+        setTimeout(() => {
+          this.injectPanel();
+          this.setupUrlChangeListener();
+          this.setupMutationObserver();
+          this.setupPresenceCheck();
+          log('SidePanel initialized (Bilibili delayed)');
+        }, 2000);
+      } else {
+        this.injectPanel();
+        this.setupUrlChangeListener();
+        this.setupMutationObserver();
+        this.setupPresenceCheck();
+        log('SidePanel initialized');
+      }
     }
 
     /**
@@ -105,23 +119,25 @@
         }
         return null;
       } else if (url.includes('bilibili.com/video')) {
-        // Bilibili video page - insert after UP info, before danmuku
-        // Structure: .right-container-inner > .up-panel-container > #danmukuBox
-        // We want to insert after .up-panel-container
+        // Bilibili video page - insert between danmuku box and recommendation list
+        // Structure: .right-container-inner > #danmukuBox > .recommend-list-container
+        // We want to insert after #danmukuBox, before recommendation
 
-        const upPanel = document.querySelector('.up-panel-container');
-        if (upPanel && upPanel.parentElement) {
-          // Return special object for "insert after" behavior
-          return { insertAfter: upPanel };
-        }
-
-        // Fallback: insert before #danmukuBox
+        // Priority 1: Insert after danmuku box (before recommendation list)
         const danmuku = document.querySelector('#danmukuBox');
         if (danmuku && danmuku.parentElement) {
-          return { insertBefore: danmuku, container: danmuku.parentElement };
+          return { insertAfter: danmuku };
         }
 
-        // Last fallback: just use right-container-inner
+        // Priority 2: Insert before recommendation list
+        const recoList = document.querySelector('.recommend-list-container') ||
+                         document.querySelector('.rec-list') ||
+                         document.querySelector('[class*="recommend"]');
+        if (recoList && recoList.parentElement) {
+          return { insertBefore: recoList, container: recoList.parentElement };
+        }
+
+        // Priority 3: Append to right-container-inner (at the end, safest)
         const rightContainer = document.querySelector('.right-container-inner') ||
                                document.querySelector('.right-container');
         if (rightContainer) {
@@ -347,8 +363,9 @@
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
           -webkit-font-smoothing: antialiased;
           position: relative;
-          z-index: 100;
+          z-index: 1;
           pointer-events: auto;
+          isolation: isolate;
         }
 
         /* Bilibili specific adjustments */
@@ -360,13 +377,13 @@
         }
 
         .kairos-sp-card {
-          background: linear-gradient(145deg, rgba(20, 20, 22, 0.95), rgba(30, 30, 35, 0.9));
+          background: linear-gradient(145deg, rgb(20, 20, 22), rgb(30, 30, 35));
           border-radius: 16px;
           border: 1px solid rgba(255, 255, 255, 0.08);
           overflow: hidden;
           box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-          backdrop-filter: blur(20px);
           pointer-events: auto;
+          /* Note: backdrop-filter removed to prevent interference with Bilibili image loading */
         }
 
         .kairos-sp-header {
@@ -890,7 +907,7 @@
         // Skip if already pending
         if (pendingReinject) return;
 
-        // Check if our panel was removed
+        // Only check if our panel was removed - don't react to other DOM changes
         const panelExists = document.getElementById('kairos-sidepanel');
 
         if (!panelExists && this.container) {
@@ -902,39 +919,33 @@
           setTimeout(() => {
             pendingReinject = false;
             this.injectPanel();
-          }, 300);
+          }, 500);
           return;
         }
 
-        // Also check if container was recreated (SPA behavior)
-        for (const mutation of mutations) {
-          if (mutation.type === 'childList') {
-            for (const node of mutation.addedNodes) {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const el = node;
-                // Check if secondary/related container was added (YouTube)
-                const isYouTubeContainer = el.id === 'secondary' || el.id === 'related' ||
-                    el.id === 'secondary-inner' ||
-                    el.querySelector?.('#secondary, #related');
-                // Check if Bilibili container was added
-                const isBilibiliContainer = el.id === 'reco_list' ||
-                    el.id === 'danmukuBox' ||
-                    el.classList?.contains('right-container') ||
-                    el.classList?.contains('right-container-inner') ||
-                    el.classList?.contains('up-panel-container') ||
-                    el.querySelector?.('.up-panel-container, #danmukuBox, .right-container-inner');
+        // For YouTube SPA navigation, check if secondary container was recreated
+        // Only for YouTube - Bilibili doesn't need this aggressive re-injection
+        if (window.location.href.includes('youtube.com')) {
+          for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+              for (const node of mutation.addedNodes) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                  const el = node;
+                  const isYouTubeContainer = el.id === 'secondary' || el.id === 'related' ||
+                      el.id === 'secondary-inner';
 
-                if ((isYouTubeContainer || isBilibiliContainer) && !panelExists) {
-                  pendingReinject = true;
-                  log('SidePanel: Container recreated, injecting panel...');
-                  this.retryCount = 0;
-                  this.container = null;
-                  this.elements = {};
-                  setTimeout(() => {
-                    pendingReinject = false;
-                    this.injectPanel();
-                  }, 500);
-                  return;
+                  if (isYouTubeContainer && !panelExists) {
+                    pendingReinject = true;
+                    log('SidePanel: YouTube container recreated, injecting panel...');
+                    this.retryCount = 0;
+                    this.container = null;
+                    this.elements = {};
+                    setTimeout(() => {
+                      pendingReinject = false;
+                      this.injectPanel();
+                    }, 500);
+                    return;
+                  }
                 }
               }
             }
@@ -942,11 +953,21 @@
         }
       });
 
-      // Observe the body for child list changes
-      this.observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+      // Observe the body for child list changes, but NOT subtree for Bilibili
+      // to avoid interfering with Vue's reactivity and lazy loading
+      if (window.location.href.includes('bilibili.com')) {
+        // For Bilibili: only observe direct children of body, not subtree
+        this.observer.observe(document.body, {
+          childList: true,
+          subtree: false
+        });
+      } else {
+        // For YouTube: observe subtree for SPA navigation
+        this.observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
     }
 
     /**
@@ -958,38 +979,51 @@
         clearInterval(this.checkInterval);
       }
 
+      // For Bilibili: use less aggressive checking to avoid interfering with lazy loading
+      const isBilibili = window.location.href.includes('bilibili.com');
+
       // Check more frequently at first, then slow down
       let checkCount = 0;
+      let lastPanelState = !!document.getElementById('kairos-sidepanel');
 
       const doCheck = () => {
         checkCount++;
         const panel = document.getElementById('kairos-sidepanel');
-        const target = this.getInjectionPoint();
+        const panelExists = !!panel;
 
-        // If target exists but panel doesn't, re-inject
-        if (target && !panel) {
-          log('SidePanel: Panel missing (check #' + checkCount + '), re-injecting...');
-          this.retryCount = 0;
-          this.container = null;
-          this.elements = {};
-          this.injectPanel();
+        // Only re-inject if panel was previously present but now missing
+        // This avoids re-injecting during initial page load
+        if (lastPanelState && !panelExists) {
+          const target = this.getInjectionPoint();
+          if (target) {
+            log('SidePanel: Panel missing (check #' + checkCount + '), re-injecting...');
+            this.retryCount = 0;
+            this.container = null;
+            this.elements = {};
+            this.injectPanel();
+          }
         }
+
+        lastPanelState = panelExists;
       };
 
-      // Rapid checks for the first 10 seconds (every 500ms)
+      // Rapid checks for the first few seconds
+      const rapidCheckInterval = isBilibili ? 1000 : 500;  // Slower for Bilibili
+      const rapidCheckDuration = isBilibili ? 5000 : 10000;  // Shorter for Bilibili
+
       const rapidCheck = setInterval(() => {
         doCheck();
-      }, 500);
+      }, rapidCheckInterval);
 
-      // Stop rapid checks after 10 seconds
       setTimeout(() => {
         clearInterval(rapidCheck);
-      }, 10000);
+      }, rapidCheckDuration);
 
       // Then continue with slower periodic checks
+      const slowCheckInterval = isBilibili ? 5000 : 3000;  // Even slower for Bilibili
       this.checkInterval = setInterval(() => {
         doCheck();
-      }, 3000);
+      }, slowCheckInterval);
     }
 
     /**

@@ -504,8 +504,8 @@
         background: transparent;
       }
 
-      /* The Emoji Head */
-      .kairos-pin::after {
+      /* The Emoji Head - Only for manual pins */
+      .kairos-pin:not(.kairos-marker-insight)::after {
         content: '📌';
         font-size: 20px;
         transform: rotate(180deg) scaleX(-1);

@@ -1139,6 +1139,49 @@
     }
 
     /**
+     * Creates a proactive insight marker (💡) on the timeline
+     * @param {number} percentage - Position percentage
+     * @param {Object} data - Insight data {keyword, context, timestamp}
+     */
+    createInsightMarker(percentage, data) {
+      const marker = document.createElement('div');
+      marker.className = 'kairos-pin kairos-marker-insight';
+      marker.style.left = `${percentage}%`;
+      marker.innerHTML = data.icon || '💡';
+      marker.title = `${data.label || 'Insight'}: "${data.keyword}"`;
+      
+      // Style adjustments for the emoji marker
+      marker.style.background = 'none';
+      marker.style.border = 'none';
+      marker.style.fontSize = '14px';
+      marker.style.top = '-6px'; // Lift it up a bit
+      marker.style.cursor = 'help';
+      marker.style.filter = 'drop-shadow(0 0 4px rgba(255, 255, 0, 0.5))';
+
+      this.timeline.appendChild(marker);
+      
+      // Animation
+      marker.animate([
+        { transform: 'scale(0)', opacity: 0 },
+        { transform: 'scale(1.2)', opacity: 1 },
+        { transform: 'scale(1)', opacity: 1 }
+      ], {
+        duration: 400,
+        easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+      });
+
+      // Optional: Add click handler to jump to time?
+      marker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.videoElement) {
+          this.videoElement.currentTime = data.timestamp;
+        }
+      });
+      
+      log('Insight marker created at', percentage.toFixed(1) + '%');
+    }
+
+    /**
      * Destroys the overlay
      */
     destroy() {

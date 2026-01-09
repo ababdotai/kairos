@@ -24,6 +24,7 @@
         "content/tracker.js",
         "content/capture.js",
         "content/subtitles.js",
+        "content/agent.js",
         "content/styles.js",
         "content/overlay.js",
         "content/sidepanel.js",

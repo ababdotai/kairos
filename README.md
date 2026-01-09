@@ -4,9 +4,11 @@
 
 如何让观看视频学习的过程更有价值和互动?
 
-Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记 Chrome Extension，核心功能为在用户观看视频时通过快捷键或点击进行AI笔记，通过智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
+Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记Agent，载体为一个Chrome Extension，核心功能为在用户观看视频时通过快捷键或点击进行AI笔记，通过智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
 
-用户负责提供信号（Signal），AI 负责降低噪点（Noise）并填充细节（Fidelity）
+Kairos 是一个Proactive+Reactive的Agent：
+- Proactive：Kairos陪用户观看视频，自动发现重点和亮点
+- Reactive：用户负责提供信号（Signal），AI 负责降低噪点（Noise）并填充细节（Fidelity）
 
 ## 🎯 核心理念
 
@@ -98,9 +100,10 @@ Kairos 重新定义了看视频做笔记的交互方式：
 ### 阶段 2：AI Agent实现（Week 4-5）
 - [x] 在Dashboard中实现Settings，支持Subscribe Kairos AI和BYOK两种模式提供AI API Key
 - [x] Gemini API 调用管道（Background Script）
-- [ ] 只在真正重要的时候调用 AI：通过Subtitle(timedtext API)/VoiceOver筛选发现可能的重点
-- [ ] 激活时同时视频在播放时，自动发现关键点和重点，并以💡的形式显示在Timeline上，并显示文字
 - [ ] 多模态内容分析：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要
+- [ ] 自适应语言：优先使用设置中的笔记语言，默认使用视频本身/标题/字幕中的主要语言
+- [ ] 只在真正重要的时候调用 AI：通过Subtitle(timedtext API)/VoiceOver筛选发现可能的重点
+- [ ] 激活时同时视频在播放时，自动发现关键点和重点，并以💡的形式显示在Timeline上
 - [ ] 里程碑：AI 自动发现视频重点，提取视频中的代码并生成解释
 
 ### 阶段 3：护城河建设（Week 6-7）

@@ -213,6 +213,11 @@
         filter: drop-shadow(0 0 2px #00f2ff);
       }
 
+      /* Flip icon when orb is on the left side */
+      .kairos-orb.flip-icon .kairos-orb-icon {
+        transform: scaleX(-1);
+      }
+
       /* Orb Menu Container (hidden by default) */
       .kairos-orb-menu {
         display: flex;
@@ -268,6 +273,12 @@
       .kairos-orb-btn.orb-icon-btn img {
         width: 24px;
         height: 24px;
+        transition: transform 0.4s ease;
+      }
+
+      /* Flip expanded menu icon when orb is on the left side */
+      .kairos-orb.flip-icon .kairos-orb-btn.orb-icon-btn img {
+        transform: scaleX(-1);
       }
 
       .kairos-note-icon { display: none; }

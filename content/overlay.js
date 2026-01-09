@@ -341,7 +341,7 @@
       island.style.left = `${newLeft}px`;
       island.style.top = `${newTop}px`;
 
-      this.updateOrientation(newTop, overlayRect.height);
+      this.updateOrientation(newTop, overlayRect.height, newLeft, overlayRect.width);
     }
 
     /**
@@ -377,7 +377,7 @@
         }
 
         island.style.transition = '';
-        this.updateOrientation(currentTop, overlayRect.height);
+        this.updateOrientation(currentTop, overlayRect.height, currentLeft, overlayRect.width);
 
         // Save relative position if actually dragged
         if (this.isDragging) {
@@ -458,20 +458,24 @@
       island.style.top = `${newTop}px`;
       island.classList.add('positioned');
 
-      this.updateOrientation(newTop, overlayRect.height);
+      this.updateOrientation(newTop, overlayRect.height, newLeft, overlayRect.width);
       log('Orb position restored:', { left: newLeft, top: newTop });
     }
 
     /**
-     * Updates note orientation based on Y position
+     * Updates note orientation based on Y position and icon flip based on X position
      * @param {number} currentTop - Current top position
      * @param {number} containerHeight - Container height
+     * @param {number} currentLeft - Current left position (optional)
+     * @param {number} containerWidth - Container width (optional)
      */
-    updateOrientation(currentTop, containerHeight) {
+    updateOrientation(currentTop, containerHeight, currentLeft, containerWidth) {
       if (!this.shadowRoot) return;
       const island = this.shadowRoot.querySelector('.kairos-island-container');
+      const orb = this.shadowRoot.querySelector('.kairos-orb');
       if (!island) return;
 
+      // Update vertical orientation (top/bottom)
       const positionRatio = currentTop / containerHeight;
 
       if (positionRatio > 0.6) {
@@ -480,6 +484,21 @@
       } else {
         island.classList.remove('orient-top');
         island.classList.add('orient-bottom');
+      }
+
+      // Update horizontal orientation (flip icon based on left/right position)
+      if (orb && currentLeft !== undefined && containerWidth !== undefined) {
+        const orbWidth = orb.offsetWidth || 48;
+        const orbCenterX = currentLeft + orbWidth / 2;
+        const horizontalRatio = orbCenterX / containerWidth;
+
+        if (horizontalRatio > 0.5) {
+          // Right half - normal icon
+          orb.classList.remove('flip-icon');
+        } else {
+          // Left half - flip icon
+          orb.classList.add('flip-icon');
+        }
       }
     }
 

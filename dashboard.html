@@ -48,6 +48,18 @@
             margin-right: 12px;
         }
 
+        .welcome-logo {
+            width: 80px;
+            height: 80px;
+            margin-top: 20px;
+            filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.2));
+            transition: transform 0.3s ease;
+        }
+
+        .welcome-logo:hover {
+            transform: scale(1.05);
+        }
+
         .header h1 {
             font-size: 20px;
             font-weight: 600;
@@ -503,6 +515,7 @@
         <div id="libraryView" style="height: 100%;">
             <div class="empty-state">
                 <div class="welcome-text">Welcome to Kairos</div>
+                <img src="icons/icon.png" class="welcome-logo" alt="Kairos">
                 <div class="center-content">
                     <div class="quote-text">
                         <div>I hear and I forget.</div>

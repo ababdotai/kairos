@@ -34,7 +34,10 @@
     // Initialize Proactive Agent
     const { ProactiveAgent } = window.Kairos;
     const agent = new ProactiveAgent(subtitleManager, overlayManager);
-    agent.init();
+    await agent.init();
+
+    // Link agent to overlay manager
+    overlayManager.agent = agent;
 
     // Create video tracker
     const videoTracker = new VideoTracker(CONFIG.VIDEO_SELECTOR);

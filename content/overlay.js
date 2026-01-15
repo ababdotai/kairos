@@ -22,12 +22,14 @@
       this.captureEngine = new CaptureEngine();
       this.currentVideoId = null;
       this.sidePanel = null; // Reference to SidePanelManager
+      this.agent = null; // Reference to ProactiveAgent
 
       // Interaction States
       this.activePin = null;
       this.isEditing = false;
       this.wasPlaying = false;
       this.positionLoaded = false;
+      this.scanAnimationTimer = null; // Timer for AI scanning animation
     }
 
     /**
@@ -650,6 +652,11 @@
 
       if (this.overlayElement) this.overlayElement.classList.add('active');
 
+      // Notify agent about activation
+      if (this.agent && this.agent.onActivate) {
+        this.agent.onActivate();
+      }
+
       // Animation effects
       flash.classList.remove('animating');
       ripple.classList.remove('animating');
@@ -1183,23 +1190,48 @@
 
     /**
      * Starts the AI loading/scanning animation on the Orb
+     * Toggles flip-icon to create "looking left and right" effect
      */
     startLoading() {
-      if (this.orbElement) {
-        this.orbElement.classList.add('ai-scanning');
-        // Optional: Tooltip update
-        this.orbElement.title = 'Kairos is thinking...';
+      if (!this.orbElement) return;
+
+      this.orbElement.classList.add('ai-scanning');
+      this.orbElement.title = 'Kairos is thinking...';
+
+      // Stop any existing animation
+      if (this.scanAnimationTimer) {
+        clearInterval(this.scanAnimationTimer);
       }
+
+      // Toggle flip-icon every 600ms to simulate looking left/right
+      let isFlipped = this.orbElement.classList.contains('flip-icon');
+      this.scanAnimationTimer = setInterval(() => {
+        isFlipped = !isFlipped;
+        if (isFlipped) {
+          this.orbElement.classList.add('flip-icon');
+        } else {
+          this.orbElement.classList.remove('flip-icon');
+        }
+      }, 600);
     }
 
     /**
      * Stops the AI loading/scanning animation
      */
     stopLoading() {
-      if (this.orbElement) {
-        this.orbElement.classList.remove('ai-scanning');
-        this.orbElement.title = this.isActive ? 'Kairos Active' : 'Click to expand menu';
+      if (!this.orbElement) return;
+
+      this.orbElement.classList.remove('ai-scanning');
+      this.orbElement.title = this.isActive ? 'Kairos Active' : 'Click to expand menu';
+
+      // Stop flip animation
+      if (this.scanAnimationTimer) {
+        clearInterval(this.scanAnimationTimer);
+        this.scanAnimationTimer = null;
       }
+
+      // Restore flip-icon based on actual position (will be updated by drag handler)
+      // Leave it as-is for now, drag handler will correct it
     }
 
     /**

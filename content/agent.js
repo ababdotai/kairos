@@ -108,8 +108,43 @@
       this.interval = null;
     }
 
+    /**
+     * Called when Kairos is activated by the user
+     * Triggers immediate analysis if in smart mode
+     */
+    onActivate() {
+      log('ProactiveAgent: Kairos activated');
+
+      // Log current subtitle state
+      if (this.subtitleManager) {
+        const context = this.subtitleManager.getFullContext();
+        const isAvailable = this.subtitleManager.isAvailable();
+        const isActive = this.subtitleManager.isActive();
+
+        log(`ProactiveAgent: Subtitle state - Available: ${isAvailable}, Active: ${isActive}`);
+        log(`ProactiveAgent: Current context length: ${context.length} chars`);
+
+        if (context.length > 0) {
+          log(`ProactiveAgent: Context preview: "${context.substring(0, 200)}..."`);
+        }
+      }
+
+      // If in smart mode, trigger immediate scan (bypass cooldown)
+      if (this.mode === 'smart') {
+        log('ProactiveAgent: Smart mode enabled, triggering immediate analysis...');
+        // Reset cooldown to allow immediate scan
+        this.lastSmartCheckTime = 0;
+        this.lastContextLength = 0;
+        // Trigger scan on next interval
+        setTimeout(() => this.scan(), 500);
+      }
+    }
+
     scan() {
       if (this.mode === 'disabled') return;
+
+      // Only scan when Kairos is active
+      if (!this.overlayManager.isActive) return;
 
       if (this.mode === 'smart') {
         this.smartScan();

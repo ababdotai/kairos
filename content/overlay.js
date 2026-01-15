@@ -1182,6 +1182,27 @@
     }
 
     /**
+     * Starts the AI loading/scanning animation on the Orb
+     */
+    startLoading() {
+      if (this.orbElement) {
+        this.orbElement.classList.add('ai-scanning');
+        // Optional: Tooltip update
+        this.orbElement.title = 'Kairos is thinking...';
+      }
+    }
+
+    /**
+     * Stops the AI loading/scanning animation
+     */
+    stopLoading() {
+      if (this.orbElement) {
+        this.orbElement.classList.remove('ai-scanning');
+        this.orbElement.title = this.isActive ? 'Kairos Active' : 'Click to expand menu';
+      }
+    }
+
+    /**
      * Destroys the overlay
      */
     destroy() {

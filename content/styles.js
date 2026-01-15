@@ -626,6 +626,50 @@
           opacity: 0;
         }
       }
+
+      /* AI Scanning Animation */
+      .kairos-orb.ai-scanning {
+        border-color: rgba(0, 242, 255, 0.9);
+        box-shadow: 0 0 25px rgba(0, 242, 255, 0.5);
+        animation: kairos-orb-breathe 2s infinite ease-in-out;
+      }
+
+      /* Disable transition during animation to prevent conflicts */
+      .kairos-orb.ai-scanning .kairos-orb-icon {
+        transition: none;
+        filter: drop-shadow(0 0 6px #00f2ff);
+      }
+
+      /* Animation for normal (right side) orb */
+      .kairos-orb.ai-scanning:not(.flip-icon) .kairos-orb-icon {
+        animation: kairos-scan-look-normal 1.2s infinite ease-in-out;
+      }
+
+      /* Animation for flipped (left side) orb */
+      .kairos-orb.ai-scanning.flip-icon .kairos-orb-icon {
+        animation: kairos-scan-look-flipped 1.2s infinite ease-in-out;
+      }
+
+      @keyframes kairos-orb-breathe {
+        0%, 100% { box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); border-color: rgba(0, 242, 255, 0.6); }
+        50% { box-shadow: 0 0 35px rgba(0, 242, 255, 0.8); border-color: rgba(0, 242, 255, 1); }
+      }
+
+      /* "Look Left then Right" animation for normal orientation */
+      @keyframes kairos-scan-look-normal {
+        0%, 100% { transform: translateX(0) rotate(0deg); }
+        25% { transform: translateX(-8px) rotate(-10deg); } /* Look Left */
+        50% { transform: translateX(0) rotate(0deg); }
+        75% { transform: translateX(8px) rotate(10deg); } /* Look Right */
+      }
+
+      /* "Look Left then Right" animation for flipped orientation */
+      @keyframes kairos-scan-look-flipped {
+        0%, 100% { transform: scaleX(-1) translateX(0) rotate(0deg); }
+        25% { transform: scaleX(-1) translateX(8px) rotate(10deg); } /* Look Right (in flipped space) */
+        50% { transform: scaleX(-1) translateX(0) rotate(0deg); }
+        75% { transform: scaleX(-1) translateX(-8px) rotate(-10deg); } /* Look Left (in flipped space) */
+      }
     `;
   }
 

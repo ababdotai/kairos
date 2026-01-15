@@ -131,15 +131,15 @@
 
         // Priority 2: Insert before recommendation list
         const recoList = document.querySelector('.recommend-list-container') ||
-                         document.querySelector('.rec-list') ||
-                         document.querySelector('[class*="recommend"]');
+          document.querySelector('.rec-list') ||
+          document.querySelector('[class*="recommend"]');
         if (recoList && recoList.parentElement) {
           return { insertBefore: recoList, container: recoList.parentElement };
         }
 
         // Priority 3: Append to right-container-inner (at the end, safest)
         const rightContainer = document.querySelector('.right-container-inner') ||
-                               document.querySelector('.right-container');
+          document.querySelector('.right-container');
         if (rightContainer) {
           return rightContainer;
         }
@@ -241,8 +241,8 @@
       brand.appendChild(title);
 
       // Subtitle Badge
-      const subBadge = createElement('span', { 
-        className: 'kairos-sp-subtitle-badge', 
+      const subBadge = createElement('span', {
+        className: 'kairos-sp-subtitle-badge',
         text: 'CC',
         title: 'Captions available for better AI notes'
       });
@@ -305,7 +305,7 @@
         id: 'kairos-sp-dashboard'
       });
       dashboardBtn.appendChild(createSvgIcon('M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'));
-      dashboardBtn.appendChild(createElement('span', { text: 'Open Dashboard' }));
+      dashboardBtn.appendChild(createElement('span', { text: 'My Notes & Settings' }));
       actions.appendChild(dashboardBtn);
 
       this.elements.dashboardBtn = dashboardBtn;
@@ -998,7 +998,7 @@
                 if (node.nodeType === Node.ELEMENT_NODE) {
                   const el = node;
                   const isYouTubeContainer = el.id === 'secondary' || el.id === 'related' ||
-                      el.id === 'secondary-inner';
+                    el.id === 'secondary-inner';
 
                   if (isYouTubeContainer && !panelExists) {
                     pendingReinject = true;

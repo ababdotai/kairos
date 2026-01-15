@@ -12,6 +12,7 @@
     constructor(subtitleManager, overlayManager) {
       this.subtitleManager = subtitleManager;
       this.overlayManager = overlayManager;
+      this.mode = 'basic'; // default
 
       // Rule definitions for different types of insights
       this.rules = [
@@ -69,13 +70,31 @@
       ];
 
       this.lastCheckTime = Date.now();
-      this.cooldown = 15000; // 15s cooldown
+      this.cooldown = 15000; // 15s cooldown for Basic
+      this.smartCooldown = 15000; // 15s interval for Smart
+      this.lastSmartCheckTime = 0;
+      this.lastContextLength = 0;
       this.lastTriggerTime = 0;
       this.interval = null;
     }
 
-    init() {
-      log('ProactiveAgent: Initialized with advanced rules');
+    async init() {
+      // Load settings
+      const settings = await chrome.storage.sync.get(['autoHighlightMode']);
+      this.mode = settings.autoHighlightMode || 'basic';
+      log(`ProactiveAgent: Initialized in [${this.mode}] mode`);
+
+      // Listen for changes
+      chrome.storage.onChanged.addListener((changes) => {
+        if (changes.autoHighlightMode) {
+          this.mode = changes.autoHighlightMode.newValue;
+          log(`ProactiveAgent: Mode switched to [${this.mode}]`);
+          // Reset smart tracking on mode switch
+          this.lastSmartCheckTime = 0;
+          this.lastContextLength = 0;
+        }
+      });
+
       this.start();
     }
 
@@ -90,12 +109,23 @@
     }
 
     scan() {
+      if (this.mode === 'disabled') return;
+
+      if (this.mode === 'smart') {
+        this.smartScan();
+      } else {
+        this.basicScan();
+      }
+    }
+
+    basicScan() {
       if (!this.subtitleManager) return;
 
       const buffer = this.subtitleManager.buffer;
       if (!buffer || buffer.length === 0) return;
 
       const now = Date.now();
+      // Global trigger cooldown
       if (now - this.lastTriggerTime < this.cooldown) return;
 
       // Check items added since last scan
@@ -110,11 +140,80 @@
       for (const rule of this.rules) {
         for (const pattern of rule.patterns) {
           if (recentText.includes(pattern)) {
-            log(`ProactiveAgent: Detected [${rule.label}] pattern "${pattern}"`);
+            log(`ProactiveAgent: Basic - Detected [${rule.label}] pattern "${pattern}"`);
             this.triggerInsight(pattern, recentText, rule);
             return; // Trigger only one insight per scan
           }
         }
+      }
+    }
+
+    async smartScan() {
+      if (!this.subtitleManager) return;
+
+      const now = Date.now();
+      // Throttle Smart Analysis
+      if (now - this.lastSmartCheckTime < this.smartCooldown) return;
+
+      // Also respect global trigger cooldown so we don't spam if we just triggered
+      if (now - this.lastTriggerTime < this.cooldown) return;
+
+      // Get full session context
+      const context = this.subtitleManager.getFullContext();
+      if (!context || context.length < 50) return; // Wait for enough context
+
+      // Skip if context hasn't grown significantly (at least 100 chars of new content)
+      const contextGrowth = context.length - this.lastContextLength;
+      if (contextGrowth < 100) {
+        // log('Smart Analysis: Context growth insufficient, skipping.');
+        return;
+      }
+
+      // Update check time BEFORE making the call to prevent concurrent calls
+      this.lastSmartCheckTime = now;
+      this.lastContextLength = context.length;
+
+      log('Smart Analysis: Scanning...');
+      log(`Smart Analysis: Full context sent (${context.length} chars, +${contextGrowth} new)`);
+
+      const videoTitle = document.title.replace(/^\(\d+\)\s*/, ''); // Remove notification count
+
+      // Visual Feedback: Start
+      this.overlayManager.startLoading();
+
+      try {
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({
+            type: 'ANALYZE_SUBTITLES',
+            payload: { context, videoTitle }
+          }, resolve);
+        });
+
+        log('Smart Analysis: Received response:', response);
+
+        if (response && response.success && response.data) {
+          const { isKeyMoment, label, emoji, reason } = response.data;
+
+          if (isKeyMoment) {
+             log(`ProactiveAgent: Smart Insight Found! [${label}] - ${reason}`);
+
+             // Construct a rule-like object dynamically
+             const rule = {
+               id: 'smart-insight',
+               icon: emoji || '✨',
+               label: label || 'Insight'
+             };
+
+             this.triggerInsight('Smart Analysis', reason || context.substring(0, 100) + '...', rule);
+          } else {
+             log('Smart Analysis: No insight found.');
+          }
+        }
+      } catch (err) {
+        log('ProactiveAgent: Smart Analysis Failed', err);
+      } finally {
+        // Visual Feedback: Stop
+        this.overlayManager.stopLoading();
       }
     }
 

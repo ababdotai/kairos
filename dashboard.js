@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusMessageEl = document.getElementById('statusMessage');
     const toggleKeyVisibilityBtn = document.getElementById('toggleKeyVisibility');
     const languageOptions = document.querySelectorAll('.radio-option[data-lang]');
+    const highlightOptions = document.querySelectorAll('.radio-option[data-highlight]');
 
     // State
     let currentTab = 'library';
@@ -42,6 +43,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
+        // Highlight option selection
+        highlightOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const radio = option.querySelector('input[type="radio"]');
+                radio.checked = true;
+
+                // Update UI
+                highlightOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+            });
+        });
+
         saveSettingsBtn.addEventListener('click', saveSettings);
     }
 
@@ -72,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Loads saved settings from chrome.storage.sync
      */
     function loadSettings() {
-        chrome.storage.sync.get(['geminiApiKey', 'noteLanguage'], (result) => {
+        chrome.storage.sync.get(['geminiApiKey', 'noteLanguage', 'autoHighlightMode'], (result) => {
             // Load API Key
             if (result.geminiApiKey) {
                 apiKeyInput.value = result.geminiApiKey;
@@ -80,10 +93,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Load Language Preference
             const savedLang = result.noteLanguage || 'auto';
-            const targetRadio = document.querySelector(`input[name="noteLanguage"][value="${savedLang}"]`);
-            if (targetRadio) {
-                targetRadio.checked = true;
-                targetRadio.closest('.radio-option').classList.add('selected');
+            const targetLangRadio = document.querySelector(`input[name="noteLanguage"][value="${savedLang}"]`);
+            if (targetLangRadio) {
+                targetLangRadio.checked = true;
+                // Update visuals
+                languageOptions.forEach(opt => opt.classList.remove('selected'));
+                targetLangRadio.closest('.radio-option').classList.add('selected');
+            }
+
+            // Load Highlight Mode
+            const savedHighlight = result.autoHighlightMode || 'basic';
+            const targetHighlightRadio = document.querySelector(`input[name="autoHighlightMode"][value="${savedHighlight}"]`);
+            if (targetHighlightRadio) {
+                targetHighlightRadio.checked = true;
+                // Update visuals
+                highlightOptions.forEach(opt => opt.classList.remove('selected'));
+                targetHighlightRadio.closest('.radio-option').classList.add('selected');
             }
         });
     }
@@ -94,6 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function saveSettings() {
         const apiKey = apiKeyInput.value.trim();
         const selectedLang = document.querySelector('input[name="noteLanguage"]:checked').value;
+        const selectedHighlight = document.querySelector('input[name="autoHighlightMode"]:checked').value;
 
         if (!apiKey) {
             showStatus('Please enter a valid API Key', 'error');
@@ -107,7 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         chrome.storage.sync.set({
             geminiApiKey: apiKey,
-            noteLanguage: selectedLang
+            noteLanguage: selectedLang,
+            autoHighlightMode: selectedHighlight
         }, () => {
             showStatus('Settings saved successfully!', 'success');
             setTimeout(() => {

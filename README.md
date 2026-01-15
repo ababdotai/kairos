@@ -4,7 +4,7 @@
 
 如何让观看视频学习的过程更有价值和互动?
 
-Kairos 是一个基于 Gemini 3 Flash 多模态理解能力的视频笔记Agent，载体为一个Chrome Extension，核心功能为在用户观看视频时通过快捷键或点击进行AI笔记，通过智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
+Kairos 是一个基于 Gemini 3 Flash (gemini-3-flash-preview)多模态理解能力的视频笔记Agent，目前的载体为一个Chrome Extension，核心功能为在用户观看Coursera/Udemy/Bilibili/YouTube/TED等高信息密度视频时，在不打断心流的前提下优雅地做笔记，通过简单直观的操作+AI结合智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
 
 Kairos 是一个Proactive+Reactive的Agent：
 - Proactive：Kairos陪用户观看视频，自动发现重点和亮点
@@ -12,7 +12,7 @@ Kairos 是一个Proactive+Reactive的Agent：
 
 ## 🎯 核心理念
 
-传统视频学习是线性的——用户必须通过进度条寻找信息；边看视频边做笔记是麻烦的--用户必须手动截图粘贴到另一个软件中，文字也必须全部自己编写。
+传统视频学习是线性和非结构化的——用户必须通过进度条寻找信息；边看视频边做笔记是麻烦的--用户必须手动截图粘贴到另一个软件中，文字也必须全部自己编写。
 Kairos 重新定义了看视频做笔记的交互方式：
 
 - **心流模式**：遵循Granola的设计理念：“无感AI”与“增强而非替代”
@@ -20,6 +20,8 @@ Kairos 重新定义了看视频做笔记的交互方式：
 - **零 UI 摩擦**：悬浮球交互，无需打开侧边栏
 - **本地优先**：数据存储在用户本地，深度集成 Obsidian/Notion
 - **多模态理解**：利用 Gemini 3 Flash 的视觉能力，自动提取代码、公式、关键概念
+
+Deep Understanding（深度理解）和Active Learning（主动学习）: 追求观看时的效率，更追求深入的理解和学习。
 
 ## ✨ 核心功能
 
@@ -99,30 +101,40 @@ Kairos 重新定义了看视频做笔记的交互方式：
 
 ### 阶段 2：AI Agent实现（Week 4-5）
 - [x] 在Dashboard中实现Settings，支持Subscribe Kairos AI和BYOK两种模式提供AI API Key
-- [x] Gemini API 调用管道（Background Script）
-- [x] 激活时同时视频在播放时，自动发现关键点和重点，并以💡的形式显示在Timeline上
-- [ ] 多模态内容分析：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要
 - [x] 自适应语言：优先使用设置中的笔记语言，默认使用视频本身/标题/字幕中的主要语言
-- [ ] 只在真正重要的时候调用 AI：通过Subtitle(timedtext API)/VoiceOver筛选发现可能的重点
+- [x] Gemini API 调用管道（Background Script）
+- [ ] Growing Knowledge Tree：动态生长的思维导图，不剧透后面的内容，它只实时绘制已讲过内容的逻辑结构，帮助用户把线性的语音流，在脑中“编译”成结构化的知识结晶。
+- [x] Auto Highlight功能：
+  - [x] Basic(Free)：激活时同时视频在播放时，通过字幕CC关键词自动筛选和发现关键点和重点，并以💡等emoji的形式显示在Timeline上
+  - [x] Smart(API key/Subscription required)：激活后立刻通过让模型查看Subtitle(timedtext API)/VoiceOver发现提取出最精华、最有独特观点的部分，并通过“概念即时浮窗（Contextual Tooltip）”显示在视频上
+- [ ] 自由交互：支持自由点击屏幕任意位置进行空间维度笔记，而不仅仅是时间维度标记
+- [ ] Context-Aware Note功能：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
+- [ ] Agent化：视频不再是封闭的，而是可交互的，联通外部世界（Google Grounding）和沙箱（Gemini Code Interpreter），支持识别和点击视频元素进行解释
+- [ ] IntelliChat：支持更好的可视化、自由聊天与搜索
 - [ ] 里程碑：AI 自动发现视频重点，提取视频中的代码并生成解释
 
 ### 阶段 3：护城河建设（Week 6-7）
+- [ ] 账号体系：支持谷歌登录
 - [ ] Obsidian 本地直连（FileSystemAccess API）
 - [ ] Notion Integration 同步
 - [ ] Deep Link 回跳支持 (生成的笔记带有直接跳转到视频特定时间的链接)
+- [ ] Kairos Cloud：云端存储同步
+- [ ] 笔记分享：像《死亡搁浅》游戏中一样，可以在视频上看到别人留下的公开笔记，类似在YouTube上实现学习的弹幕和聊天室！
 - [ ] 里程碑：卸载插件后，笔记仍完整保留在 Obsidian
 
 ### 阶段 4：品质打磨与发布（Week 8+）
-- [ ] UI/UX 精细化（Glassmorphism + 动效）
-- [ ] 记录上次拖动位置，切换视频依然生效
+- [ ] UI/UX 极致体现taste和on hand
+- [x] 记录上次拖动位置，切换视频依然生效
 - [ ] Sound Design（截图音效、保存音效）
+- [ ] 支持语音输入
 - [ ] 录制 Demo 视频
+- [ ] 支持手机端悬浮球，通过点击、按住等操作交互，重触摸轻输入
 - [ ] Product Hunt 发布准备
 
 ## 🎨 设计语言
 
 - **核心隐喻**："Kairos"（关键时刻）—— 捕捉质的时间，而非量的时间，参考Granola，通过点击甚至无需输入，由AI智能辅助笔记
-- **视觉风格**：Liquid Glass（流体玻璃），参考 Linear/Granola/Arc
+- **视觉风格**：Liquid Glass（流体玻璃），参考 Linear/Granola/Arc/macOS26
 - **色彩方案**：
   - 背景：`#0A0A0A`（黑曜石）
   - 主色：`#D4D4D4`（高级灰）

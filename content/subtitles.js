@@ -8,6 +8,7 @@
   class SubtitleManager {
     constructor() {
       this.buffer = [];
+      this.fullSessionBuffer = []; // Stores entire session transcript
       this.observer = null;
       this.maxAge = 60 * 1000; // 60 seconds
       this.pollInterval = null;
@@ -40,6 +41,8 @@
       if (container) {
         log(`SubtitleManager: ${this.platform} container found, attaching observer.`);
         this._attachObserver(container);
+        // Fallback polling for robustness
+        this._startPolling(container);
       } else {
         // Poll for container presence
         if (!this.pollInterval) {
@@ -68,6 +71,7 @@
             if (c) {
               log(`SubtitleManager: ${this.platform} container found via polling.`);
               this._attachObserver(c);
+              this._startPolling(c);
               clearInterval(this.pollInterval);
               this.pollInterval = null;
             }
@@ -84,12 +88,18 @@
       const config = { childList: true, subtree: true, characterData: true };
       
       this.observer = new MutationObserver((mutationsList) => {
-        // Debounce slightly or just capture? 
-        // For efficiency, let's just capture.
         this._captureCurrentCaption(targetNode);
       });
 
       this.observer.observe(targetNode, config);
+    }
+
+    _startPolling(targetNode) {
+      // Poll every 1s to catch subtitles if Observer fails or DOM changes subtly
+      if (this.contentPollInterval) clearInterval(this.contentPollInterval);
+      this.contentPollInterval = setInterval(() => {
+        this._captureCurrentCaption(targetNode);
+      }, 1000);
     }
 
     _captureCurrentCaption(container) {
@@ -102,31 +112,44 @@
           currentText += seg.innerText + ' ';
         });
       } else {
-        // Fallback: direct text (common in Bilibili simple render)
+        // Fallback: direct text
         currentText = container.innerText;
       }
       
-      currentText = currentText.trim();
+      currentText = currentText.trim().replace(/\s+/g, ' '); // Normalize whitespace
       if (!currentText) return;
 
-      // Avoid duplicate consecutive entries
-      const lastEntry = this.buffer[this.buffer.length - 1];
-      
-      // Bilibili text usually replaces entirely, unlike YouTube's rolling partials.
-      // So if it's the exact same text, ignore.
-      if (lastEntry && lastEntry.text === currentText) {
-          return; 
+      const now = Date.now();
+
+      // --- Handle Buffer (Short-term) ---
+      const lastBuffer = this.buffer[this.buffer.length - 1];
+      if (lastBuffer && lastBuffer.text === currentText) {
+         // Duplicate
+      } else if (lastBuffer && currentText.startsWith(lastBuffer.text) && currentText.length > lastBuffer.text.length) {
+         lastBuffer.text = currentText;
+         lastBuffer.timestamp = now;
+      } else {
+         this.buffer.push({ text: currentText, timestamp: now });
+      }
+
+      // --- Handle Full Session (Long-term) ---
+      const lastFull = this.fullSessionBuffer[this.fullSessionBuffer.length - 1];
+      let action = 'ignore';
+
+      if (lastFull && lastFull.text === currentText) {
+         // Duplicate
+      } else if (lastFull && currentText.startsWith(lastFull.text) && currentText.length > lastFull.text.length) {
+         lastFull.text = currentText;
+         lastFull.timestamp = now;
+         action = 'update';
+      } else {
+         this.fullSessionBuffer.push({ text: currentText, timestamp: now });
+         action = 'push';
       }
       
-      // If the new text contains the old text, replace the old one (growing sentence - YouTube style)
-      if (lastEntry && currentText.startsWith(lastEntry.text) && currentText.length > lastEntry.text.length) {
-          lastEntry.text = currentText;
-          lastEntry.timestamp = Date.now();
-      } else {
-          this.buffer.push({
-            text: currentText,
-            timestamp: Date.now()
-          });
+      if (action !== 'ignore') {
+         // Debug log only when changes happen
+         // log(`Subtitle Capture: "${currentText.substring(0, 20)}..." [${action}] (Total: ${this.fullSessionBuffer.length} lines)`);
       }
       
       this._pruneBuffer();
@@ -203,6 +226,12 @@
       return this.buffer.map(item => item.text).join(' ');
     }
 
+    getFullContext() {
+      // Return entire session history
+      // Simple join. Improvements could include deduping more aggressively.
+      return this.fullSessionBuffer.map(item => item.text).join(' ');
+    }
+
     stop() {
       if (this.observer) {
         this.observer.disconnect();
@@ -212,6 +241,7 @@
         clearInterval(this.pollInterval);
       }
       this.buffer = [];
+      this.fullSessionBuffer = [];
     }
   }
 

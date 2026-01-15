@@ -112,17 +112,60 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             height: 100%;
-            color: var(--text-dim);
-            opacity: 0.5;
+            width: 100%;
         }
 
-        .empty-state svg {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 16px;
-            fill: currentColor;
+        .welcome-text {
+            flex: 0 0 auto;
+            margin-top: 60px; /* 顶部距离 */
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        .center-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding-bottom: 60px; /* 视觉补偿，平衡顶部的 margin */
+        }
+
+        .quote-text {
+            font-family: 'Georgia', serif;
+            font-size: 36px;
+            font-style: italic;
+            text-align: center;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 40px;
+            letter-spacing: -0.5px;
+        }
+
+        .quote-text div {
+            margin-bottom: 12px;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .quote-text div:hover {
+            color: var(--accent);
+            transform: scale(1.05);
+            text-shadow: 0 0 30px rgba(0, 242, 255, 0.15);
+        }
+
+        .hint-text {
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            opacity: 0.4;
+            font-weight: 400;
+            text-align: center;
+            line-height: 1.8;
         }
 
         .note-header {
@@ -457,13 +500,20 @@
     </div>
 
     <div class="main" id="mainContent">
-        <div id="libraryView">
+        <div id="libraryView" style="height: 100%;">
             <div class="empty-state">
-                <svg viewBox="0 0 24 24">
-                    <path
-                        d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-                </svg>
-                <p>Select a video to view notes</p>
+                <div class="welcome-text">Welcome to Kairos</div>
+                <div class="center-content">
+                    <div class="quote-text">
+                        <div>I hear and I forget.</div>
+                        <div>I see and I remember.</div>
+                        <div>I do and I understand.</div>
+                    </div>
+                    <div class="hint-text">
+                        Select a video to view notes.<br>
+                        Click settings to customize.
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -559,6 +609,33 @@
                             <span class="radio-desc">Générer des notes en français</span>
                         </div>
                     </label>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label>Auto Highlight Mode</label>
+                <div class="setting-control radio-group">
+                    <div class="radio-option" data-highlight="disabled">
+                        <input type="radio" name="autoHighlightMode" value="disabled">
+                        <div class="radio-label">
+                            <div class="radio-title">Disabled</div>
+                            <div class="radio-desc">Manual highlighting only</div>
+                        </div>
+                    </div>
+                    <div class="radio-option selected" data-highlight="basic">
+                        <input type="radio" name="autoHighlightMode" value="basic" checked>
+                        <div class="radio-label">
+                            <div class="radio-title">Basic (Free)</div>
+                            <div class="radio-desc">Keyword matching based on subtitles</div>
+                        </div>
+                    </div>
+                    <div class="radio-option" data-highlight="smart">
+                        <input type="radio" name="autoHighlightMode" value="smart">
+                        <div class="radio-label">
+                            <div class="radio-title">Smart (AI Powered)</div>
+                            <div class="radio-desc">Semantic analysis via Gemini API</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

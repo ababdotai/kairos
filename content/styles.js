@@ -638,6 +638,68 @@
         filter: drop-shadow(0 0 6px #00f2ff);
       }
 
+      /* Spatial Note / Ripple Styles (Granola Style) */
+      .kairos-spatial-marker {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #00f2ff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 15px #00f2ff, 0 0 30px rgba(0, 242, 255, 0.4);
+        pointer-events: none;
+        z-index: 100;
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .kairos-spatial-marker.active {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1.2);
+      }
+
+      /* Ripple Animation on click */
+      .kairos-spatial-ripple {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border: 2px solid #00f2ff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        pointer-events: none;
+        z-index: 99;
+        animation: kairos-spatial-ripple-anim 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+      }
+
+      @keyframes kairos-spatial-ripple-anim {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 4px; }
+        100% { transform: translate(-50%, -50%) scale(2); opacity: 0; border-width: 1px; }
+      }
+
+      /* Ephemeral Spatial Note Tooltip */
+      .kairos-spatial-tooltip {
+        position: absolute;
+        background: rgba(15, 15, 15, 0.7);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 0.5px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: white;
+        font-size: 13px;
+        max-width: 240px;
+        pointer-events: none;
+        z-index: 101;
+        opacity: 0;
+        transform: translate(-50%, -100%) translateY(-15px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      }
+
+      .kairos-spatial-tooltip.active {
+        opacity: 1;
+        transform: translate(-50%, -100%) translateY(-10px) scale(1);
+      }
+
       @keyframes kairos-orb-breathe {
         0%, 100% { box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); border-color: rgba(0, 242, 255, 0.6); }
         50% { box-shadow: 0 0 35px rgba(0, 242, 255, 0.8); border-color: rgba(0, 242, 255, 1); }

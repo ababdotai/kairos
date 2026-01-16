@@ -254,7 +254,14 @@
 
       overlay.appendChild(effectContainer);
 
+      // Spatial Marker Container
+      const spatialLayer = document.createElement('div');
+      spatialLayer.className = 'kairos-spatial-layer';
+      spatialLayer.style.cssText = 'position: absolute; inset: 0; pointer-events: none; overflow: hidden;';
+      overlay.appendChild(spatialLayer);
+
       this.overlayElement = overlay;
+      this.spatialLayer = spatialLayer;
       this.dragHandle = dragHandle;
       this.orbElement = orb;
       this.orbMenu = orbMenu;
@@ -264,10 +271,39 @@
       this.noteInput = noteInput;
       this.notePreview = notePreview;
       this.pins = [];
+      this.spatialMarkers = [];
 
       this.shadowRoot.appendChild(overlay);
 
       this.effectElements = { flash, ripple, glowBorder };
+
+      // Global capture-phase double click listener to intercept video fullscreen toggle
+      // We bind this once and checking bounds inside
+      this.boundGlobalDblClick = (e) => this.handleGlobalDoubleClick(e);
+      document.addEventListener('dblclick', this.boundGlobalDblClick, true);
+
+      // Global double-click K listener
+      this.lastKPress = 0;
+      this.kPressTimeout = null;
+      window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'k' && !this.isEditing) {
+          const now = Date.now();
+          if (now - this.lastKPress < 400) {
+            // Double click K detected
+            e.preventDefault();
+            e.stopPropagation();
+            clearTimeout(this.kPressTimeout);
+            this.handlePinCapture();
+            this.lastKPress = 0;
+          } else {
+            this.lastKPress = now;
+            // Optional: single K behavior could be different or ignored for a moment
+            this.kPressTimeout = setTimeout(() => {
+              this.lastKPress = 0;
+            }, 400);
+          }
+        }
+      }, true);
     }
 
     /* --- Dragging Logic --- */
@@ -549,9 +585,97 @@
       if (this.isActive && this.progressBar && video && video.duration) {
         const progress = (video.currentTime / video.duration) * 100;
         this.progressBar.style.width = `${progress}%`;
+        this.updateSpatialMarkers(video.currentTime);
       }
 
       this.enforceIslandBounds(rect.width, rect.height);
+    }
+
+    /**
+     * Updates the visibility of spatial markers based on current video time
+     * @param {number} currentTime - Current video time in seconds
+     */
+    updateSpatialMarkers(currentTime) {
+      if (!this.isActive || !this.spatialLayer || !this.pins) {
+        if (!this.isActive) this.clearAllSpatialMarkers();
+        return;
+      }
+
+      const WINDOW = 2; // Visibility window in seconds
+
+      this.pins.forEach(pin => {
+        if (pin.spatialX === null || pin.spatialX === undefined) return;
+
+        const timeDiff = Math.abs(currentTime - pin.timestamp);
+        const shouldBeVisible = timeDiff < WINDOW || pin.isHovered;
+
+        if (shouldBeVisible && !pin.spatialMarker) {
+          this.renderSpatialMarker(pin);
+        } else if (!shouldBeVisible && pin.spatialMarker) {
+          this.removeSpatialMarker(pin);
+        }
+
+        // Update opacity for fade effect
+        if (pin.spatialMarker) {
+          const opacity = pin.isHovered ? 1 : Math.max(0, 1 - (timeDiff / WINDOW));
+          pin.spatialMarker.style.opacity = opacity;
+          if (pin.spatialTooltip) pin.spatialTooltip.style.opacity = opacity;
+          
+          if (opacity > 0) {
+            pin.spatialMarker.classList.add('active');
+            if (pin.spatialTooltip) pin.spatialTooltip.classList.add('active');
+          } else {
+            pin.spatialMarker.classList.remove('active');
+            if (pin.spatialTooltip) pin.spatialTooltip.classList.remove('active');
+          }
+        }
+      });
+    }
+
+    /**
+     * Removes all spatial markers from the screen
+     */
+    clearAllSpatialMarkers() {
+      if (!this.pins) return;
+      this.pins.forEach(pin => this.removeSpatialMarker(pin));
+    }
+
+    /**
+     * Renders a spatial marker (ripple/dot) at the captured coordinates
+     * @param {Object} pin - Pin data
+     */
+    renderSpatialMarker(pin) {
+      const marker = document.createElement('div');
+      marker.className = 'kairos-spatial-marker';
+      marker.style.left = `${pin.spatialX}%`;
+      marker.style.top = `${pin.spatialY}%`;
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'kairos-spatial-tooltip';
+      tooltip.style.left = `${pin.spatialX}%`;
+      tooltip.style.top = `${pin.spatialY}%`;
+      tooltip.textContent = pin.note || 'Snapshot';
+
+      this.spatialLayer.appendChild(marker);
+      this.spatialLayer.appendChild(tooltip);
+
+      pin.spatialMarker = marker;
+      pin.spatialTooltip = tooltip;
+    }
+
+    /**
+     * Removes a spatial marker from the DOM
+     * @param {Object} pin - Pin data
+     */
+    removeSpatialMarker(pin) {
+      if (pin.spatialMarker) {
+        pin.spatialMarker.remove();
+        pin.spatialMarker = null;
+      }
+      if (pin.spatialTooltip) {
+        pin.spatialTooltip.remove();
+        pin.spatialTooltip = null;
+      }
     }
 
     /**
@@ -688,6 +812,7 @@
       if (this.overlayElement) this.overlayElement.classList.remove('active');
 
       this.closeNoteInput(true);
+      this.clearAllSpatialMarkers();
 
       // Reverse ripple animation
       ripple.classList.remove('animating');
@@ -697,9 +822,62 @@
     }
 
     /**
-     * Handles Pin capture button click
+     * Handles global double click to intercept video player events
+     * @param {MouseEvent} e - Mouse event
      */
-    async handlePinCapture() {
+    handleGlobalDoubleClick(e) {
+      // Only intercept if Kairos is active
+      if (!this.isActive || !this.overlayElement || !this.videoElement) return;
+
+      const rect = this.overlayElement.getBoundingClientRect();
+      
+      // Check if click is inside the overlay bounds
+      const isInsideOverlay = 
+        e.clientX >= rect.left && 
+        e.clientX <= rect.right && 
+        e.clientY >= rect.top && 
+        e.clientY <= rect.bottom;
+
+      if (isInsideOverlay) {
+        // STOP propagation to prevent native fullscreen toggle
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        // Calculate relative coordinates
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+        log('Spatial capture triggered at:', { x: x.toFixed(1) + '%', y: y.toFixed(1) + '%' });
+
+        // Visual Feedback: Spatial Ripple
+        this.createSpatialRipple(e.clientX - rect.left, e.clientY - rect.top);
+
+        // Trigger Pin Capture with spatial context
+        this.handlePinCapture({ spatialX: x, spatialY: y });
+      }
+    }
+
+    /**
+     * Creates a ripple effect at specific coordinates
+     * @param {number} x - Left in pixels
+     * @param {number} y - Top in pixels
+     */
+    createSpatialRipple(x, y) {
+      const ripple = document.createElement('div');
+      ripple.className = 'kairos-spatial-ripple';
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+
+      this.overlayElement.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 800);
+    }
+
+    /**
+     * Handles Pin capture button click
+     * @param {Object} spatialContext - Optional spatial coordinates {spatialX, spatialY}
+     */
+    async handlePinCapture(spatialContext = null) {
       if (!this.videoElement) return;
 
       log('Capturing current moment...');
@@ -715,20 +893,32 @@
       void flash.offsetWidth;
       flash.classList.add('animating');
 
+      // Pause video on capture to maintain focus (Granola style)
+      if (!this.videoElement.paused) {
+        this.videoElement.pause();
+        this.wasPlaying = true;
+      }
+
       const pinData = this.createPin(percentage);
+
+      // Add spatial coordinates if provided
+      if (spatialContext) {
+        pinData.spatialX = spatialContext.spatialX;
+        pinData.spatialY = spatialContext.spatialY;
+      }
 
       // Capture Frame
       try {
         const screenshot = await this.captureEngine.captureFrame(this.videoElement);
-        pinData.imageUrl = screenshot; // Store screenshot for persistence
+        pinData.imageUrl = screenshot;
         pinData.isAnalyzing = true;
-        this.openNoteInput(pinData);
+        this.openNoteInput(pinData, true);
 
-        // Request AI Analysis
+        // Request AI Analysis with spatial context
         this.requestAIAnalysis(pinData, screenshot);
       } catch (err) {
         log('Capture failed:', err);
-        this.openNoteInput(pinData);
+        this.openNoteInput(pinData, true);
       }
     }
 
@@ -802,13 +992,15 @@
       // Store context for persistence
       pinData.context = context;
 
+      // Request AI Analysis
       chrome.runtime.sendMessage({
         type: 'ANALYZE_FRAME',
         payload: {
           image: screenshot,
           videoTitle: videoInfo.title,
           context: context,
-          promptType: 'manual'
+          promptType: pinData.spatialX !== undefined ? 'spatial' : 'manual',
+          spatialPoint: pinData.spatialX !== undefined ? { x: pinData.spatialX, y: pinData.spatialY } : null
         }
       }, (response) => {
         pinData.isAnalyzing = false;
@@ -970,16 +1162,20 @@
         ...noteData,
         note: noteData.content,
         element: pin,
+        spatialX: noteData.spatialX,
+        spatialY: noteData.spatialY,
         savedToStorage: true
       };
 
       this.pins.push(pinData);
 
       pin.addEventListener('mouseenter', () => {
+        pinData.isHovered = true;
         if (!this.isEditing) this.openNoteInput(pinData, false);
       });
 
       pin.addEventListener('mouseleave', () => {
+        pinData.isHovered = false;
         this.closeNoteInput(false);
       });
 
@@ -1015,6 +1211,8 @@
           percentage: this.activePin.percentage,
           imageUrl: this.activePin.imageUrl || null,
           context: this.activePin.context || null,
+          spatialX: this.activePin.spatialX || null,
+          spatialY: this.activePin.spatialY || null,
           createdAt: this.activePin.createdAt || Date.now()
         };
 
@@ -1022,6 +1220,12 @@
           await this.storage.saveNote(noteRecord);
           this.activePin.id = noteRecord.id;
           this.activePin.savedToStorage = true;
+          
+          // Force spatial marker refresh to update tooltip content
+          if (this.activePin.spatialMarker) {
+            this.removeSpatialMarker(this.activePin);
+          }
+          
           log('Note persisted');
 
           // Notify SidePanel to add the new note
@@ -1125,10 +1329,12 @@
       this.pins.push(pinData);
 
       pin.addEventListener('mouseenter', () => {
+        pinData.isHovered = true;
         if (!this.isEditing) this.openNoteInput(pinData, false);
       });
 
       pin.addEventListener('mouseleave', () => {
+        pinData.isHovered = false;
         this.closeNoteInput(false);
       });
 
@@ -1238,6 +1444,10 @@
      * Destroys the overlay
      */
     destroy() {
+      if (this.boundGlobalDblClick) {
+        document.removeEventListener('dblclick', this.boundGlobalDblClick, true);
+      }
+      
       if (this.container && this.container.parentNode) {
         this.container.parentNode.removeChild(this.container);
       }

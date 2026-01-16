@@ -184,7 +184,7 @@
 
       const noteInput = document.createElement('textarea');
       noteInput.className = 'kairos-note-input';
-      noteInput.placeholder = '✨ Capture thought...';
+      noteInput.placeholder = 'Type note, or Enter for AI ✨';
       noteInput.rows = 1;
 
       const blockEvent = (e) => {
@@ -237,8 +237,9 @@
       noteWrapper.appendChild(noteActions);
 
       island.appendChild(orb);
-      island.appendChild(noteWrapper);
+      // noteWrapper moved to overlay for spatial positioning
       overlay.appendChild(island);
+      overlay.appendChild(noteWrapper);
 
       // Animation Effect Container
       const effectContainer = document.createElement('div');
@@ -378,6 +379,10 @@
 
       island.style.left = `${newLeft}px`;
       island.style.top = `${newTop}px`;
+
+      if (this.noteWrapper.classList.contains('active')) {
+        this.updateNoteAlignment(this.activePin, overlayRect.width, overlayRect.height);
+      }
 
       this.updateOrientation(newTop, overlayRect.height, newLeft, overlayRect.width);
     }
@@ -654,7 +659,7 @@
       tooltip.className = 'kairos-spatial-tooltip';
       tooltip.style.left = `${pin.spatialX}%`;
       tooltip.style.top = `${pin.spatialY}%`;
-      tooltip.textContent = pin.note || 'Snapshot';
+      tooltip.textContent = pin.note || '';
 
       this.spatialLayer.appendChild(marker);
       this.spatialLayer.appendChild(tooltip);
@@ -719,45 +724,78 @@
           island.style.top = `${newTop}px`;
         }
 
-        this.updateNoteAlignment(newLeft, containerWidth, noteWrapper);
+        if (this.noteWrapper.classList.contains('active')) {
+          this.updateNoteAlignment(this.activePin, containerWidth, containerHeight);
+        }
       }
     }
 
     /**
-     * Updates note wrapper alignment based on orb position
-     * @param {number} orbLeft - Orb left position in container
+     * Updates note wrapper alignment based on reference point (Orb or Spatial)
+     * @param {Object} pinData - The pin data containing spatial info
      * @param {number} containerWidth - Container width
-     * @param {HTMLElement} noteWrapper - Note wrapper element
+     * @param {number} containerHeight - Container height
      */
-    updateNoteAlignment(orbLeft, containerWidth, noteWrapper) {
-      if (!noteWrapper) return;
+    updateNoteAlignment(pinData, containerWidth, containerHeight) {
+      if (!this.noteWrapper) return;
 
-      const orb = this.shadowRoot?.querySelector('.kairos-orb');
-      const orbWidth = orb ? orb.offsetWidth : 48;
       const noteWidth = 320;
+      const PADDING = 12;
+      const MARGIN = 16;
 
-      // Calculate where note would be if centered on orb
-      const orbCenter = orbLeft + orbWidth / 2;
-      const noteLeftIfCentered = orbCenter - noteWidth / 2;
-      const noteRightIfCentered = noteLeftIfCentered + noteWidth;
+      let refX, refY, refWidth, refHeight;
 
-      let noteLeft;
-
-      if (noteLeftIfCentered < 0) {
-        // Left edge would go out of bounds - align left edges
-        noteLeft = 0;
-      } else if (noteRightIfCentered > containerWidth) {
-        // Right edge would go out of bounds - align right edges
-        noteLeft = orbLeft + orbWidth - noteWidth;
+      // Determine reference point and dimensions
+      if (pinData && pinData.spatialX !== undefined && pinData.spatialX !== null) {
+        // Case: Spatial (Double Click)
+        refX = (pinData.spatialX / 100) * containerWidth;
+        refY = (pinData.spatialY / 100) * containerHeight;
+        refWidth = 0;
+        refHeight = 0;
       } else {
-        // Center note on orb
-        noteLeft = noteLeftIfCentered;
+        // Case: Orb (KK or Pin Button)
+        const orb = this.shadowRoot?.querySelector('.kairos-orb');
+        const island = this.shadowRoot?.querySelector('.kairos-island-container');
+        if (!orb || !island) return;
+
+        const orbRect = orb.getBoundingClientRect();
+        const overlayRect = this.overlayElement.getBoundingClientRect();
+
+        refX = orbRect.left - overlayRect.left;
+        refY = orbRect.top - overlayRect.top;
+        refWidth = orb.offsetWidth;
+        refHeight = orb.offsetHeight;
       }
 
-      // Convert to position relative to island container (which starts at orbLeft)
-      const relativeLeft = noteLeft - orbLeft;
-      noteWrapper.style.left = `${relativeLeft}px`;
-      noteWrapper.style.right = 'auto';
+      // Calculate Horizontal Position (Center on refX, but clamp to bounds)
+      const centerX = refX + refWidth / 2;
+      let left = centerX - noteWidth / 2;
+
+      // Clamp to screen edges
+      left = Math.max(MARGIN, Math.min(left, containerWidth - noteWidth - MARGIN));
+
+      // Calculate Vertical Position (Prefer TOP, fallback to BOTTOM)
+      const spaceAbove = refY - MARGIN;
+      const noteHeightEstimate = this.noteWrapper.offsetHeight || 100;
+
+      let top;
+      if (spaceAbove > noteHeightEstimate + PADDING) {
+        // Place Above
+        top = refY - noteHeightEstimate - PADDING;
+        this.noteWrapper.style.transformOrigin = 'center bottom';
+      } else {
+        // Place Below
+        top = refY + refHeight + PADDING;
+        this.noteWrapper.style.transformOrigin = 'center top';
+      }
+
+      // Clamp vertical to bounds
+      top = Math.max(MARGIN, Math.min(top, containerHeight - noteHeightEstimate - MARGIN - 60));
+
+      this.noteWrapper.style.left = `${left}px`;
+      this.noteWrapper.style.top = `${top}px`;
+      this.noteWrapper.style.right = 'auto';
+      this.noteWrapper.style.bottom = 'auto';
     }
 
     /**
@@ -911,11 +949,8 @@
       try {
         const screenshot = await this.captureEngine.captureFrame(this.videoElement);
         pinData.imageUrl = screenshot;
-        pinData.isAnalyzing = true;
+        pinData.isAnalyzing = false; // Don't trigger AI yet
         this.openNoteInput(pinData, true);
-
-        // Request AI Analysis with spatial context
-        this.requestAIAnalysis(pinData, screenshot);
       } catch (err) {
         log('Capture failed:', err);
         this.openNoteInput(pinData, true);
@@ -928,11 +963,27 @@
      */
     handleNoteKeydown(e) {
       e.stopPropagation();
-      e.stopImmediatePropagation();
+      // e.stopImmediatePropagation(); // Allow Enter key processing
 
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        this.saveNote();
+      if (e.key === 'Enter') {
+        const content = this.noteInput.value.trim();
+        
+        // If empty and Enter (without modifiers) -> Trigger AI
+        if (!content && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+          e.preventDefault();
+          if (this.activePin && this.activePin.imageUrl) {
+            log('Empty input + Enter: Triggering AI...');
+            this.activePin.isAnalyzing = true;
+            this.noteInput.placeholder = '✨ AI is thinking...';
+            this.noteInput.classList.add('ai-loading');
+            this.requestAIAnalysis(this.activePin, this.activePin.imageUrl);
+          }
+        } 
+        // If meta/ctrl + Enter OR just Enter on non-empty (standard behavior for simple input)
+        else if (content && (e.metaKey || e.ctrlKey || !e.shiftKey)) {
+          e.preventDefault();
+          this.saveNote();
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault();
         this.cancelNote();
@@ -1061,7 +1112,7 @@
         this.noteInput.classList.add('ai-loading');
         this.switchToEditMode(); // Show loading input
       } else {
-        this.noteInput.placeholder = '✨ Capture thought...';
+        this.noteInput.placeholder = 'Type note, or Enter for AI ✨';
         this.noteInput.classList.remove('ai-loading');
 
         if (!isEdit && pinData.note) {
@@ -1073,16 +1124,13 @@
 
       this.noteWrapper.classList.add('active');
 
-      // Update note alignment based on current orb position
+      // Update note alignment based on reference (Orb or Spatial)
       if (this.overlayElement) {
-        const island = this.shadowRoot?.querySelector('.kairos-island-container');
-        const orb = this.shadowRoot?.querySelector('.kairos-orb');
-        if (island && orb) {
-          const overlayRect = this.overlayElement.getBoundingClientRect();
-          const orbRect = orb.getBoundingClientRect();
-          const orbLeft = orbRect.left - overlayRect.left;
-          this.updateNoteAlignment(orbLeft, overlayRect.width, this.noteWrapper);
-        }
+        const rect = this.overlayElement.getBoundingClientRect();
+        // Delay alignment slightly to allow max-height transition/content rendering for height calc
+        setTimeout(() => {
+          this.updateNoteAlignment(pinData, rect.width, rect.height);
+        }, 10);
       }
 
       if (this.isEditing) {
@@ -1276,6 +1324,11 @@
       if (this.activePin) {
         // If this is a new unsaved pin (no id saved to storage yet), remove it
         if (!this.activePin.savedToStorage) {
+          // Remove spatial marker if it exists
+          if (this.activePin.spatialMarker) {
+            this.removeSpatialMarker(this.activePin);
+          }
+
           // Remove pin element from timeline
           if (this.activePin.element && this.activePin.element.parentNode) {
             this.activePin.element.parentNode.removeChild(this.activePin.element);

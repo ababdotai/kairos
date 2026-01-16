@@ -69,16 +69,6 @@
         bottom: auto;
       }
 
-      /* Note positioning relative to orb */
-      .kairos-island-container.orient-bottom .kairos-note-wrapper {
-        top: calc(100% + 12px);
-        bottom: auto;
-      }
-
-      .kairos-island-container.orient-top .kairos-note-wrapper {
-        bottom: calc(100% + 12px);
-        top: auto;
-      }
 
       .kairos-note-wrapper.active {
         width: 320px;
@@ -172,7 +162,7 @@
         margin-right: 0;
       }
 
-      /* Note Wrapper - absolutely positioned relative to island */
+      /* Note Wrapper - absolute within overlay */
       .kairos-note-wrapper {
         position: absolute;
         width: 320px;
@@ -182,17 +172,24 @@
         border: 0.5px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
         opacity: 0;
+        transform: scale(0.6) translateY(10px);
         pointer-events: none;
-        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: 
+          opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+          transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+          max-height 0.4s ease;
         display: flex;
         align-items: center;
         overflow: visible;
+        z-index: 1000;
+        transform-origin: center bottom; /* Default, will be updated by JS */
       }
 
       .kairos-note-wrapper.active {
-        max-height: 200px;
+        max-height: 300px;
         min-height: 36px;
         opacity: 1;
+        transform: scale(1) translateY(0);
         pointer-events: auto;
       }
 

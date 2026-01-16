@@ -301,7 +301,7 @@
 
       // Dashboard button
       const dashboardBtn = createElement('button', {
-        className: 'kairos-sp-btn kairos-sp-btn-secondary',
+        className: 'kairos-sp-btn kairos-sp-btn-accent',
         id: 'kairos-sp-dashboard'
       });
       dashboardBtn.appendChild(createSvgIcon('M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'));
@@ -376,6 +376,9 @@
           z-index: 1;
           pointer-events: auto;
           isolation: isolate;
+          --kairos-accent-start: #4fb6c8;
+          --kairos-accent-end: #5a7bd8;
+          --kairos-accent-ink: #0d1418;
         }
 
         /* Bilibili specific adjustments */
@@ -387,11 +390,11 @@
         }
 
         .kairos-sp-card {
-          background: linear-gradient(145deg, rgb(20, 20, 22), rgb(30, 30, 35));
+          background: linear-gradient(145deg, rgb(22, 23, 26), rgb(28, 30, 34));
           border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.06);
           overflow: hidden;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
           pointer-events: auto;
           /* Note: backdrop-filter removed to prevent interference with Bilibili image loading */
         }
@@ -401,8 +404,8 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-          background: rgba(255, 255, 255, 0.02);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          background: rgba(255, 255, 255, 0.015);
         }
 
         .kairos-sp-brand {
@@ -420,7 +423,7 @@
         .kairos-sp-title {
           font-size: 15px;
           font-weight: 600;
-          background: linear-gradient(135deg, #00f2ff 0%, #bd00ff 100%);
+          background: linear-gradient(135deg, var(--kairos-accent-start) 0%, var(--kairos-accent-end) 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -506,7 +509,7 @@
 
         .kairos-sp-note-count {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(255, 255, 255, 0.5);
         }
 
         .kairos-sp-notes-list {
@@ -578,8 +581,8 @@
           flex-shrink: 0;
           font-size: 11px;
           font-weight: 600;
-          color: #00f2ff;
-          background: rgba(0, 242, 255, 0.1);
+          color: #6fc3d6;
+          background: rgba(79, 182, 200, 0.12);
           padding: 4px 8px;
           border-radius: 6px;
           font-family: 'SF Mono', 'Menlo', monospace;
@@ -644,14 +647,14 @@
         }
 
         .kairos-sp-btn-primary {
-          background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
-          color: #000;
-          box-shadow: 0 2px 12px rgba(0, 212, 255, 0.3);
+          background: linear-gradient(135deg, #4fb6c8 0%, #4a9bd6 100%);
+          color: #0d1418;
+          box-shadow: 0 2px 10px rgba(79, 182, 200, 0.22);
         }
 
         .kairos-sp-btn-primary:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+          box-shadow: 0 4px 16px rgba(79, 182, 200, 0.3);
         }
 
         .kairos-sp-btn-primary:active {
@@ -659,14 +662,25 @@
         }
 
         .kairos-sp-btn-secondary {
-          background: rgba(255, 255, 255, 0.06);
-          color: rgba(255, 255, 255, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.82);
+          border: 1px solid rgba(255, 255, 255, 0.07);
         }
 
         .kairos-sp-btn-secondary:hover {
           background: rgba(255, 255, 255, 0.1);
           color: #fff;
+        }
+
+        .kairos-sp-btn-accent {
+          background: linear-gradient(120deg, var(--kairos-accent-start), var(--kairos-accent-end));
+          color: var(--kairos-accent-ink);
+          box-shadow: 0 8px 18px rgba(79, 182, 200, 0.22), 0 2px 8px rgba(90, 123, 216, 0.18);
+        }
+
+        .kairos-sp-btn-accent:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 22px rgba(79, 182, 200, 0.28), 0 4px 10px rgba(90, 123, 216, 0.22);
         }
 
         .kairos-sp-btn:disabled {

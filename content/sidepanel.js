@@ -853,6 +853,13 @@
         if (confirm('Delete this note?')) {
           try {
             await this.storage.deleteNote(note.id);
+
+            // Notify overlay to remove the pin
+            const event = new CustomEvent('kairos-note-deleted', {
+              detail: { noteId: note.id }
+            });
+            window.dispatchEvent(event);
+
             item.style.opacity = '0';
             item.style.transform = 'translateX(20px)';
             setTimeout(() => {

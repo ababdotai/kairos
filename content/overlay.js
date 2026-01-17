@@ -50,6 +50,12 @@
 
       document.body.appendChild(this.container);
 
+      // Listen for note deletion events from sidepanel
+      window.addEventListener('kairos-note-deleted', (e) => {
+        const { noteId } = e.detail;
+        this.removePinByNoteId(noteId);
+      });
+
       log('Overlay initialized');
     }
 
@@ -753,6 +759,33 @@
     clearAllSpatialMarkers() {
       if (!this.pins) return;
       this.pins.forEach(pin => this.removeSpatialMarker(pin));
+    }
+
+    /**
+     * Removes a pin by note ID
+     * @param {string} noteId - Note ID to remove
+     */
+    removePinByNoteId(noteId) {
+      const pinIndex = this.pins.findIndex(p => p.id === noteId);
+      if (pinIndex === -1) {
+        log(`Pin not found for note ID: ${noteId}`);
+        return;
+      }
+
+      const pin = this.pins[pinIndex];
+
+      // Remove pin element from DOM
+      if (pin.element && pin.element.parentNode) {
+        pin.element.parentNode.removeChild(pin.element);
+      }
+
+      // Remove spatial marker
+      this.removeSpatialMarker(pin);
+
+      // Remove from pins array
+      this.pins.splice(pinIndex, 1);
+
+      log(`Pin removed for note ID: ${noteId}`);
     }
 
     /**

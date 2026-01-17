@@ -254,12 +254,14 @@
       .kairos-orb-btn.pin-btn {
         background: rgba(0, 242, 255, 0.2);
         color: #00f2ff;
+        border-radius: 50%;
       }
 
       .kairos-orb-btn.pin-btn:hover {
         background: rgba(0, 242, 255, 0.4);
         color: white;
         box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
+        border-radius: 50%;
       }
 
       /* Orb Icon Button (center, for collapsing) */
@@ -411,16 +413,19 @@
       /* Ceiling Timeline: Now only a viewer */
       .kairos-timeline-container {
         position: absolute;
-        top: 0;
+        top: 20px;
         left: 0;
         right: 0;
-        height: 24px;
+        height: 16px;
         background: transparent;
         pointer-events: none;
         z-index: 30;
         opacity: 0;
         transition: opacity 0.3s ease;
         overflow: visible;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
       }
 
       /* Show when active */
@@ -433,62 +438,98 @@
         pointer-events: auto;
       }
 
-      /* The Visual Rail: Frosted Glass Fiber */
+      /* The Visual Rail: Liquid Glass Effect (macOS 26 Style) */
       .kairos-timeline-rail {
         position: absolute;
         top: 50%;
-        left: 0;
-        right: 0;
-        height: 4px;
+        left: 12px;
+        right: 12px;
+        height: 12px;
         transform: translateY(-50%);
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 2px;
-        backdrop-filter: blur(4px);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.35) 0%,
+          rgba(255, 255, 255, 0.25) 50%,
+          rgba(255, 255, 255, 0.2) 100%
+        );
+        backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
+        -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.1);
+        border-radius: 12px;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow:
+          0 2px 8px rgba(0, 0, 0, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.5),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+        overflow: visible;
+        border: 0.5px solid rgba(255, 255, 255, 0.4);
       }
 
       /* Hover Effect: Rail "Energizes" */
       .kairos-timeline-container:hover .kairos-timeline-rail {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.25);
-        box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.4) 0%,
+          rgba(255, 255, 255, 0.3) 50%,
+          rgba(255, 255, 255, 0.25) 100%
+        );
+        box-shadow:
+          0 2px 12px rgba(0, 0, 0, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.08);
       }
 
-      /* The Progress Beam */
+      /* The Progress Beam - White Fill with Liquid Glass */
       .kairos-progress-bar {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, transparent 0%, #00f2ff 100%);
-        border-radius: 2px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(255, 255, 255, 0.98) 50%,
+          rgba(255, 255, 255, 0.95) 100%
+        ) !important;
+        border-radius: 12px;
         position: relative;
+        transition: width 0.1s linear;
+        box-shadow:
+          inset 0 1px 2px rgba(255, 255, 255, 0.8),
+          inset 0 -1px 1px rgba(0, 0, 0, 0.05);
       }
 
-      /* The Playhead: Glowing Bead */
+      /* The Playhead: Bubble Timestamp - Reduced size */
       .kairos-progress-bar::after {
-        content: '';
+        content: attr(data-time);
         position: absolute;
-        right: -4px;
+        right: -18px;
         top: 50%;
         transform: translateY(-50%);
-        width: 8px;
-        height: 8px;
-        background: #ffffff;
-        border-radius: 50%;
-        box-shadow:
-          0 0 10px rgba(255, 255, 255, 1),
-          0 0 20px rgba(0, 242, 255, 0.8);
+        min-width: 32px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(30px) saturate(200%);
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: #000000;
+        padding: 0 8px;
         transition: transform 0.3s ease;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        border: 0.5px solid rgba(255, 255, 255, 0.5);
       }
 
       /* Playhead expands on hover */
       .kairos-timeline-container:hover .kairos-progress-bar::after {
-        transform: translateY(-50%) scale(1.5);
+        transform: translateY(-50%) scale(1.05);
       }
 
       /* The Pin: Visual Emoji Marker */
       .kairos-pin {
         position: absolute;
-        top: 2px;
+        top: -12px;
         width: 24px;
         height: 24px;
         transform: translateX(-50%);
@@ -505,21 +546,75 @@
       .kairos-pin:not(.kairos-marker-insight)::after {
         content: '📌';
         font-size: 20px;
-        transform: rotate(180deg) scaleX(-1);
-        filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.6));
+        filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.6));
         transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         pointer-events: auto;
       }
 
       /* Hover Effect: Scale up */
       .kairos-pin:hover::after {
-        transform: rotate(180deg) scaleX(-1) scale(1.3);
+        transform: scale(1.2);
         filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.9));
         cursor: pointer;
       }
 
       .kairos-pin:hover {
         height: 24px;
+      }
+
+      /* Timeline Ticks Container */
+      .kairos-ticks-container {
+        position: absolute;
+        top: 0;
+        left: 12px;
+        right: 12px;
+        height: 100%;
+        pointer-events: none;
+        z-index: 28;
+      }
+
+      /* Individual Tick Mark */
+      .kairos-tick {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        background: rgba(0, 0, 0, 0.2);
+        pointer-events: none;
+      }
+
+      /* Major Tick (with label) */
+      .kairos-tick-major {
+        height: 8px;
+        background: rgba(0, 0, 0, 0.35);
+      }
+
+      /* Minor Tick (shorter, no label) */
+      .kairos-tick-minor {
+        height: 4px;
+        background: rgba(0, 0, 0, 0.18);
+      }
+
+      /* Tick Label (Time Text) - White with gradient border */
+      .kairos-tick-label {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #ffffff;
+        white-space: nowrap;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        pointer-events: none;
+        text-shadow:
+          0 0 8px rgba(0, 0, 0, 0.8),
+          0 1px 2px rgba(0, 0, 0, 0.6),
+          -1px -1px 0 rgba(0, 0, 0, 0.3),
+          1px -1px 0 rgba(0, 0, 0, 0.3),
+          -1px 1px 0 rgba(0, 0, 0, 0.3),
+          1px 1px 0 rgba(0, 0, 0, 0.3);
       }
 
       /* Animation Layers */

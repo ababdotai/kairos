@@ -30,6 +30,7 @@
       this.wasPlaying = false;
       this.positionLoaded = false;
       this.scanAnimationTimer = null; // Timer for AI scanning animation
+      this.timelineScaleRendered = false; // Flag for timeline scale rendering
     }
 
     /**
@@ -82,8 +83,13 @@
       const progressBar = document.createElement('div');
       progressBar.className = 'kairos-progress-bar';
 
+      // Ticks Container for time scale
+      const ticksContainer = document.createElement('div');
+      ticksContainer.className = 'kairos-ticks-container';
+
       rail.appendChild(progressBar);
       timeline.appendChild(rail);
+      timeline.appendChild(ticksContainer);
 
       timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
       overlay.appendChild(timeline);
@@ -268,6 +274,7 @@
       this.orbMenu = orbMenu;
       this.timeline = timeline;
       this.progressBar = progressBar;
+      this.ticksContainer = ticksContainer;
       this.noteWrapper = noteWrapper;
       this.noteInput = noteInput;
       this.notePreview = notePreview;
@@ -588,12 +595,113 @@
       this.lastOverlayHeight = rect.height;
 
       if (this.isActive && this.progressBar && video && video.duration) {
+        // Render timeline scale once when duration is available
+        if (!this.timelineScaleRendered) {
+          this.renderTimelineScale(video.duration);
+          this.timelineScaleRendered = true;
+        }
+
         const progress = (video.currentTime / video.duration) * 100;
         this.progressBar.style.width = `${progress}%`;
+
+        // Update bubble timestamp
+        const currentTime = Math.floor(video.currentTime);
+        const minutes = Math.floor(currentTime / 60);
+        const seconds = currentTime % 60;
+        this.progressBar.setAttribute('data-time', `${minutes}:${seconds.toString().padStart(2, '0')}`);
+
         this.updateSpatialMarkers(video.currentTime);
       }
 
       this.enforceIslandBounds(rect.width, rect.height);
+    }
+
+    /**
+     * Renders smart time ticks on the timeline based on video duration
+     * @param {number} duration - Video duration in seconds
+     */
+    renderTimelineScale(duration) {
+      if (!this.ticksContainer) return;
+
+      this.ticksContainer.innerHTML = '';
+      
+      // Determine interval based on duration
+      // Target around 8-12 major ticks
+      let interval = 60; // Default 1 min
+      let chompSpeed = 0.25; // Default speed
+
+      if (duration < 300) {
+        interval = 30;        // < 5m: 30s
+        chompSpeed = 0.15;    // Fast chomp
+      }
+      else if (duration < 600) interval = 60;    // < 10m: 1m
+      else if (duration < 1800) interval = 120;  // < 30m: 2m
+      else if (duration < 3600) {
+        interval = 300;       // < 1h: 5m
+        chompSpeed = 0.4;     // Slow chomp
+      }
+      else if (duration < 7200) {
+        interval = 600;       // < 2h: 10m
+        chompSpeed = 0.5;     // Very slow chomp
+      }
+      else {
+        interval = 900;       // > 2h: 15m
+        chompSpeed = 0.6;     // Lazy chomp
+      }
+
+      // Apply dynamic chomp speed
+      if (this.progressBar) {
+        this.progressBar.style.setProperty('--chomp-speed', `${chompSpeed}s`);
+      }
+
+      const totalTicks = Math.floor(duration / interval);
+
+      for (let i = 0; i <= totalTicks; i++) {
+        const time = i * interval;
+        const percent = (time / duration) * 100;
+
+        // Don't render if too close to the end
+        if (percent > 98) continue;
+
+        // Major tick with label
+        const tick = document.createElement('div');
+        tick.className = 'kairos-tick kairos-tick-major';
+        tick.style.left = `${percent}%`;
+
+        // Create label for every tick
+        const label = document.createElement('span');
+        label.className = 'kairos-tick-label';
+
+        // Format time: "5m", "10m" or "1:30"
+        if (interval >= 60) {
+            label.textContent = Math.floor(time / 60) + 'm';
+        } else {
+            label.textContent = time + 's';
+        }
+
+        tick.appendChild(label);
+        this.ticksContainer.appendChild(tick);
+
+        // Add minor ticks between major ticks
+        if (i < totalTicks) {
+          const minorTickCount = interval >= 300 ? 5 : (interval >= 60 ? 4 : 3);
+          const minorInterval = interval / minorTickCount;
+
+          for (let j = 1; j < minorTickCount; j++) {
+            const minorTime = time + (j * minorInterval);
+            const minorPercent = (minorTime / duration) * 100;
+
+            if (minorPercent > 98) continue;
+
+            const minorTick = document.createElement('div');
+            minorTick.className = 'kairos-tick kairos-tick-minor';
+            minorTick.style.left = `${minorPercent}%`;
+            this.ticksContainer.appendChild(minorTick);
+          }
+        }
+      }
+      
+      log(`Rendered timeline scale: ${totalTicks} ticks with ${interval}s interval`);
     }
 
     /**

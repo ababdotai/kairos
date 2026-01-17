@@ -94,7 +94,7 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 - [x] 悬浮球交互组件（The Orb）：鼠标悬浮之上显示“Activate/Deactivate Kairos”
 - [x] 天花板时间轴（The Ceiling Timeline）：实现Pin功能
 - [x] 浏览器本地笔记存储（IndexedDB CRUD）
-- [x] 快捷键仅在Kairos激活时生效
+- [x] 所有视频区叠层功能仅在Kairos激活时生效，在Kairos未激活时，所有交互都应被禁用
 - [x] Markdown 导出功能
 - [x] Dashboard 管理界面
 - [x] 里程碑：完整记录 5 条笔记并导出MD
@@ -106,7 +106,7 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 - [x] Auto Highlight功能：
   - [x] Basic(Free)：激活时同时视频在播放时，通过字幕CC关键词自动筛选和发现关键点和重点，并以💡等emoji的形式显示在Timeline上
   - [x] Smart(API key/Subscription required)：激活后立刻通过让模型查看Subtitle(timedtext API)/VoiceOver发现提取出最精华、最有独特观点的部分，并通过“概念即时浮窗（Contextual Tooltip）”显示在视频上
-- [ ] Pin Everywhere功能：支持自由点击屏幕任意位置进行时间temperal+空间spatial维度的笔记，可以贴在视频上模拟写实的Sticky notes
+- [x] Pin Everywhere功能：支持自由点击屏幕任意位置进行时间temperal+空间spatial维度的笔记，可以贴在视频上模拟写实的Sticky notes
 - [ ] Context-Aware Note功能：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
 - [ ] Growing Knowledge Tree：动态生长的思维导图，不剧透后面的内容，它只实时绘制已讲过内容的逻辑结构，帮助用户把线性的语音流，在脑中“编译”成结构化的知识结晶
 - [ ] Agent化：视频不再是封闭的，而是可交互的，联通外部世界（Google Grounding）和沙箱（Gemini Code Interpreter），支持识别和点击视频元素进行解释

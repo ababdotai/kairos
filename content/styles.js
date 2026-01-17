@@ -247,7 +247,7 @@
       .kairos-orb-btn:hover {
         background: rgba(255, 255, 255, 0.2);
         color: white;
-        transform: scale(1.1);
+        transform: scale(1.05);
       }
 
       /* Pin button special styling */
@@ -260,7 +260,7 @@
       .kairos-orb-btn.pin-btn:hover {
         background: rgba(0, 242, 255, 0.4);
         color: white;
-        box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
+        // box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
         border-radius: 50%;
       }
 

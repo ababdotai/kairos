@@ -418,7 +418,7 @@
         right: 0;
         height: 16px;
         background: transparent;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 30;
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -426,6 +426,12 @@
         display: flex;
         align-items: center;
         padding: 0 12px;
+        cursor: pointer;
+      }
+
+      /* Dragging state */
+      .kairos-timeline-container.dragging {
+        cursor: grabbing;
       }
 
       /* Show when active */

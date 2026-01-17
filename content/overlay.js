@@ -31,6 +31,7 @@
       this.positionLoaded = false;
       this.scanAnimationTimer = null; // Timer for AI scanning animation
       this.timelineScaleRendered = false; // Flag for timeline scale rendering
+      this.isDraggingTimeline = false; // Flag for timeline dragging
     }
 
     /**
@@ -92,6 +93,7 @@
       timeline.appendChild(ticksContainer);
 
       timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
+      timeline.addEventListener('mousedown', (e) => this.handleTimelineMouseDown(e));
       overlay.appendChild(timeline);
 
       // The Intelligent Island Container (Orb + Note)
@@ -1457,12 +1459,112 @@
     }
 
     /**
-     * Handles clicks on the timeline area
+     * Handles clicks on the timeline area to seek video
      * @param {MouseEvent} e - Mouse event
      */
     handleTimelineClick(e) {
+      // Don't trigger click if we were dragging
+      if (this.isDraggingTimeline) {
+        this.isDraggingTimeline = false;
+        return;
+      }
+
       e.stopPropagation();
-      log('Timeline click ignored (Use Orb to capture)');
+
+      const video = document.querySelector('video');
+      if (!video || !video.duration) return;
+
+      const rect = this.timeline.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+      const newTime = (percentage / 100) * video.duration;
+
+      video.currentTime = newTime;
+      log(`Timeline seek to ${percentage.toFixed(1)}% (${newTime.toFixed(1)}s)`);
+    }
+
+    /**
+     * Handles mousedown on timeline to start dragging
+     * @param {MouseEvent} e - Mouse event
+     */
+    handleTimelineMouseDown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const video = document.querySelector('video');
+      if (!video || !video.duration) return;
+
+      this.isDraggingTimeline = true;
+      this.timeline.classList.add('dragging');
+
+      // Pause video while dragging
+      this.wasPlayingBeforeDrag = !video.paused;
+      if (this.wasPlayingBeforeDrag) {
+        video.pause();
+      }
+
+      // Seek to initial position
+      this.seekTimelineToPosition(e.clientX);
+
+      // Add global listeners
+      this.timelineMouseMoveHandler = (e) => this.handleTimelineMouseMove(e);
+      this.timelineMouseUpHandler = (e) => this.handleTimelineMouseUp(e);
+
+      document.addEventListener('mousemove', this.timelineMouseMoveHandler);
+      document.addEventListener('mouseup', this.timelineMouseUpHandler);
+    }
+
+    /**
+     * Handles mousemove while dragging timeline
+     * @param {MouseEvent} e - Mouse event
+     */
+    handleTimelineMouseMove(e) {
+      if (!this.isDraggingTimeline) return;
+
+      e.preventDefault();
+      this.seekTimelineToPosition(e.clientX);
+    }
+
+    /**
+     * Handles mouseup to end timeline dragging
+     * @param {MouseEvent} e - Mouse event
+     */
+    handleTimelineMouseUp(e) {
+      if (!this.isDraggingTimeline) return;
+
+      e.preventDefault();
+      this.timeline.classList.remove('dragging');
+
+      // Resume video if it was playing before drag
+      const video = document.querySelector('video');
+      if (video && this.wasPlayingBeforeDrag) {
+        video.play();
+      }
+
+      // Remove global listeners
+      document.removeEventListener('mousemove', this.timelineMouseMoveHandler);
+      document.removeEventListener('mouseup', this.timelineMouseUpHandler);
+
+      // Keep isDraggingTimeline true briefly to prevent click event
+      setTimeout(() => {
+        this.isDraggingTimeline = false;
+      }, 10);
+    }
+
+    /**
+     * Seeks video to position based on mouse X coordinate
+     * @param {number} clientX - Mouse X coordinate
+     */
+    seekTimelineToPosition(clientX) {
+      const video = document.querySelector('video');
+      if (!video || !video.duration) return;
+
+      const rect = this.timeline.getBoundingClientRect();
+      const clickX = clientX - rect.left;
+      const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+      const newTime = (percentage / 100) * video.duration;
+
+      video.currentTime = newTime;
     }
 
     /**

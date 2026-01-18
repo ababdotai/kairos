@@ -425,7 +425,7 @@
         overflow: visible;
         display: flex;
         align-items: center;
-        padding: 0 12px;
+        padding: 0 40px;
         cursor: pointer;
       }
 
@@ -448,8 +448,8 @@
       .kairos-timeline-rail {
         position: absolute;
         top: 50%;
-        left: 12px;
-        right: 12px;
+        left: 40px;
+        right: 40px;
         height: 12px;
         transform: translateY(-50%);
         background: linear-gradient(
@@ -572,8 +572,8 @@
       .kairos-ticks-container {
         position: absolute;
         top: 0;
-        left: 12px;
-        right: 12px;
+        left: 40px;
+        right: 40px;
         height: 100%;
         pointer-events: none;
         z-index: 28;

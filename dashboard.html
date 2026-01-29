@@ -13,6 +13,23 @@
             --accent: #00f2ff;
             --text: #fff;
             --text-dim: #aaa;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --hover-bg: rgba(255, 255, 255, 0.05);
+            --active-bg: rgba(0, 242, 255, 0.05);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #ffffff;
+                --sidebar-bg: #f5f5f5;
+                --card-bg: #ffffff;
+                --accent: #007bff;
+                --text: #1a1a1a;
+                --text-dim: #666;
+                --border-color: rgba(0, 0, 0, 0.08);
+                --hover-bg: rgba(0, 0, 0, 0.05);
+                --active-bg: rgba(0, 123, 255, 0.1);
+            }
         }
 
         body {
@@ -30,14 +47,14 @@
         .sidebar {
             width: 350px;
             background-color: var(--sidebar-bg);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
         }
 
         .header {
             padding: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
         }
@@ -85,12 +102,12 @@
 
         .video-item:hover {
             transform: translateY(-2px);
-            background-color: #2a2a2a;
+            background-color: var(--hover-bg);
         }
 
         .video-item.active {
             border-color: var(--accent);
-            background-color: rgba(0, 242, 255, 0.05);
+            background-color: var(--active-bg);
         }
 
         .video-item-title {
@@ -154,7 +171,7 @@
             font-style: italic;
             text-align: center;
             line-height: 1.6;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-dim);
             margin-bottom: 40px;
             letter-spacing: -0.5px;
         }
@@ -183,7 +200,7 @@
         .note-header {
             margin-bottom: 40px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .note-title {
@@ -199,30 +216,30 @@
         }
 
         .action-btn {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--hover-bg);
             border: none;
             padding: 8px 16px;
             border-radius: 6px;
-            color: white;
+            color: var(--text);
             cursor: pointer;
             font-size: 13px;
             transition: background 0.2s;
         }
 
         .action-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--border-color);
         }
 
         .action-btn.primary {
             background: var(--accent);
-            color: black;
+            color: var(--bg);
             font-weight: 500;
         }
 
         .timeline {
             position: relative;
             padding-left: 24px;
-            border-left: 2px solid rgba(255, 255, 255, 0.1);
+            border-left: 2px solid var(--border-color);
         }
 
         .note-entry {
@@ -253,7 +270,7 @@
         .content {
             font-size: 16px;
             line-height: 1.6;
-            color: #ddd;
+            color: var(--text);
             white-space: pre-wrap;
         }
 
@@ -277,12 +294,12 @@
         }
 
         .nav-item:hover {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--hover-bg);
             color: var(--text);
         }
 
         .nav-item.active {
-            background-color: rgba(0, 242, 255, 0.1);
+            background-color: var(--active-bg);
             color: var(--accent);
         }
 
@@ -299,7 +316,7 @@
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
         }
 
         .settings-section h3 {
@@ -583,7 +600,7 @@
                     <label class="radio-option" data-lang="auto">
                         <input type="radio" name="noteLanguage" value="auto" checked>
                         <div class="radio-content">
-                            <span class="radio-title">Auto-detect</span>
+                            <span class="radio-title">AI-Decision</span>
                             <span class="radio-desc">Use video's primary language from title/subtitles</span>
                         </div>
                     </label>
@@ -625,7 +642,7 @@
                 </div>
             </div>
 
-            <div class="setting-item">
+            <!-- <div class="setting-item">
                 <label>Auto Highlight Mode</label>
                 <div class="setting-control radio-group">
                     <div class="radio-option" data-highlight="disabled">
@@ -650,7 +667,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <div id="statusMessage" class="status-message"></div>
             <button id="saveSettingsBtn" class="action-btn primary" style="width: 100%; margin-top: 16px;">Save

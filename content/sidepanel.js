@@ -379,6 +379,25 @@
           --kairos-accent-start: #4fb6c8;
           --kairos-accent-end: #5a7bd8;
           --kairos-accent-ink: #0d1418;
+
+          /* Default Theme (Dark) */
+          --kairos-sp-bg: linear-gradient(145deg, rgb(22, 23, 26), rgb(28, 30, 34));
+          --kairos-sp-text: rgba(255, 255, 255, 0.9);
+          --kairos-sp-text-muted: rgba(255, 255, 255, 0.5);
+          --kairos-sp-border: rgba(255, 255, 255, 0.06);
+          --kairos-sp-item-bg: rgba(255, 255, 255, 0.03);
+          --kairos-sp-header-bg: rgba(255, 255, 255, 0.015);
+        }
+
+        @media (prefers-color-scheme: light) {
+          #kairos-sidepanel {
+            --kairos-sp-bg: linear-gradient(145deg, rgb(255, 255, 255), rgb(245, 245, 245));
+            --kairos-sp-text: #1a1a1a;
+            --kairos-sp-text-muted: rgba(0, 0, 0, 0.5);
+            --kairos-sp-border: rgba(0, 0, 0, 0.08);
+            --kairos-sp-item-bg: rgba(0, 0, 0, 0.03);
+            --kairos-sp-header-bg: rgba(0, 0, 0, 0.01);
+          }
         }
 
         /* Bilibili specific adjustments */
@@ -390,13 +409,12 @@
         }
 
         .kairos-sp-card {
-          background: linear-gradient(145deg, rgb(22, 23, 26), rgb(28, 30, 34));
+          background: var(--kairos-sp-bg);
           border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid var(--kairos-sp-border);
           overflow: hidden;
           box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
           pointer-events: auto;
-          /* Note: backdrop-filter removed to prevent interference with Bilibili image loading */
         }
 
         .kairos-sp-header {
@@ -404,8 +422,8 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          background: rgba(255, 255, 255, 0.015);
+          border-bottom: 1px solid var(--kairos-sp-border);
+          background: var(--kairos-sp-header-bg);
         }
 
         .kairos-sp-brand {
@@ -433,9 +451,9 @@
           font-size: 10px;
           padding: 2px 6px;
           border-radius: 4px;
-          background: rgba(255, 255, 255, 0.05);
-          color: rgba(255, 255, 255, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(128, 128, 128, 0.05);
+          color: var(--kairos-sp-text-muted);
+          border: 1px solid var(--kairos-sp-border);
           font-weight: 600;
           letter-spacing: 0.05em;
           transition: all 0.3s ease;
@@ -460,9 +478,9 @@
           width: 28px;
           height: 28px;
           border: none;
-          background: rgba(255, 255, 255, 0.06);
+          background: rgba(128, 128, 128, 0.06);
           border-radius: 8px;
-          color: rgba(255, 255, 255, 0.6);
+          color: var(--kairos-sp-text-muted);
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -471,8 +489,8 @@
         }
 
         .kairos-sp-toggle:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.9);
+          background: rgba(128, 128, 128, 0.1);
+          color: var(--kairos-sp-text);
         }
 
         .kairos-sp-toggle svg {
@@ -498,7 +516,7 @@
         .kairos-sp-video-title {
           font-size: 14px;
           font-weight: 500;
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--kairos-sp-text);
           line-height: 1.4;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -509,7 +527,7 @@
 
         .kairos-sp-note-count {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--kairos-sp-text-muted);
         }
 
         .kairos-sp-notes-list {
@@ -517,7 +535,7 @@
           overflow-y: auto;
           margin-bottom: 16px;
           scrollbar-width: thin;
-          scrollbar-color: rgba(255,255,255,0.2) transparent;
+          scrollbar-color: var(--kairos-sp-border) transparent;
         }
 
         .kairos-sp-notes-list::-webkit-scrollbar {
@@ -529,7 +547,7 @@
         }
 
         .kairos-sp-notes-list::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
+          background: var(--kairos-sp-border);
           border-radius: 2px;
         }
 
@@ -539,7 +557,7 @@
           align-items: center;
           justify-content: center;
           padding: 24px 16px;
-          color: rgba(255, 255, 255, 0.3);
+          color: var(--kairos-sp-text-muted);
           font-size: 13px;
           text-align: center;
           gap: 8px;
@@ -552,7 +570,8 @@
 
         .kairos-sp-empty-hint {
           font-size: 11px;
-          color: rgba(255, 255, 255, 0.2);
+          color: var(--kairos-sp-text-muted);
+          opacity: 0.7;
         }
 
         .kairos-sp-note-item {
@@ -561,15 +580,15 @@
           gap: 12px;
           padding: 12px;
           margin-bottom: 8px;
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--kairos-sp-item-bg);
           border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          border: 1px solid var(--kairos-sp-border);
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .kairos-sp-note-item:hover {
-          background: rgba(255, 255, 255, 0.06);
+          background: rgba(128, 128, 128, 0.06);
           border-color: rgba(0, 242, 255, 0.2);
         }
 
@@ -591,7 +610,7 @@
         .kairos-sp-note-content {
           flex: 1;
           font-size: 13px;
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--kairos-sp-text);
           line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -605,7 +624,7 @@
           height: 24px;
           border: none;
           background: transparent;
-          color: rgba(255, 255, 255, 0.3);
+          color: var(--kairos-sp-text-muted);
           cursor: pointer;
           border-radius: 6px;
           display: flex;
@@ -662,14 +681,14 @@
         }
 
         .kairos-sp-btn-secondary {
-          background: rgba(255, 255, 255, 0.05);
-          color: rgba(255, 255, 255, 0.82);
-          border: 1px solid rgba(255, 255, 255, 0.07);
+          background: var(--kairos-sp-item-bg);
+          color: var(--kairos-sp-text);
+          border: 1px solid var(--kairos-sp-border);
         }
 
         .kairos-sp-btn-secondary:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #fff;
+          background: rgba(128, 128, 128, 0.1);
+          color: var(--kairos-sp-text);
         }
 
         .kairos-sp-btn-accent {

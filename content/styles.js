@@ -24,6 +24,34 @@
         position: fixed;
         pointer-events: none;
         z-index: ${CONFIG.Z_INDEX};
+
+        /* Constant Glass Theme (Shared) */
+        --kairos-glass-bg: rgba(15, 15, 15, 0.45);
+        --kairos-glass-border: rgba(255, 255, 255, 0.15);
+        --kairos-glass-shadow: rgba(0, 0, 0, 0.4);
+
+        /* Default Theme (Dark) */
+        --kairos-bg-main: rgba(10, 10, 10, 0.45);
+        --kairos-bg-secondary: rgba(25, 25, 25, 0.85);
+        --kairos-text-main: #ffffff;
+        --kairos-text-secondary: rgba(255, 255, 255, 0.6);
+        --kairos-border: rgba(255, 255, 255, 0.18);
+        --kairos-shadow: rgba(0, 0, 0, 0.4);
+        --kairos-accent: #00f2ff;
+        --kairos-input-bg: transparent;
+      }
+
+      @media (prefers-color-scheme: light) {
+        .kairos-overlay {
+          /* Note and UI elements still follow theme for readability */
+          --kairos-bg-main: rgba(255, 255, 255, 0.7);
+          --kairos-bg-secondary: rgba(255, 255, 255, 0.95);
+          --kairos-text-main: #1a1a1a;
+          --kairos-text-secondary: rgba(0, 0, 0, 0.6);
+          --kairos-border: rgba(0, 0, 0, 0.12);
+          --kairos-shadow: rgba(0, 0, 0, 0.1);
+          --kairos-input-bg: rgba(0, 0, 0, 0.03);
+        }
       }
 
       /* Apple Intelligence-style Border */
@@ -31,7 +59,7 @@
         position: absolute;
         inset: -1.5px;
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--kairos-border);
         box-shadow: 0 0 0 rgba(0,0,0,0);
         opacity: 0;
         pointer-events: none;
@@ -84,13 +112,13 @@
         justify-content: center;
         cursor: grab;
         transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        color: rgba(255, 255, 255, 0.4);
+        color: var(--kairos-text-secondary);
         margin-right: 0;
         overflow: hidden;
       }
 
       .kairos-drag-handle:hover {
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--kairos-text-main);
       }
 
       .kairos-drag-handle:active {
@@ -116,9 +144,9 @@
         position: relative;
         height: 48px;
         width: 48px;
-        background: rgba(10, 10, 10, 0.4);
+        background: var(--kairos-glass-bg);
         backdrop-filter: blur(32px) saturate(210%);
-        border: 0.5px solid rgba(255, 255, 255, 0.18);
+        border: 0.5px solid var(--kairos-glass-border);
         border-radius: 24px;
         pointer-events: auto;
         cursor: pointer;
@@ -126,7 +154,7 @@
         align-items: center;
         justify-content: center;
         transition: width 0.4s cubic-bezier(0.3, 1.2, 0.3, 1), background 0.3s ease;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 10px 40px var(--kairos-glass-shadow);
         overflow: hidden;
         flex-shrink: 0;
         padding: 0 12px;
@@ -137,7 +165,7 @@
       .kairos-orb.expanded {
         width: auto;
         min-width: 130px;
-        background: rgba(20, 20, 20, 0.55);
+        background: var(--kairos-glass-bg);
         justify-content: center;
         padding: 0 8px;
         gap: 0;
@@ -167,9 +195,9 @@
         position: absolute;
         width: 320px;
         max-height: 0;
-        background: rgba(25, 25, 25, 0.85);
+        background: var(--kairos-bg-secondary);
         backdrop-filter: blur(32px) saturate(180%);
-        border: 0.5px solid rgba(255, 255, 255, 0.15);
+        border: 0.5px solid var(--kairos-border);
         border-radius: 12px;
         opacity: 0;
         transform: scale(0.6) translateY(10px);
@@ -232,8 +260,8 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.8);
+        background: rgba(128, 128, 128, 0.1);
+        color: var(--kairos-text-secondary);
         border: none;
         cursor: pointer;
         display: flex;
@@ -245,22 +273,21 @@
       }
 
       .kairos-orb-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
+        background: rgba(128, 128, 128, 0.2);
+        color: var(--kairos-text-main);
         transform: scale(1.05);
       }
 
       /* Pin button special styling */
       .kairos-orb-btn.pin-btn {
-        background: rgba(0, 242, 255, 0.2);
+        background: rgba(0, 242, 255, 0.15);
         color: #00f2ff;
         border-radius: 50%;
       }
 
       .kairos-orb-btn.pin-btn:hover {
-        background: rgba(0, 242, 255, 0.4);
+        background: rgba(0, 242, 255, 0.3);
         color: white;
-        // box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
         border-radius: 50%;
       }
 
@@ -284,14 +311,14 @@
 
       .kairos-note-input {
         flex: 1;
-        background: transparent;
+        background: var(--kairos-input-bg);
         border: none;
         outline: none;
-        color: white;
-        font-size: 13px; /* Reduced from 16px */
+        color: var(--kairos-text-main);
+        font-size: 13px;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
         font-weight: 400;
-        padding: 10px 14px; /* Reduced padding */
+        padding: 10px 14px;
         min-height: 36px;
         max-height: 150px;
         min-width: 100px;
@@ -301,7 +328,8 @@
       }
 
       .kairos-note-input::placeholder {
-        color: rgba(255, 255, 255, 0.3);
+        color: var(--kairos-text-secondary);
+        opacity: 0.5;
         font-style: italic;
       }
 
@@ -309,13 +337,13 @@
       .kairos-note-input.ai-loading {
         background: linear-gradient(
           90deg,
-          rgba(255, 255, 255, 0) 0%,
-          rgba(255, 255, 255, 0.05) 50%,
-          rgba(255, 255, 255, 0) 100%
+          rgba(128, 128, 128, 0) 0%,
+          rgba(128, 128, 128, 0.05) 50%,
+          rgba(128, 128, 128, 0) 100%
         );
         background-size: 200% 100%;
         animation: kairos-shimmer 2s infinite linear;
-        color: rgba(255, 255, 255, 0.5);
+        color: var(--kairos-text-secondary);
       }
 
       @keyframes kairos-shimmer {
@@ -327,8 +355,8 @@
       .kairos-note-preview {
         flex: 1;
         background: transparent;
-        color: white;
-        font-size: 13px; /* Reduced from 16px */
+        color: var(--kairos-text-main);
+        font-size: 13px;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
         font-weight: 400;
         padding: 10px 14px;
@@ -341,10 +369,10 @@
         cursor: text;
       }
       
-      .kairos-note-preview strong { font-weight: 700; color: #fff; }
-      .kairos-note-preview em { font-style: italic; color: #ddd; }
+      .kairos-note-preview strong { font-weight: 700; color: var(--kairos-text-main); }
+      .kairos-note-preview em { font-style: italic; opacity: 0.9; }
       .kairos-note-preview code { 
-        background: rgba(255,255,255,0.15); 
+        background: rgba(128,128,128,0.15); 
         padding: 2px 4px; 
         border-radius: 4px; 
         font-family: 'Menlo', 'Monaco', monospace; 
@@ -382,8 +410,8 @@
         justify-content: center;
         font-size: 14px;
         transition: all 0.2s ease;
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.6);
+        background: rgba(128, 128, 128, 0.1);
+        color: var(--kairos-text-secondary);
       }
 
       .kairos-note-action-btn:hover {
@@ -585,20 +613,20 @@
         top: 50%;
         transform: translate(-50%, -50%);
         width: 2px;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(128, 128, 128, 0.2);
         pointer-events: none;
       }
 
       /* Major Tick (with label) */
       .kairos-tick-major {
         height: 8px;
-        background: rgba(0, 0, 0, 0.35);
+        background: rgba(128, 128, 128, 0.35);
       }
 
       /* Minor Tick (shorter, no label) */
       .kairos-tick-minor {
         height: 4px;
-        background: rgba(0, 0, 0, 0.18);
+        background: rgba(128, 128, 128, 0.18);
       }
 
       /* Tick Label (Time Text) - White with gradient border */
@@ -686,7 +714,7 @@
             inset 6px 0 35px rgba(0, 200, 255, 0.8),
             inset -6px 0 35px rgba(180, 0, 255, 0.8),
             inset 0 6px 35px rgba(255, 0, 150, 0.8),
-            inset 0 -6px 35px rgba(255, 100, 0, 0.8),
+            inset 0 -6px 35px rgba(180, 0, 255, 0.8),
             0 0 25px rgba(255, 255, 255, 0.3);
         }
       }
@@ -777,12 +805,12 @@
       /* Ephemeral Spatial Note Tooltip */
       .kairos-spatial-tooltip {
         position: absolute;
-        background: rgba(15, 15, 15, 0.7);
+        background: var(--kairos-bg-secondary);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 0.5px solid rgba(255, 255, 255, 0.2);
+        border: 0.5px solid var(--kairos-border);
         border-radius: 8px;
         padding: 8px 12px;
-        color: white;
+        color: var(--kairos-text-main);
         font-size: 13px;
         max-width: 240px;
         pointer-events: none;
@@ -790,7 +818,7 @@
         opacity: 0;
         transform: translate(-50%, -100%) translateY(-15px) scale(0.95);
         transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 30px var(--kairos-shadow);
       }
 
       .kairos-spatial-tooltip.active {
@@ -801,6 +829,11 @@
       @keyframes kairos-orb-breathe {
         0%, 100% { box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); border-color: rgba(0, 242, 255, 0.6); }
         50% { box-shadow: 0 0 35px rgba(0, 242, 255, 0.8); border-color: rgba(0, 242, 255, 1); }
+      }
+
+      @keyframes kairos-fade-in {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
       }
     `;
   }

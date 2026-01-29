@@ -108,22 +108,23 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] Smart(API key/Subscription required)：激活后立刻通过让模型查看Subtitle(timedtext API)/VoiceOver发现提取出最精华、最有独特观点的部分，并通过“概念即时浮窗（Contextual Tooltip）”显示在视频上
 - [x] Pin Everywhere功能：支持自由点击屏幕任意位置进行时间temperal+空间spatial维度的笔记，可以贴在视频上模拟写实的Sticky notes
 - [ ] 交互：
-  - [ ] 改进双击、点击后视频是否自动暂停的逻辑
-  - [ ] 目前交互还是容易打断心流，寻找一种更加极致好用的交互
-  - [ ] 快捷键按下后AI生成过程中通过Orb图标展示状态不要阻塞其他操作
-  - [ ] 增加未激活时快捷键是否生效的设置（默认不生效，可开启自动唤起）
-  - [ ] note input时退出有内容则自动保存逻辑
+  - [x] 改进双击、点击后视频是否自动暂停的逻辑
+  - [x] 空白回车后或快捷键按下后AI生成过程中通过Orb图标展示状态，不阻塞视频播放
+  - [ ] note input时退出有内容则自动保存
   - [ ] 侧边栏自动出现AI分析进度和生成结果
-  - [ ] 分离AI笔记快捷键（对于直播有用）和手动输入快捷键
+  - [ ] 分离AI笔记快捷键（KK）和手动输入快捷键（FF）
   - [ ] 同时显示用户输入和AI笔记（通过小标识），只有无输入时才调用AI笔记
 - [ ] UI:
   - [ ] 检测浏览器亮色与暗色模式，自动切换所有UI主题
-  - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
-  - [ ] Buttons: 按钮改为更好看的Button、随时显示快捷键，通过胶囊+数字显示当前视频笔记个数
+  - [ ] Side panel显示交互帮助信息、随时显示交互的指导信息，通过胶囊+数字显示当前视频笔记个数
+  - [ ] Buttons: 按钮改为更好看的Button
   - [ ] Side panel中视频播放到特定时间时同步滚动定位到笔记并高亮
   - [ ] Dashboard中Reference直接平铺展示，不需要展开收缩
   - [ ] Dashboard中note添加复制按钮，不复制图片数据
+  - [ ] Side panel支持按时间倒序或顺序显示
 - [ ] 功能：
+  - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
+  - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备
   - [ ] 直接将YouTube URL发送给模型指定时间分析
   - [ ] Ceiling timeline改为可以设置位置：底部原生进度条上方，或屏幕顶部（当前），添加Hide、Move按钮
   - [ ] 画面笔记：参考选中-高亮这一类似Liner的操作对视频进行笔记，不仅是PIN

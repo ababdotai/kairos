@@ -325,19 +325,28 @@
       this.lastKPress = 0;
       this.kPressTimeout = null;
       window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'k' && !this.isEditing) {
+        if (e.key.toLowerCase() === 'k' && this.isActive && !this.isEditing) {
+          // Always prevent default to stop native handlers (YouTube toggling play/pause)
+          // immediately. We will emulate the single-press behavior if no second press occurs.
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
           const now = Date.now();
           if (now - this.lastKPress < 400) {
             // Double click K detected
-            e.preventDefault();
-            e.stopPropagation();
             clearTimeout(this.kPressTimeout);
-            this.handlePinCapture();
+            this.handlePinCapture({ silent: true });
             this.lastKPress = 0;
           } else {
             this.lastKPress = now;
-            // Optional: single K behavior could be different or ignored for a moment
+            // Wait to see if it's a double press
             this.kPressTimeout = setTimeout(() => {
+              // Single press confirmed: Emulate native Play/Pause behavior
+              if (this.videoElement) {
+                if (this.videoElement.paused) this.videoElement.play();
+                else this.videoElement.pause();
+              }
               this.lastKPress = 0;
             }, 400);
           }
@@ -1089,12 +1098,16 @@
 
     /**
      * Handles Pin capture button click
-     * @param {Object} spatialContext - Optional spatial coordinates {spatialX, spatialY}
+     * @param {Object} options - Options { silent: boolean, spatialX: number, spatialY: number }
      */
-    async handlePinCapture(spatialContext = null) {
+    async handlePinCapture(options = {}) {
       if (!this.videoElement) return;
 
-      log('Capturing current moment...');
+      const silent = options.silent || false;
+      const spatialX = options.spatialX;
+      const spatialY = options.spatialY;
+
+      log(silent ? 'Silent capture (Background AI)...' : 'Capturing current moment...');
       const { flash } = this.effectElements;
 
       const duration = this.videoElement.duration;
@@ -1113,31 +1126,40 @@
       setTimeout(() => { this.capturingState = false; }, 600);
 
       // Pause video on capture to maintain focus (Granola style)
-      if (!this.videoElement.paused) {
-        this.videoElement.pause();
-        this.wasPlaying = true;
-      } else {
-        // Reset wasPlaying if paused (fix for bug where it auto-played after being paused)
-        this.wasPlaying = false;
+      // BUT only if NOT in silent mode. Silent mode should not interrupt flow.
+      if (!silent) {
+        if (!this.videoElement.paused) {
+          this.videoElement.pause();
+          this.wasPlaying = true;
+        } else {
+          this.wasPlaying = false;
+        }
       }
 
       const pinData = this.createPin(percentage);
 
       // Add spatial coordinates if provided
-      if (spatialContext) {
-        pinData.spatialX = spatialContext.spatialX;
-        pinData.spatialY = spatialContext.spatialY;
+      if (spatialX !== undefined) {
+        pinData.spatialX = spatialX;
+        pinData.spatialY = spatialY;
       }
 
       // Capture Frame
       try {
         const screenshot = await this.captureEngine.captureFrame(this.videoElement);
         pinData.imageUrl = screenshot;
-        pinData.isAnalyzing = false; // Don't trigger AI yet
-        this.openNoteInput(pinData, true);
+        
+        if (silent) {
+           pinData.isAnalyzing = true;
+           this.startLoading();
+           this.requestAIAnalysis(pinData, screenshot);
+        } else {
+           pinData.isAnalyzing = false; // Don't trigger AI yet
+           this.openNoteInput(pinData, true);
+        }
       } catch (err) {
         log('Capture failed:', err);
-        this.openNoteInput(pinData, true);
+        if (!silent) this.openNoteInput(pinData, true);
       }
     }
 
@@ -1156,11 +1178,18 @@
         if (!content && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault();
           if (this.activePin && this.activePin.imageUrl) {
-            log('Empty input + Enter: Triggering AI...');
-            this.activePin.isAnalyzing = true;
-            this.noteInput.placeholder = '✨ AI is thinking...';
-            this.noteInput.classList.add('ai-loading');
-            this.requestAIAnalysis(this.activePin, this.activePin.imageUrl);
+            log('Empty input + Enter: Triggering background AI...');
+            
+            const pinToAnalyze = this.activePin;
+            const imageToAnalyze = this.activePin.imageUrl;
+            
+            // Start AI
+            pinToAnalyze.isAnalyzing = true;
+            this.startLoading();
+            this.requestAIAnalysis(pinToAnalyze, imageToAnalyze);
+
+            // Close input immediately
+            this.closeNoteInput(true);
           }
         } 
         // If meta/ctrl + Enter OR just Enter on non-empty (standard behavior for simple input)
@@ -1244,11 +1273,18 @@
           const aiText = response.data.text;
           pinData.note = aiText;
 
+          // Check if this was a background/silent request or the UI is closed
+          const isBackground = this.activePin !== pinData;
+
           // Update UI if this pin is still active in the input
-          if (this.activePin === pinData && this.noteInput) {
+          if (!isBackground && this.noteInput) {
             this.noteInput.value = aiText;
             this.noteInput.classList.remove('ai-loading');
             this.switchToViewMode(aiText);
+          } else {
+             // Background completion
+             this.showSuccess();
+             this.savePinToStorage(pinData);
           }
         } else {
           log('AI Analysis failed:', response ? response.error : 'Unknown error');
@@ -1440,35 +1476,48 @@
 
       if (this.activePin) {
         this.activePin.note = content;
+        await this.savePinToStorage(this.activePin);
+      }
+
+      this.isEditing = false;
+      this.closeNoteInput(true);
+    }
+
+    /**
+     * Persists a pin data object to storage
+     * @param {Object} pinData - The pin object to save
+     */
+    async savePinToStorage(pinData) {
+        if (!pinData) return;
 
         const info = Utils.getVideoInfo();
         const noteRecord = {
-          id: this.activePin.id || Utils.generateId(),
+          id: pinData.id || Utils.generateId(),
           videoId: info.videoId,
           videoUrl: info.url,
           videoTitle: info.title,
-          content: content,
-          timestamp: this.activePin.timestamp,
-          timeLabel: Utils.formatTime(this.activePin.timestamp),
-          percentage: this.activePin.percentage,
-          imageUrl: this.activePin.imageUrl || null,
-          context: this.activePin.context || null,
-          spatialX: this.activePin.spatialX || null,
-          spatialY: this.activePin.spatialY || null,
-          createdAt: this.activePin.createdAt || Date.now()
+          content: pinData.note || '',
+          timestamp: pinData.timestamp,
+          timeLabel: Utils.formatTime(pinData.timestamp),
+          percentage: pinData.percentage,
+          imageUrl: pinData.imageUrl || null,
+          context: pinData.context || null,
+          spatialX: pinData.spatialX || null,
+          spatialY: pinData.spatialY || null,
+          createdAt: pinData.createdAt || Date.now()
         };
 
         try {
           await this.storage.saveNote(noteRecord);
-          this.activePin.id = noteRecord.id;
-          this.activePin.savedToStorage = true;
+          pinData.id = noteRecord.id;
+          pinData.savedToStorage = true;
           
           // Force spatial marker refresh to update tooltip content
-          if (this.activePin.spatialMarker) {
-            this.removeSpatialMarker(this.activePin);
+          if (pinData.spatialMarker) {
+            this.removeSpatialMarker(pinData);
           }
           
-          log('Note persisted');
+          log('Note persisted:', noteRecord.id);
 
           // Notify SidePanel to add the new note
           if (this.sidePanel) {
@@ -1477,10 +1526,6 @@
         } catch (err) {
           log('Failed to persist note:', err);
         }
-      }
-
-      this.isEditing = false;
-      this.closeNoteInput(true);
     }
 
     /**
@@ -1797,6 +1842,46 @@
 
       // Restore flip-icon based on actual position (will be updated by drag handler)
       // Leave it as-is for now, drag handler will correct it
+    }
+
+    /**
+     * Shows a success animation on the Orb (Checkmark)
+     */
+    showSuccess() {
+      if (!this.orbElement) return;
+
+      this.stopLoading(); // Stop scanning animation
+
+      this.orbElement.classList.add('success');
+      
+      const originalIcon = this.orbElement.querySelector('.kairos-orb-icon');
+      if (originalIcon) originalIcon.style.opacity = '0';
+      
+      const checkmark = document.createElement('div');
+      checkmark.className = 'kairos-success-mark';
+      checkmark.innerHTML = `
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00ff9d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      `;
+      checkmark.style.position = 'absolute';
+      checkmark.style.inset = '0';
+      checkmark.style.display = 'flex';
+      checkmark.style.alignItems = 'center';
+      checkmark.style.justifyContent = 'center';
+      checkmark.style.animation = 'kairos-fade-in 0.3s ease';
+      
+      // Inject keyframes if needed (doing it inline via style tag might be safer but verbose, 
+      // relying on simple opacity transition via CSS class is better if I could edit CSS.
+      // I'll assume simple appearance is fine or add a style tag)
+      
+      this.orbElement.appendChild(checkmark);
+
+      setTimeout(() => {
+        checkmark.remove();
+        if (originalIcon) originalIcon.style.opacity = '1';
+        this.orbElement.classList.remove('success');
+      }, 2000);
     }
 
     /**

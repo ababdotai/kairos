@@ -33,6 +33,7 @@
       this.timelineScaleRendered = false; // Flag for timeline scale rendering
       this.isDraggingTimeline = false; // Flag for timeline dragging
       this.capturingState = false; // Flag for capture-phase state (debouncing play events)
+      this.isKeyboardLocked = false; // Flag for keyboard lock state
     }
 
     /**
@@ -57,7 +58,28 @@
         this.removePinByNoteId(noteId);
       });
 
+      // Handle fullscreen changes to ensure overlay is visible
+      this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
+      document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+
       log('Overlay initialized');
+    }
+
+    /**
+     * Handles fullscreen changes to ensure overlay remains visible (Top Layer)
+     */
+    handleFullscreenChange() {
+      const fsElement = document.fullscreenElement;
+      if (fsElement) {
+        // Move container into the fullscreen element
+        // This ensures it sits on top of the video in native fullscreen mode
+        log('Entering fullscreen: moving overlay to fullscreen element');
+        fsElement.appendChild(this.container);
+      } else {
+        // Move back to body
+        log('Exiting fullscreen: moving overlay back to body');
+        document.body.appendChild(this.container);
+      }
     }
 
     /**
@@ -1297,6 +1319,16 @@
 
       if (this.isEditing) {
         this.noteInput.focus();
+
+        // Try to lock keyboard (Escape) if in fullscreen to prevent exit
+        if (document.fullscreenElement && navigator.keyboard && navigator.keyboard.lock) {
+          navigator.keyboard.lock(['Escape']).then(() => {
+            this.isKeyboardLocked = true;
+            log('Keyboard locked (Escape captured)');
+          }).catch((e) => {
+            log('Failed to lock keyboard:', e);
+          });
+        }
       }
 
       // Register global Esc listener to handle platforms that capture Escape early (e.g., Bilibili)
@@ -1463,6 +1495,18 @@
 
       if (this.isEditing && this.wasPlaying && this.videoElement) {
         this.videoElement.play();
+      }
+
+      if (this.isKeyboardLocked && navigator.keyboard && navigator.keyboard.unlock) {
+        // Delay unlock to prevent browser from interpreting the current Escape press as a fullscreen exit trigger
+        setTimeout(() => {
+          // Only unlock if we are still closed (user didn't reopen immediately)
+          if (!this.noteWrapper.classList.contains('active')) {
+             navigator.keyboard.unlock();
+             this.isKeyboardLocked = false;
+             log('Keyboard unlocked');
+          }
+        }, 500);
       }
 
       this.activePin = null;
@@ -1761,6 +1805,10 @@
     destroy() {
       if (this.boundGlobalDblClick) {
         document.removeEventListener('dblclick', this.boundGlobalDblClick, true);
+      }
+      
+      if (this.handleFullscreenChange) {
+        document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
       }
       
       if (this.container && this.container.parentNode) {

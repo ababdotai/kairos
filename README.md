@@ -1,6 +1,6 @@
 # Kairos
 
-> **Your AI secretary while watching videos.**
+> **Kairos=Vital Moments. Your AI secretary while watching videos.**
 
 如何让观看视频学习的过程更有价值和互动?
 
@@ -107,26 +107,55 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] Basic(Free)：激活时同时视频在播放时，通过字幕CC关键词自动筛选和发现关键点和重点，并以💡等emoji的形式显示在Timeline上
   - [x] Smart(API key/Subscription required)：激活后立刻通过让模型查看Subtitle(timedtext API)/VoiceOver发现提取出最精华、最有独特观点的部分，并通过“概念即时浮窗（Contextual Tooltip）”显示在视频上
 - [x] Pin Everywhere功能：支持自由点击屏幕任意位置进行时间temperal+空间spatial维度的笔记，可以贴在视频上模拟写实的Sticky notes
+- [ ] 交互：
+  - [ ] 改进双击、点击后视频是否自动暂停的逻辑
+  - [ ] 目前交互还是容易打断心流，寻找一种更加极致好用的交互
+  - [ ] 快捷键按下后AI生成过程中通过Orb图标展示状态不要阻塞其他操作
+  - [ ] 增加未激活时快捷键是否生效的设置（默认不生效，可开启自动唤起）
+  - [ ] note input时退出有内容则自动保存逻辑
+  - [ ] 侧边栏自动出现AI分析进度和生成结果
+  - [ ] 分离AI笔记快捷键（对于直播有用）和手动输入快捷键
+  - [ ] 同时显示用户输入和AI笔记（通过小标识），只有无输入时才调用AI笔记
+- [ ] UI:
+  - [ ] 检测浏览器亮色与暗色模式，自动切换所有UI主题
+  - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
+  - [ ] Buttons: 按钮改为更好看的Button、随时显示快捷键，通过胶囊+数字显示当前视频笔记个数
+  - [ ] Side panel中视频播放到特定时间时同步滚动定位到笔记并高亮
+  - [ ] Dashboard中Reference直接平铺展示，不需要展开收缩
+  - [ ] Dashboard中note添加复制按钮，不复制图片数据
+- [ ] 功能：
+  - [ ] 直接将YouTube URL发送给模型指定时间分析
+  - [ ] Ceiling timeline改为可以设置位置：底部原生进度条上方，或屏幕顶部（当前），添加Hide、Move按钮
+  - [ ] 画面笔记：参考选中-高亮这一类似Liner的操作对视频进行笔记，不仅是PIN
+- [ ] Bug:
+  - [ ] B站时间轴遮挡弹幕问题、全屏无法显示的问题
+  - [ ] 通过PIN/快捷键触发的笔记在播放到对应时间点时也应该有渐现渐隐的效果
+  - [ ] 点击PIN与时间轴的位置不对齐的问题
+- [ ] Export Note to Video：非线性叙事的重组Agent，根据笔记智能剪辑和重组视频，生成专属视频笔记
+- [ ] 针对所有笔记进行一键总结与分享，采用Growing Knowledge Tree形式
 - [ ] Context-Aware Note功能：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
 - [ ] Growing Knowledge Tree：动态生长的思维导图，不剧透后面的内容，它只实时绘制已讲过内容的逻辑结构，帮助用户把线性的语音流，在脑中“编译”成结构化的知识结晶
-- [ ] Agent化：视频不再是封闭的，而是可交互的，联通外部世界（Google Grounding）和沙箱（Gemini Code Interpreter），支持识别和点击视频元素进行解释
+- [ ] Agent化：视频不再是封闭的，而是可交互的，联通外部世界（Google Grounding）和沙箱（Gemini Code Interpreter），支持识别和点击视频元素进行解释和笔记
 - [ ] 里程碑：AI 自动发现视频重点，点击后提取视频中的代码并生成解释
 
 ### 阶段 3：护城河建设（Week 6-7）
 - [ ] 账号体系：支持谷歌登录
+- [ ] AI服务：采用SDK调用而非URL请求
 - [ ] Obsidian 本地直连（FileSystemAccess API）
 - [ ] Notion Integration 同步
 - [ ] Deep Link 回跳支持 (生成的笔记带有直接跳转到视频特定时间的链接)
 - [ ] Kairos Cloud：云端存储同步
-- [ ] 笔记分享：像《死亡搁浅》游戏中一样，可以在视频上看到别人留下的公开笔记，类似在YouTube上实现学习的弹幕和聊天室！
+- [ ] Publish Notes：像《死亡搁浅》游戏中一样，可以在视频上看到别人留下的公开笔记，类似在YouTube上实现学习的弹幕和聊天室！
 - [ ] 里程碑：卸载插件后，笔记仍完整保留在 Obsidian
 
 ### 阶段 4：品质打磨与发布（Week 8+）
 - [ ] UI/UX 极致体现taste和on hand
 - [x] 记录上次拖动位置，切换视频依然生效
 - [ ] Sound Design（截图音效、保存音效）
-- [ ] 支持语音输入
-- [ ] 录制 Demo 视频
+- [ ] 支持语音输入，支持文件夹分类甚至智能笔记聚类（超越单个视频）
+  - Auto-Wiki: “帮我把这个 PlayList 里所有关于 Python 装饰器的内容整理成一篇文档。” -> Agent 自动后台倍速刷视频、提取、重组。
+  - Interactive Tutorial: 将被动视频转化为交互式教程。
+- [ ] 录制 Demo 视频, 增加交互引导
 - [ ] 支持手机端悬浮球，通过点击、按住等操作交互，重触摸轻输入
 - [ ] Product Hunt 发布准备
 
@@ -233,3 +262,16 @@ MIT License
 ---
 
 **Built with ❤️ by an indie maker who believes in the power of capturing the right moment.**
+
+
+
+Gemini 3 + AICoding 的核心优势——**“懂逻辑（Logic-aware）”\**和\**“能执行复杂指令（Code-based）”**，去解决那些需要**脑子**才能剪好的视频（如叙事重组、私有素材匹配），而不是去解决只需要**眼睛**就能剪好的视频（如简单的去静音、加特效）：**“AI帮你把素材变成生意的资产”**
+
+个性化叙事组装、数据驱动的动态广告生成自迭代、非线性叙事的重组Agent，重组叙事
+
+*“Just finished watching @karpathy's new video. Mind-blowing. Used Kairos to extract all the code snippets and diagrams into a structured note. Here is the link for anyone who needs a quick review: [Link] ⚡️”**
+
+1. **Build in Public (Twitter):** 每天发一个产品细节的 GIF，吸引最早期的 50 个极客用户。
+
+2. **Reddit 截流:** 每天搜一遍相关问题，真诚回答并推荐自己的工具。
+3. **Obsidian 插件库:** 争取把你的插件（或配合的 Obsidian 插件）上架到 Obsidian 官方社区列表，那是源源不断的精准长尾流量。

@@ -32,6 +32,7 @@
       this.scanAnimationTimer = null; // Timer for AI scanning animation
       this.timelineScaleRendered = false; // Flag for timeline scale rendering
       this.isDraggingTimeline = false; // Flag for timeline dragging
+      this.capturingState = false; // Flag for capture-phase state (debouncing play events)
     }
 
     /**
@@ -572,6 +573,16 @@
       if (isNewVideo) {
         this.videoElement = video;
         video.addEventListener('play', () => {
+          // If we are in the middle of a capture (dblclick), ignore the play event
+          // and enforce pause. This fixes issues where previous clicks (before dblclick)
+          // toggle the video state (e.g. Bilibili).
+          if (this.capturingState) {
+            log('Play event intercepted during capture. Enforcing pause.');
+            video.pause();
+            this.wasPlaying = true; // Confirm we should resume later
+            return;
+          }
+
           if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
             this.closeNoteInput();
           }
@@ -1074,10 +1085,18 @@
       void flash.offsetWidth;
       flash.classList.add('animating');
 
+      // Set capturing state to intercept potential 'play' events from race conditions
+      // (e.g. Bilibili double-click vs single-click toggle conflict)
+      this.capturingState = true;
+      setTimeout(() => { this.capturingState = false; }, 600);
+
       // Pause video on capture to maintain focus (Granola style)
       if (!this.videoElement.paused) {
         this.videoElement.pause();
         this.wasPlaying = true;
+      } else {
+        // Reset wasPlaying if paused (fix for bug where it auto-played after being paused)
+        this.wasPlaying = false;
       }
 
       const pinData = this.createPin(percentage);

@@ -111,17 +111,15 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] 改进双击、点击后视频是否自动暂停的逻辑
   - [x] 空白回车后或快捷键按下后AI生成过程中通过Orb图标展示状态，不阻塞视频播放
   - [ ] note input时退出有内容则自动保存
-  - [ ] 侧边栏自动出现AI分析进度和生成结果
-  - [ ] 分离AI笔记快捷键（KK）和手动输入快捷键（FF）
+  - [ ] 分离AI笔记快捷键（FF）和手动输入快捷键（JJ）
   - [ ] 同时显示用户输入和AI笔记（通过小标识），只有无输入时才调用AI笔记
 - [ ] UI:
-  - [ ] 检测浏览器亮色与暗色模式，自动切换所有UI主题
-  - [ ] Side panel显示交互帮助信息、随时显示交互的指导信息，通过胶囊+数字显示当前视频笔记个数
-  - [ ] Buttons: 按钮改为更好看的Button
-  - [ ] Side panel中视频播放到特定时间时同步滚动定位到笔记并高亮
+  - [x] 检测浏览器亮色与暗色模式，自动切换所有UI主题
+  - [x] Side panel显示关于UX的交互帮助信息，在视频标题上通过胶囊+数字显示当前视频笔记个数
+  - [x] Side panel中视频播放到特定时间时同步滚动定位到笔记并高亮
+  - [x] Buttons: 将所有按钮改为更好看的Buttons，参考Linear/Arc/macOS26的设计
   - [ ] Dashboard中Reference直接平铺展示，不需要展开收缩
   - [ ] Dashboard中note添加复制按钮，不复制图片数据
-  - [ ] Side panel支持按时间倒序或顺序显示
 - [ ] 功能：
   - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
   - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备

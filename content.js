@@ -45,6 +45,9 @@
     // Start tracking and update overlay position
     videoTracker.start((rect, video) => {
       overlayManager.updatePosition(rect, video);
+      if (video) {
+        sidePanelManager.updateTime(video.currentTime);
+      }
     });
 
     // Monitor URL changes (for SPA like YouTube)

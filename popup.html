@@ -93,47 +93,57 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 10px;
-      border: none;
+      padding: 10px 12px;
+      border: 1px solid transparent;
       border-radius: 8px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       text-decoration: none;
       box-sizing: border-box;
+      position: relative;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
     }
 
     .btn-primary {
-      background: linear-gradient(90deg, #4fb6c8, #4a9bd6);
-      color: #0d1418;
+      background: var(--kairos-accent-start);
+      color: #fff;
       margin-bottom: 12px;
-      box-shadow: 0 6px 14px rgba(79, 182, 200, 0.18);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.1);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
     }
 
     .btn-primary:hover {
-      opacity: 0.9;
+      filter: brightness(1.1);
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 182, 200, 0.25);
     }
 
     .btn-secondary {
       background: var(--kairos-btn-secondary-bg);
       color: var(--kairos-btn-secondary-text);
+      border: 1px solid rgba(255,255,255,0.05);
     }
 
     .btn-secondary:hover {
-      opacity: 0.9;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
     .btn-accent {
-      background: linear-gradient(120deg, var(--kairos-accent-start), var(--kairos-accent-end));
-      color: var(--kairos-accent-ink);
-      box-shadow: 0 8px 18px rgba(79, 182, 200, 0.22), 0 2px 8px rgba(90, 123, 216, 0.18);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--kairos-text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .btn-accent:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba(79, 182, 200, 0.28), 0 4px 10px rgba(90, 123, 216, 0.22);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--kairos-text-muted);
     }
 
     .empty-state {

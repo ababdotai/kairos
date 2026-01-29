@@ -13,10 +13,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // State
     let currentTab = 'library';
 
+    // Check URL params for tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['library', 'settings'].includes(tabParam)) {
+        currentTab = tabParam;
+    }
+
     // Init
     loadVideoList();
     loadSettings();
     setupNavigation();
+    switchTab(currentTab); // Apply initial tab state
 
     function setupNavigation() {
         navItems.forEach(item => {

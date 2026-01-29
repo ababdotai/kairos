@@ -1107,7 +1107,7 @@
       const spatialX = options.spatialX;
       const spatialY = options.spatialY;
 
-      log(silent ? 'Silent capture (Background AI)...' : 'Capturing current moment...');
+      log(silent ? 'AI Note (Background AI)...' : 'Capturing current moment...');
       const { flash } = this.effectElements;
 
       const duration = this.videoElement.duration;

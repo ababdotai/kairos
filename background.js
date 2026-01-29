@@ -93,6 +93,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           chrome.tabs.create({ url: 'dashboard.html' });
           response = { status: 'opened' };
           break;
+        case 'OPEN_SETTINGS':
+          chrome.tabs.create({ url: 'dashboard.html?tab=settings' });
+          response = { status: 'opened' };
+          break;
         case 'ANALYZE_FRAME':
           response = await callGeminiAI(message.payload);
           break;

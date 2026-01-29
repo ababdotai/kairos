@@ -402,40 +402,50 @@
       .kairos-note-action-btn {
         width: 28px;
         height: 28px;
-        border-radius: 6px;
-        border: none;
+        border-radius: 8px; /* Slightly more rounded */
+        border: 1px solid transparent;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 14px;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         background: rgba(128, 128, 128, 0.1);
         color: var(--kairos-text-secondary);
       }
 
       .kairos-note-action-btn:hover {
-        transform: scale(1.1);
+        transform: scale(1.05);
+        background: rgba(128, 128, 128, 0.15);
+        color: var(--kairos-text-main);
+      }
+
+      .kairos-note-action-btn:active {
+        transform: scale(0.95);
       }
 
       .kairos-note-action-btn.save-btn {
-        background: rgba(0, 200, 100, 0.2);
+        background: rgba(0, 200, 100, 0.15);
         color: #00c864;
+        border: 1px solid rgba(0, 200, 100, 0.2);
       }
 
       .kairos-note-action-btn.save-btn:hover {
-        background: rgba(0, 200, 100, 0.4);
-        color: white;
+        background: rgba(0, 200, 100, 0.25);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 200, 100, 0.25);
       }
 
       .kairos-note-action-btn.cancel-btn {
-        background: rgba(255, 80, 80, 0.2);
+        background: rgba(255, 80, 80, 0.15);
         color: #ff6b6b;
+        border: 1px solid rgba(255, 80, 80, 0.2);
       }
 
       .kairos-note-action-btn.cancel-btn:hover {
-        background: rgba(255, 80, 80, 0.4);
-        color: white;
+        background: rgba(255, 80, 80, 0.25);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(255, 80, 80, 0.25);
       }
 
       /* Ceiling Timeline: Now only a viewer */

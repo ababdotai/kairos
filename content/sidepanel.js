@@ -251,12 +251,46 @@
 
       header.appendChild(brand);
 
+      // Header Actions (Right)
+      const headerActions = createElement('div', { className: 'kairos-sp-header-actions' });
+
+      // Export Button
+      const exportBtn = createElement('button', { 
+          className: 'kairos-sp-header-btn', 
+          title: 'Export Markdown',
+          id: 'kairos-sp-export' 
+      });
+      exportBtn.appendChild(createSvgIcon('M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z', 18));
+      headerActions.appendChild(exportBtn);
+      this.elements.exportBtn = exportBtn;
+
+      // Dashboard Button
+      const dashboardBtn = createElement('button', { 
+          className: 'kairos-sp-header-btn', 
+          title: 'My Notes',
+          id: 'kairos-sp-dashboard'
+      });
+      dashboardBtn.appendChild(createSvgIcon('M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z', 16));
+      headerActions.appendChild(dashboardBtn);
+      this.elements.dashboardBtn = dashboardBtn;
+
+      // Settings Button
+      const settingsBtn = createElement('button', { 
+          className: 'kairos-sp-header-btn', 
+          title: 'Settings',
+          id: 'kairos-sp-settings'
+      });
+      settingsBtn.appendChild(createSvgIcon('M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.57,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.08-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z', 16));
+      headerActions.appendChild(settingsBtn);
+      this.elements.settingsBtn = settingsBtn;
+
       // Toggle button
       const toggle = createElement('button', { className: 'kairos-sp-toggle', title: 'Toggle panel' });
       toggle.appendChild(createSvgIcon('M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'));
-      header.appendChild(toggle);
-
+      headerActions.appendChild(toggle);
       this.elements.toggle = toggle;
+
+      header.appendChild(headerActions);
       return header;
     }
 
@@ -267,16 +301,22 @@
     buildBody() {
       const body = createElement('div', { className: 'kairos-sp-body' });
 
-      // Video info
+      // Video info (Title + Badge)
       const videoInfo = createElement('div', { className: 'kairos-sp-video-info' });
+      
+      const titleRow = createElement('div', { className: 'kairos-sp-title-row' });
       const videoTitle = createElement('div', { className: 'kairos-sp-video-title', text: 'Loading...' });
-      const noteCount = createElement('div', { className: 'kairos-sp-note-count', text: '0 notes' });
-      videoInfo.appendChild(videoTitle);
-      videoInfo.appendChild(noteCount);
+      
+      const badge = createElement('span', { className: 'kairos-sp-count-badge', text: '0' });
+      
+      titleRow.appendChild(videoTitle);
+      titleRow.appendChild(badge);
+      videoInfo.appendChild(titleRow);
+      
       body.appendChild(videoInfo);
 
       this.elements.videoTitle = videoTitle;
-      this.elements.noteCount = noteCount;
+      this.elements.noteCountBadge = badge;
 
       // Notes list
       const notesList = createElement('div', { className: 'kairos-sp-notes-list' });
@@ -285,33 +325,39 @@
 
       this.elements.notesList = notesList;
 
-      // Actions
-      const actions = createElement('div', { className: 'kairos-sp-actions' });
+      // Help / Tips Section
+      body.appendChild(this.buildHelpSection());
 
-      // Export button
-      const exportBtn = createElement('button', {
-        className: 'kairos-sp-btn kairos-sp-btn-primary',
-        id: 'kairos-sp-export'
-      });
-      exportBtn.appendChild(createSvgIcon('M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z'));
-      exportBtn.appendChild(createElement('span', { text: 'Export Markdown' }));
-      actions.appendChild(exportBtn);
-
-      this.elements.exportBtn = exportBtn;
-
-      // Dashboard button
-      const dashboardBtn = createElement('button', {
-        className: 'kairos-sp-btn kairos-sp-btn-accent',
-        id: 'kairos-sp-dashboard'
-      });
-      dashboardBtn.appendChild(createSvgIcon('M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'));
-      dashboardBtn.appendChild(createElement('span', { text: 'My Notes & Settings' }));
-      actions.appendChild(dashboardBtn);
-
-      this.elements.dashboardBtn = dashboardBtn;
-
-      body.appendChild(actions);
       return body;
+    }
+
+    /**
+     * Builds the help/tips section
+     * @returns {HTMLElement} Help element
+     */
+    buildHelpSection() {
+        const help = createElement('div', { className: 'kairos-sp-help' });
+        
+        const items = [
+            { icon: 'icons/mouse-double-click.png', text: '= You Note' },
+            { icon: 'icons/keyboard_key_k.png', text: 'x2= AI Note' },
+            { icon: 'icons/ai_enhanced_input.png', text: '= You+AI Note' }
+        ];
+
+        items.forEach(item => {
+            const row = createElement('div', { className: 'kairos-sp-help-item' });
+            
+            const img = document.createElement('img');
+            img.src = chrome.runtime.getURL(item.icon);
+            img.className = 'kairos-sp-help-img';
+            img.alt = item.text;
+            
+            row.appendChild(img);
+            row.appendChild(createElement('span', { className: 'kairos-sp-help-text', text: item.text }));
+            help.appendChild(row);
+        });
+
+        return help;
     }
 
     /**
@@ -474,12 +520,37 @@
           box-shadow: 0 0 8px rgba(0, 242, 255, 0.2);
         }
 
-        .kairos-sp-toggle {
-          width: 28px;
-          height: 28px;
+        .kairos-sp-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .kairos-sp-header-btn {
+          width: 26px;
+          height: 26px;
           border: none;
-          background: rgba(128, 128, 128, 0.06);
-          border-radius: 8px;
+          background: transparent;
+          border-radius: 6px;
+          color: var(--kairos-sp-text-muted);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .kairos-sp-header-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--kairos-sp-text);
+        }
+
+        .kairos-sp-toggle {
+          width: 26px;
+          height: 26px;
+          border: none;
+          background: transparent;
+          border-radius: 6px;
           color: var(--kairos-sp-text-muted);
           cursor: pointer;
           display: flex;
@@ -489,7 +560,7 @@
         }
 
         .kairos-sp-toggle:hover {
-          background: rgba(128, 128, 128, 0.1);
+          background: rgba(255, 255, 255, 0.1);
           color: var(--kairos-sp-text);
         }
 
@@ -513,6 +584,13 @@
           margin-bottom: 16px;
         }
 
+        .kairos-sp-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
+        }
+
         .kairos-sp-video-title {
           font-size: 14px;
           font-weight: 500;
@@ -522,13 +600,66 @@
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          margin-bottom: 6px;
+          flex: 1;
+        }
+
+        .kairos-sp-count-badge {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, var(--kairos-accent-start) 0%, var(--kairos-accent-end) 100%);
+          color: var(--kairos-accent-ink);
+          font-size: 10px;
+          font-weight: 700;
+          height: 18px;
+          min-width: 18px;
+          padding: 0 6px;
+          border-radius: 12px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
 
         .kairos-sp-note-count {
           font-size: 12px;
           color: var(--kairos-sp-text-muted);
+          display: none; /* Deprecated but kept for safety */
         }
+
+        /* Help Section */
+        .kairos-sp-help {
+          margin-top: 16px;
+          padding-top: 12px;
+          border-top: 1px solid var(--kairos-sp-border);
+          display: flex;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .kairos-sp-help-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10px;
+          color: var(--kairos-sp-text-muted);
+          background: var(--kairos-sp-item-bg);
+          padding: 4px 8px;
+          border-radius: 6px;
+          border: 1px solid var(--kairos-sp-border);
+        }
+
+        .kairos-sp-help-img {
+          width: 16px;
+          height: 16px;
+          object-fit: contain;
+          opacity: 0.95;
+          background: #ffffff;
+          padding: 1px;
+          border-radius: 3px;
+        }
+        
+        /* Dark mode invert for black icons if needed, but assuming PNGs are colored or white-friendly. 
+           If they are black text on transparent, we might need inversion in dark mode. 
+           Let's assume they are designed for the UI. */
 
         .kairos-sp-notes-list {
           max-height: 240px;
@@ -596,6 +727,13 @@
           margin-bottom: 0;
         }
 
+        .kairos-sp-note-item.active {
+          background: rgba(0, 242, 255, 0.08); /* Fallback */
+          background: var(--active-bg, rgba(0, 242, 255, 0.08));
+          border-color: var(--kairos-accent-start);
+          box-shadow: 0 0 12px rgba(0, 242, 255, 0.1);
+        }
+
         .kairos-sp-note-time {
           flex-shrink: 0;
           font-size: 11px;
@@ -646,7 +784,7 @@
         .kairos-sp-actions {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 10px;
         }
 
         .kairos-sp-btn {
@@ -655,57 +793,70 @@
           justify-content: center;
           gap: 8px;
           width: 100%;
-          padding: 12px 16px;
-          border: none;
-          border-radius: 10px;
+          padding: 8px 12px;
+          border: 1px solid transparent;
+          border-radius: 8px;
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
           font-family: inherit;
+          position: relative;
+          isolation: isolate;
+          height: 36px;
+        }
+
+        .kairos-sp-btn:active {
+          transform: scale(0.98);
         }
 
         .kairos-sp-btn-primary {
-          background: linear-gradient(135deg, #4fb6c8 0%, #4a9bd6 100%);
-          color: #0d1418;
-          box-shadow: 0 2px 10px rgba(79, 182, 200, 0.22);
+          background: var(--kairos-accent-start);
+          color: #fff; /* Always white text on accent */
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 
+            0 1px 2px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         }
 
         .kairos-sp-btn-primary:hover {
+          filter: brightness(1.1);
+          box-shadow: 
+            0 4px 12px rgba(var(--kairos-accent-start), 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
           transform: translateY(-1px);
-          box-shadow: 0 4px 16px rgba(79, 182, 200, 0.3);
-        }
-
-        .kairos-sp-btn-primary:active {
-          transform: translateY(0);
         }
 
         .kairos-sp-btn-secondary {
           background: var(--kairos-sp-item-bg);
           color: var(--kairos-sp-text);
           border: 1px solid var(--kairos-sp-border);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .kairos-sp-btn-secondary:hover {
-          background: rgba(128, 128, 128, 0.1);
-          color: var(--kairos-sp-text);
+          background: var(--kairos-sp-border);
+          border-color: var(--kairos-sp-text-muted);
         }
 
         .kairos-sp-btn-accent {
-          background: linear-gradient(120deg, var(--kairos-accent-start), var(--kairos-accent-end));
-          color: var(--kairos-accent-ink);
-          box-shadow: 0 8px 18px rgba(79, 182, 200, 0.22), 0 2px 8px rgba(90, 123, 216, 0.18);
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--kairos-sp-text);
+          border: 1px solid var(--kairos-sp-border);
+          backdrop-filter: blur(10px);
         }
 
         .kairos-sp-btn-accent:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 22px rgba(79, 182, 200, 0.28), 0 4px 10px rgba(90, 123, 216, 0.22);
+          background: rgba(255, 255, 255, 0.1);
+          border-color: var(--kairos-sp-text-muted);
         }
 
         .kairos-sp-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
           transform: none !important;
+          box-shadow: none !important;
         }
 
         @keyframes kairos-sp-note-appear {
@@ -743,6 +894,11 @@
       // Dashboard button
       this.elements.dashboardBtn?.addEventListener('click', () => {
         chrome.runtime.sendMessage({ type: 'OPEN_DASHBOARD' });
+      });
+
+      // Settings button
+      this.elements.settingsBtn?.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' });
       });
 
       // Periodically update subtitle badge
@@ -789,8 +945,9 @@
       try {
         this.notes = await this.storage.getNotesForVideo(this.currentVideoId);
 
-        if (this.elements.noteCount) {
-          this.elements.noteCount.textContent = `${this.notes.length} note${this.notes.length === 1 ? '' : 's'}`;
+        if (this.elements.noteCountBadge) {
+          this.elements.noteCountBadge.textContent = String(this.notes.length);
+          this.elements.noteCountBadge.style.display = this.notes.length > 0 ? 'inline-flex' : 'none';
         }
 
         if (this.notes.length > 0) {
@@ -897,8 +1054,9 @@
      * Updates the note count display
      */
     updateNoteCount() {
-      if (this.elements.noteCount) {
-        this.elements.noteCount.textContent = `${this.notes.length} note${this.notes.length === 1 ? '' : 's'}`;
+      if (this.elements.noteCountBadge) {
+        this.elements.noteCountBadge.textContent = String(this.notes.length);
+        this.elements.noteCountBadge.style.display = this.notes.length > 0 ? 'inline-flex' : 'none';
       }
 
       if (this.notes.length === 0) {
@@ -946,6 +1104,44 @@
 
       this.updateNoteCount();
       if (this.elements.exportBtn) this.elements.exportBtn.disabled = false;
+    }
+
+    /**
+     * Updates the active note based on video time
+     * @param {number} currentTime - Current video time in seconds
+     */
+    updateTime(currentTime) {
+      if (!this.notes || this.notes.length === 0 || !this.elements.notesList) return;
+
+      // Find the active note (closest note before current time)
+      let activeNote = null;
+      for (let i = this.notes.length - 1; i >= 0; i--) {
+        if (this.notes[i].timestamp <= currentTime + 0.5) { // 0.5s buffer
+          activeNote = this.notes[i];
+          break;
+        }
+      }
+
+      if (activeNote && activeNote.id !== this.activeNoteId) {
+        this.activeNoteId = activeNote.id;
+        this.highlightActiveNote();
+      }
+    }
+
+    /**
+     * Highlights the active note element and scrolls to it
+     */
+    highlightActiveNote() {
+      const items = this.elements.notesList.querySelectorAll('.kairos-sp-note-item');
+      items.forEach(item => {
+        if (item.dataset.id === this.activeNoteId) {
+          item.classList.add('active');
+          // Scroll to view
+          item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          item.classList.remove('active');
+        }
+      });
     }
 
     /**

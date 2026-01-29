@@ -234,9 +234,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div class="timeline">
                 ${video.notes.map(note => `
-                    <div class="note-entry">
+                    <div class="note-entry" id="note-${note.id}">
                         <div class="timestamp-dot"></div>
-                        <span class="timestamp">${note.timeLabel}</span>
+                        
+                        <div class="note-header-row">
+                             <div class="timestamp-group">
+                                <span class="timestamp">${note.timeLabel}</span>
+                             </div>
+                             <button class="btn-copy-note" data-note-id="${note.id}" title="Copy note text">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy
+                             </button>
+                        </div>
+
                         <div class="content">${Kairos.SimpleMarkdown.parse(note.content)}</div>
                         ${renderExtras(note)}
                     </div>
@@ -246,33 +256,69 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('btnExport').onclick = () => exportMarkdown(video);
         document.getElementById('btnDelete').onclick = () => deleteVideoNotes(video.videoId, video.notes);
+
+        // Bind Copy Buttons
+        document.querySelectorAll('.btn-copy-note').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const noteId = btn.dataset.noteId;
+                const note = video.notes.find(n => n.id == noteId);
+                if (note) {
+                    copyToClipboard(note.content, btn);
+                }
+            });
+        });
     }
 
     function renderExtras(note) {
         if (!note.imageUrl && !note.context) return '';
 
-        let html = '<details class="note-extras"><summary>Referenced Context</summary><div class="extras-content">';
+        let html = '<div class="extras-grid">';
 
         if (note.imageUrl) {
             html += `
-                <div class="note-screenshot-container">
-                    <div class="note-context-label">Visual Snapshot</div>
-                    <img src="${note.imageUrl}" class="note-screenshot" loading="lazy" alt="Visual Snapshot">
+                <div class="extra-item">
+                    <div class="extra-header">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        Visual Snapshot
+                    </div>
+                    <div class="note-screenshot-container">
+                        <img src="${note.imageUrl}" class="note-screenshot" loading="lazy" alt="Visual Snapshot">
+                    </div>
                 </div>
             `;
         }
 
         if (note.context) {
             html += `
-                <div class="note-context-block">
-                    <div class="note-context-label">Audio Transcript</div>
+                <div class="extra-item">
+                     <div class="extra-header">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        Audio Transcript
+                     </div>
                     <div class="note-context-text">"${note.context}"</div>
                 </div>
             `;
         }
 
-        html += '</div></details>';
+        html += '</div>';
         return html;
+    }
+
+    function copyToClipboard(text, btnElement) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalHTML = btnElement.innerHTML;
+            btnElement.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
+            btnElement.style.color = 'var(--accent)';
+            btnElement.style.borderColor = 'var(--accent)';
+            
+            setTimeout(() => {
+                btnElement.innerHTML = originalHTML;
+                btnElement.style.color = '';
+                btnElement.style.borderColor = '';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
     }
 
     function exportMarkdown(video) {

@@ -118,8 +118,8 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] Side panel显示关于UX的交互帮助信息，在视频标题上通过胶囊+数字显示当前视频笔记个数
   - [x] Side panel中视频播放到特定时间时同步滚动定位到笔记并高亮
   - [x] Buttons: 将所有按钮改为更好看的Buttons，参考Linear/Arc/macOS26的设计
-  - [ ] Dashboard中Reference直接平铺展示，不需要展开收缩
-  - [ ] Dashboard中note添加复制按钮，不复制图片数据
+  - [x] Dashboard中Reference直接平铺展示，不需要展开收缩
+  - [x] Dashboard中note添加复制按钮，不复制图片数据
 - [ ] 功能：
   - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
   - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备

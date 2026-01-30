@@ -1,185 +1,357 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta charset="UTF-8">
   <style>
     :root {
-      --kairos-bg: #15171a;
-      --kairos-text: #ffffff;
+      /* Shared Colors from Project */
       --kairos-accent-start: #4fb6c8;
       --kairos-accent-end: #5a7bd8;
-      --kairos-accent-ink: #0d1418;
-      --kairos-surface: #1b1d21;
-      --kairos-surface-border: rgba(255, 255, 255, 0.08);
-      --kairos-text-muted: rgba(255, 255, 255, 0.6);
-      --kairos-header-border: rgba(255, 255, 255, 0.08);
-      --kairos-btn-secondary-bg: rgba(255, 255, 255, 0.06);
-      --kairos-btn-secondary-text: rgba(255, 255, 255, 0.85);
+      --kairos-bg: #ffffff;
+      --kairos-text: #1a1a1a;
+      --kairos-text-secondary: #666666;
+      --kairos-border: #e0e0e0;
+      --kairos-surface: #f8f9fa;
+      --kairos-surface-hover: #f0f1f2;
+      --kairos-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --kairos-card-bg: #ffffff;
     }
 
-    @media (prefers-color-scheme: light) {
+    @media (prefers-color-scheme: dark) {
       :root {
-        --kairos-bg: #ffffff;
-        --kairos-text: #1a1a1a;
-        --kairos-surface: #f5f5f5;
-        --kairos-surface-border: rgba(0, 0, 0, 0.08);
-        --kairos-text-muted: rgba(0, 0, 0, 0.6);
-        --kairos-header-border: rgba(0, 0, 0, 0.08);
-        --kairos-btn-secondary-bg: rgba(0, 0, 0, 0.06);
-        --kairos-btn-secondary-text: rgba(0, 0, 0, 0.85);
+        --kairos-bg: #15171a;
+        --kairos-text: #ffffff;
+        --kairos-text-secondary: #a0a0a0;
+        --kairos-border: rgba(255, 255, 255, 0.1);
+        --kairos-surface: #1b1d21;
+        --kairos-surface-hover: #25282e;
+        --kairos-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --kairos-card-bg: #1e2024;
       }
     }
 
     body {
-      width: 320px;
-      padding: 16px;
+      width: 340px;
       margin: 0;
+      padding: 16px;
       background: var(--kairos-bg);
       color: var(--kairos-text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
+    /* Header */
     .header {
       display: flex;
       align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--kairos-header-border);
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .logo {
       width: 24px;
       height: 24px;
-      margin-right: 10px;
+      border-radius: 6px;
     }
 
-    h1 {
+    .app-name {
       font-size: 16px;
-      font-weight: 600;
-      margin: 0;
-      background: linear-gradient(90deg, var(--kairos-accent-start), var(--kairos-accent-end));
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--kairos-accent-start), var(--kairos-accent-end));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    .card {
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
       background: var(--kairos-surface);
+      border: 1px solid var(--kairos-border);
+      color: var(--kairos-text-secondary);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .icon-btn:hover {
+      background: var(--kairos-surface-hover);
+      color: var(--kairos-text);
+      border-color: var(--kairos-text-secondary);
+    }
+
+    .icon-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Main Card */
+    .card {
+      background: var(--kairos-card-bg);
+      border: 1px solid var(--kairos-border);
       border-radius: 12px;
       padding: 16px;
+      box-shadow: var(--kairos-shadow);
       margin-bottom: 16px;
-      border: 1px solid var(--kairos-surface-border);
+      transition: all 0.3s ease;
     }
 
     .video-title {
-      font-size: 13px;
+      font-size: 14px;
+      font-weight: 600;
       line-height: 1.4;
-      margin-bottom: 8px;
+      margin: 0 0 8px 0;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      color: rgba(255, 255, 255, 0.85);
     }
 
-    .stats {
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(79, 182, 200, 0.1);
+      color: var(--kairos-accent-start);
+    }
+
+    .status-text {
       font-size: 12px;
-      color: var(--kairos-text-muted);
-      margin-bottom: 12px;
+      color: var(--kairos-text-secondary);
     }
 
-    .btn {
+    /* Primary Button */
+    .btn-primary {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid transparent;
+      padding: 10px;
+      border: none;
       border-radius: 8px;
+      background: linear-gradient(135deg, var(--kairos-accent-start), var(--kairos-accent-end));
+      color: white;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-      text-decoration: none;
-      box-sizing: border-box;
-      position: relative;
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-primary {
-      background: var(--kairos-accent-start);
-      color: #fff;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.1);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      transition: transform 0.1s, box-shadow 0.2s;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(79, 182, 200, 0.3);
     }
 
     .btn-primary:hover {
-      filter: brightness(1.1);
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(79, 182, 200, 0.25);
+      box-shadow: 0 4px 8px rgba(79, 182, 200, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
 
     .btn-secondary {
-      background: var(--kairos-btn-secondary-bg);
-      color: var(--kairos-btn-secondary-text);
-      border: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--kairos-border);
+      border-radius: 8px;
+      background: var(--kairos-surface);
+      color: var(--kairos-text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.1);
+        background: var(--kairos-surface-hover);
     }
 
-    .btn-accent {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--kairos-text);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-accent:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--kairos-text-muted);
-    }
-
+    /* Empty State */
     .empty-state {
       text-align: center;
-      color: var(--kairos-text-muted);
+      padding: 24px 16px;
+    }
+
+    .empty-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .empty-state h3 {
+      font-size: 15px;
+      margin: 0 0 8px 0;
+    }
+
+    .empty-state p {
       font-size: 13px;
-      padding: 20px 0;
+      color: var(--kairos-text-secondary);
+      margin: 0 0 16px 0;
+      line-height: 1.5;
+    }
+
+    /* Footer / Shortcuts */
+    .footer {
+      border-top: 1px solid var(--kairos-border);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .shortcuts-title {
+        font-size: 11px;
+        color: var(--kairos-text-secondary);
+        margin-bottom: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .shortcut-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      color: var(--kairos-text-secondary);
+      gap: 8px;
+    }
+
+    .shortcut-icon {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      border-radius: 3px;
+      background: #ffffff;
+      padding: 1px;
+      flex-shrink: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .shortcut-icon {
+        background: rgba(255, 255, 255, 0.9);
+      }
+    }
+
+    kbd {
+      background: var(--kairos-surface);
+      border: 1px solid var(--kairos-border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 10px;
+      min-width: 16px;
+      text-align: center;
+      box-shadow: 0 1px 0 var(--kairos-border);
     }
   </style>
 </head>
-
 <body>
-  <div class="header">
-    <img class="logo" src="/icons/icon.png" alt="Kairos">
-    <h1>Kairos</h1>
-  </div>
 
-  <div id="current-video-section" style="display: none;">
-    <div class="card">
-      <div class="video-title" id="video-title">Loading...</div>
-      <div class="stats" id="note-count">0 notes collected</div>
-      <button class="btn btn-primary" id="export-btn">
-        Download Markdown
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <img class="logo" src="/icons/icon.png" alt="Kairos">
+      <span class="app-name">Kairos</span>
+    </div>
+    <div class="header-actions">
+      <button id="dashboard-btn" class="icon-btn" title="Open Dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        My Notes&Settings
       </button>
     </div>
   </div>
 
-  <div id="no-video-state" class="empty-state" style="display: none;">
-    No active video detected.
+  <!-- Active Video Content -->
+  <div id="current-video-section" class="card" style="display: none;">
+    <h2 id="video-title" class="video-title">Loading Video...</h2>
+    <div class="stats-row">
+      <span class="badge" id="note-count">0 notes</span>
+      <span class="status-text">collected</span>
+    </div>
+    
+    <button id="export-btn" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+      </svg>
+      Download Markdown
+    </button>
   </div>
 
-  <button class="btn btn-accent" id="dashboard-btn">
-    My Notes & Settings
-  </button>
+  <!-- Empty / No Video State -->
+  <div id="no-video-state" class="card empty-state" style="display: none;">
+    <div class="empty-icon">👋</div>
+    <h3 id="empty-state-title">No Video Detected</h3>
+    <p id="empty-state-msg">Open YouTube or Bilibili to start capturing.</p>
+    <button id="refresh-btn" class="btn-secondary">
+      Refresh Page
+    </button>
+  </div>
+
+  <!-- Footer Tips -->
+  <div class="footer">
+    <div class="shortcuts-title">Quick Actions</div>
+    <div class="shortcut-list">
+      <div class="shortcut-item">
+        <img src="/icons/icon.png" class="shortcut-icon" alt="Orb">
+        <kbd>Click Orb</kbd> 
+        <span>to activate kairos</span>
+      </div>
+      <div class="shortcut-item">
+        <img src="/icons/mouse-double-click.png" class="shortcut-icon" alt="Click">
+        <kbd>Double Click on Video</kbd> 
+        <span>to take a manual note</span>
+      </div>
+      <div class="shortcut-item">
+        <img src="/icons/ai_enhanced_input.png" class="shortcut-icon" alt="AI">
+        <kbd>Enter without Input</kbd> 
+        <span>to trigger AI note</span>
+      </div>
+      <div class="shortcut-item">
+        <img src="/icons/keyboard_key_k.png" class="shortcut-icon" alt="K">
+        <kbd>Double Press K</kbd> 
+        <span>to capture an AI note</span>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="popup.js"></script>
 </body>
-
 </html>

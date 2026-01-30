@@ -1,21 +1,33 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const currentVideoSection = document.getElementById('current-video-section');
   const noVideoState = document.getElementById('no-video-state');
+  const emptyStateTitle = document.getElementById('empty-state-title');
+  const emptyStateMsg = document.getElementById('empty-state-msg');
   const dashboardBtn = document.getElementById('dashboard-btn');
   const exportBtn = document.getElementById('export-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
   const videoTitleEl = document.getElementById('video-title');
   const noteCountEl = document.getElementById('note-count');
 
-  // My Notes & Settings
+  // Dashboard Navigation
   dashboardBtn.addEventListener('click', () => {
     chrome.tabs.create({ url: '/src/dashboard.html' });
+  });
+
+  // Refresh Button Logic
+  refreshBtn.addEventListener('click', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      chrome.tabs.reload(tab.id);
+      window.close(); // Close popup after action
+    }
   });
 
   // Check current tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (!tab || (!tab.url.includes('youtube.com') && !tab.url.includes('bilibili.com'))) {
-    noVideoState.style.display = 'block';
+    showEmptyState('Not a Video Page', 'Please navigate to YouTube or Bilibili to use Kairos.');
     return;
   }
 
@@ -34,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (!videoId) {
-    noVideoState.style.display = 'block';
+    showEmptyState('No Video Found', 'We couldn\'t detect a video on this page. Try refreshing.');
     return;
   }
 
@@ -43,23 +55,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (response && response.success) {
       const notes = response.data;
 
-      if (notes && notes.length > 0) {
-        currentVideoSection.style.display = 'block';
-        videoTitleEl.textContent = notes[0].videoTitle || tab.title;
-        noteCountEl.textContent = `${notes.length} note${notes.length === 1 ? '' : 's'} collected`;
+      // Show video section even if 0 notes, so user knows it's connected
+      currentVideoSection.style.display = 'block';
+      noVideoState.style.display = 'none';
+      
+      // Use tab title as fallback if no notes yet
+      videoTitleEl.textContent = (notes.length > 0 && notes[0].videoTitle) ? notes[0].videoTitle : tab.title;
+      noteCountEl.textContent = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
 
-        // Setup Export
+      if (notes.length > 0) {
+        exportBtn.disabled = false;
         exportBtn.onclick = () => exportMarkdown(notes);
       } else {
-        noVideoState.style.display = 'block';
-        noVideoState.textContent = 'No notes found for this video.';
+        exportBtn.disabled = true;
       }
+
     } else {
       console.error('Failed to fetch notes:', response ? response.error : 'Unknown');
-      noVideoState.style.display = 'block';
-      noVideoState.textContent = 'Error loading data.';
+      showEmptyState('Connection Error', 'Could not retrieve notes. Please try refreshing the page.');
     }
   });
+
+  function showEmptyState(title, msg) {
+    currentVideoSection.style.display = 'none';
+    noVideoState.style.display = 'block';
+    if (title) emptyStateTitle.textContent = title;
+    if (msg) emptyStateMsg.textContent = msg;
+  }
 });
 
 function exportMarkdown(notes) {

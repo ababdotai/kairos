@@ -121,7 +121,7 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] Dashboard中Reference直接平铺展示，不需要展开收缩
   - [x] Dashboard中note添加复制按钮，不复制图片数据
 - [ ] 功能：
-  - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
+  - [x] 整体架构：升级为Vite
   - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备
   - [ ] 对于YouTube直接将YouTube URL发送给模型指定时间分析，对于Bilibili将片段发送给Kimi 2.5进行分析（实时监听音频，偶尔查看画面）
   - [ ] 完善核心的无感记录Context-Aware Note功能，不断让自己觉得都好用：截图/完整片段 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释

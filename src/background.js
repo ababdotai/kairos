@@ -90,11 +90,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           response = await deleteNote(message.payload.id);
           break;
         case 'OPEN_DASHBOARD':
-          chrome.tabs.create({ url: 'dashboard.html' });
+          chrome.tabs.create({ url: '/src/dashboard.html' });
           response = { status: 'opened' };
           break;
         case 'OPEN_SETTINGS':
-          chrome.tabs.create({ url: 'dashboard.html?tab=settings' });
+          chrome.tabs.create({ url: '/src/dashboard.html?tab=settings' });
           response = { status: 'opened' };
           break;
         case 'ANALYZE_FRAME':

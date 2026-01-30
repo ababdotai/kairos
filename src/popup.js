@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // My Notes & Settings
   dashboardBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'dashboard.html' });
+    chrome.tabs.create({ url: '/src/dashboard.html' });
   });
 
   // Check current tab

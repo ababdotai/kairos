@@ -1,0 +1,19 @@
+{
+  "name": "kairos",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.26.1",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.3.0",
+    "vite": "^7.3.1"
+  }
+}

@@ -1,3 +1,5 @@
+import './content/markdown.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
     const videoListEl = document.getElementById('videoList');
     const libraryViewEl = document.getElementById('libraryView');

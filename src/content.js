@@ -1,3 +1,16 @@
+import './content.css';
+import './content/config.js';
+import './content/utils.js';
+import './content/storage.js';
+import './content/markdown.js';
+import './content/tracker.js';
+import './content/capture.js';
+import './content/subtitles.js';
+import './content/agent.js';
+import './content/styles.js';
+import './content/overlay.js';
+import './content/sidepanel.js';
+
 /**
  * Kairos Content Script Entry Point
  * Orchestrates the video overlay functionality
@@ -6,6 +19,8 @@
 (function () {
   'use strict';
 
+  // Wait for modules to initialize window.Kairos
+  // In a bundled environment, they execute immediately upon import.
   const { CONFIG, log, OverlayManager, VideoTracker, SidePanelManager, SubtitleManager } = window.Kairos;
 
   /**

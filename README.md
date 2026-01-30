@@ -2,7 +2,7 @@
 
 > **Kairos=Vital Moments. Your AI secretary while watching videos.**
 
-如何让观看视频学习的过程更有价值和互动?
+如何让知识载体类视频的消费过程更有价值和互动性?
 
 Kairos 是一个基于 Gemini 3 Flash (gemini-3-flash-preview)多模态理解能力的视频笔记Agent，目前的载体为一个Chrome Extension，核心功能为在用户观看Coursera/Udemy/Bilibili/YouTube/TED等高信息密度视频时，在不打断心流的前提下优雅地做笔记，通过简单直观的操作+AI结合智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
 
@@ -123,19 +123,19 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 - [ ] 功能：
   - [ ] 整体架构：升级为React 18 + TypeScript + Tailwind CSS + Framer Motion
   - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备
-  - [ ] 直接将YouTube URL发送给模型指定时间分析
+  - [ ] 对于YouTube直接将YouTube URL发送给模型指定时间分析，对于Bilibili将片段发送给Kimi 2.5进行分析（实时监听音频，偶尔查看画面）
+  - [ ] 完善核心的无感记录Context-Aware Note功能，不断让自己觉得都好用：截图/完整片段 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
   - [ ] Ceiling timeline改为可以设置位置：底部原生进度条上方，或屏幕顶部（当前），添加Hide、Move按钮
   - [ ] 画面笔记：参考选中-高亮这一类似Liner的操作对视频进行笔记，不仅是PIN
+  - [ ] 使用VideoWrapper类似思路智能添加重点，AR/HUD for Video!
 - [ ] Bug:
-  - [ ] B站时间轴遮挡弹幕问题、全屏无法显示的问题
+  - [x] B站时间轴遮挡弹幕问题、全屏无法显示的问题
   - [ ] 通过PIN/快捷键触发的笔记在播放到对应时间点时也应该有渐现渐隐的效果
   - [ ] 点击PIN与时间轴的位置不对齐的问题
 - [ ] Export Note to Video：非线性叙事的重组Agent，根据笔记智能剪辑和重组视频，生成专属视频笔记
 - [ ] 针对所有笔记进行一键总结与分享，采用Growing Knowledge Tree形式
-- [ ] Context-Aware Note功能：截图 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
 - [ ] Growing Knowledge Tree：动态生长的思维导图，不剧透后面的内容，它只实时绘制已讲过内容的逻辑结构，帮助用户把线性的语音流，在脑中“编译”成结构化的知识结晶
-- [ ] Agent化：视频不再是封闭的，而是可交互的，联通外部世界（Google Grounding）和沙箱（Gemini Code Interpreter），支持识别和点击视频元素进行解释和笔记
-- [ ] 里程碑：AI 自动发现视频重点，点击后提取视频中的代码并生成解释
+- [ ] Agent化：打破视频的**“只读属性” (Read-only)**，视频不再是封闭的，而是可交互的，联通外部世界（Google Grounding）和沙箱（Gemini Code Interpreter），支持识别和点击视频元素进行解释和笔记
 
 ### 阶段 3：护城河建设（Week 6-7）
 - [ ] 账号体系：支持谷歌登录

@@ -234,10 +234,10 @@
       const brand = createElement('div', { className: 'kairos-sp-brand' });
       const logo = createElement('img', { className: 'kairos-sp-logo' });
       logo.src = chrome.runtime.getURL('icons/icon.png');
-      logo.alt = 'Kairos';
+      logo.alt = 'Kairos: AI Video Notepad';
       brand.appendChild(logo);
 
-      const title = createElement('span', { className: 'kairos-sp-title', text: 'Kairos' });
+      const title = createElement('span', { className: 'kairos-sp-title', text: 'Kairos: AI Video Notepad' });
       brand.appendChild(title);
 
       // Subtitle Badge
@@ -368,7 +368,7 @@
       const empty = createElement('div', { className: 'kairos-sp-empty' });
       empty.appendChild(createElement('span', { className: 'kairos-sp-empty-icon', text: '📝' }));
       empty.appendChild(createElement('span', { text: 'No notes yet' }));
-      empty.appendChild(createElement('span', { className: 'kairos-sp-empty-hint', text: 'Click the orb to capture moments' }));
+      empty.appendChild(createElement('span', { className: 'kairos-sp-empty-hint', text: 'Click the Kairos Logo to Activate!' }));
       return empty;
     }
 

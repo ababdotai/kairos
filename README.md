@@ -191,24 +191,18 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 
 ```
 kairos/
-├── src/
-│   ├── content/          # Content Script（注入页面）
-│   │   ├── overlay/      # 全局悬浮层组件
-│   │   ├── orb/          # 悬浮球交互
-│   │   └── timeline/     # 语义化进度条
-│   ├── background/       # Background Script（API 调用）
-│   ├── popup/            # 扩展弹窗
-│   ├── options/          # 设置页面/Dashboard
-│   ├── hooks/            # React Hooks
-│   │   └── useVideoTracker.ts  # 视频坐标追踪
-│   ├── utils/
-│   │   ├── gemini.ts     # Gemini API 封装
-│   │   ├── storage.ts    # IndexedDB 封装
-│   │   └── capture.ts    # 截图引擎
-│   └── manifest.json     # Manifest V3 配置
+├── src/                  # 源代码
+│   ├── content/          # Content Script 模块
+│   ├── background.js     # Background Service Worker
+│   ├── content.js        # Content Script 入口
+│   ├── popup.html        # 扩展弹窗
+│   └── dashboard.html    # 笔记管理页面
+├── public/               # 静态资源 (Icons)
+├── dist/                 # 构建输出 (加载此目录)
+├── vite.config.js        # Vite 配置
+├── manifest.json         # Manifest V3 配置
 ├── doc/                  # 文档目录
 ├── test/                 # 测试文件
-├── temp/                 # 临时文件
 └── ChatHistory.md        # 产品推演聊天记录
 ```
 
@@ -216,19 +210,20 @@ kairos/
 
 ```bash
 # 安装依赖
-npm install
+pnpm install
 
 # 开发模式（热重载）
-npm run dev
+pnpm run dev
+# 此时代码修改会自动触发扩展刷新
 
 # 构建生产版本
-npm run build
+pnpm run build
 
 # 加载到 Chrome
 # 1. 打开 chrome://extensions/
 # 2. 开启"开发者模式"
 # 3. 点击"加载已解压的扩展程序"
-# 4. 选择 dist/ 目录
+# 4. 选择 dist/ 目录 (注意：不是项目根目录)
 ```
 
 ## 📝 开发规范

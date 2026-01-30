@@ -22,29 +22,36 @@ The project follows a modular Vanilla JS architecture without a bundler.
 ### 1. File Structure
 ```
 kairos/
-├── manifest.json         # Extension configuration (Entry point)
-├── background.js         # Service Worker (DB access, API calls)
-├── content.js            # Main Content Script loader
-├── content.css           # Shadow Host styles
-├── content/              # Modular Content Logic
-│   ├── config.js         # Global configs & constants
-│   ├── utils.js          # Helpers (Time format, ID extraction)
-│   ├── storage.js        # IndexedDB Proxy (Messaging)
-│   ├── tracker.js        # Video tracking logic
-│   ├── overlay.js        # Main UI Manager (Shadow DOM)
-│   ├── styles.js         # CSS-in-JS (Template literals)
-│   └── ...
-├── popup.html/js         # Extension popup
-├── dashboard.html/js     # Full-page dashboard
-└── icons/                # Assets
+├── src/                  # Source code
+│   ├── background.js     # Service Worker (DB access, API calls)
+│   ├── content.js        # Main Content Script loader
+│   ├── popup.html        # Extension popup
+│   ├── popup.js          # Extension popup logic
+│   ├── dashboard.html    # Full-page dashboard
+│   ├── dashboard.js      # Full-page dashboard logic
+│   ├── content/          # Modular Content Logic
+│   │   ├── config.js     # Global configs & constants
+│   │   ├── utils.js      # Helpers
+│   │   ├── storage.js    # IndexedDB Proxy
+│   │   ├── tracker.js    # Video tracking logic
+│   │   ├── overlay.js    # Main UI Manager
+│   │   ├── styles.js     # CSS-in-JS
+│   │   └── ...
+│   └── content.css       # Shadow Host styles
+├── public/               # Static assets
+│   └── icons/            # Extension icons
+├── dist/                 # Build output (Load this in Chrome)
+├── vite.config.js        # Vite configuration
+├── manifest.json         # Source Manifest
+└── package.json          # Dependencies & Scripts
 ```
 
 ### 2. Module System & Communication
-- **Content Modules:** Uses **IIFE** (Immediately Invoked Function Expressions) to encapsulate logic.
-- **Global Namespace:** All modules export to `window.Kairos`.
-  - Dependency Order: `config` -> `utils` -> `storage` -> `tracker` -> `styles` -> `overlay` -> `content`.
+- **Build System:** Vite + CRXJS Plugin. Bundles ESM modules into browser-compatible scripts.
+- **Content Modules:** Standard ES Modules (`import/export`).
+- **Global Namespace:** Still uses `window.Kairos` for runtime coordination between bundled modules.
 - **Inter-Process Communication:**
-  - Content Scripts $\leftrightarrow$ Background Script: `chrome.runtime.sendMessage` (e.g., for saving notes to IndexedDB).
+  - Content Scripts $\leftrightarrow$ Background Script: `chrome.runtime.sendMessage`.
 
 ### 3. UI Implementation
 - **Shadow DOM:** All UI is encapsulated in a Shadow Root (`#kairos-overlay-root`) to prevent style bleeding.
@@ -54,16 +61,22 @@ kairos/
 ## Development Workflow
 
 ### Building and Running
-1.  **No Build Step:** The project uses raw files.
-2.  **Load Extension:**
+1.  **Install Dependencies:** `pnpm install`
+2.  **Development (HMR):** `pnpm run dev`
+    - Watches for changes and updates the extension automatically.
+3.  **Production Build:** `pnpm run build`
+4.  **Load Extension:**
     - Open `chrome://extensions/`
     - Enable **Developer mode**.
     - Click **Load unpacked**.
-    - Select the project root directory (`kairos/`).
+    - **Select the `dist/` directory** (NOT the project root).
 
 ### Key Commands
-- Since there is no `package.json` with scripts, standard `npm` commands are not applicable for building.
-- **Reloading:** Updates to `content/*` require reloading the extension in `chrome://extensions/` and refreshing the target video page. Updates to `background.js` require clicking "Update" or "Service Worker" inspect to refresh.
+- `pnpm run dev`: Start development server.
+- `pnpm run build`: Build for production.
+- **Reloading:**
+  - With `pnpm run dev`, most changes (UI, logic) hot reload.
+  - If you change `manifest.json` or background script logic significantly, you may need to reload the extension in `chrome://extensions/`.
 
 ## Coding Conventions
 - **Style:** Google JavaScript Style Guide.

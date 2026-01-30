@@ -22,11 +22,12 @@
 
 ## 🏗️ 技术架构
 
-### 当前技术栈（阶段 0-1：Vanilla 实现）
+### 当前技术栈（阶段 0-1：Vite + Vanilla 实现）
 ```
-前端框架：Vanilla ES6+ JavaScript（无构建工具）
+前端框架：Vanilla ES6+ JavaScript（通过 Vite 打包）
+构建工具：Vite + CRXJS Vite Plugin
 样式方案：Vanilla CSS3 + Shadow DOM 内联样式
-AI 能力：Gemini 3 Flash API（多模态理解）- 待接入
+AI 能力：Gemini 3 Flash API（多模态理解）
 存储方案：IndexedDB（通过 Background Script 代理）
 扩展架构：Manifest V3 (Chrome Extension)
 ```
@@ -34,7 +35,6 @@ AI 能力：Gemini 3 Flash API（多模态理解）- 待接入
 ### 未来技术栈（阶段 2+：可能迁移）
 ```
 前端框架：React 18 + TypeScript
-构建工具：Vite + CRXJS Vite Plugin
 样式方案：Tailwind CSS + Framer Motion
 ```
 
@@ -73,23 +73,27 @@ const NoteEntry = {
 
 ```
 kairos/
-├── manifest.json           # Manifest V3 配置
-├── content.js              # Content Script 入口点（~60 行）
-├── content.css             # 外部 CSS（仅 Shadow Host 样式）
-├── content/                # Content Script 模块化目录
-│   ├── config.js           # 配置常量 + log() 函数（~50 行）
-│   ├── utils.js            # 工具函数：getVideoId, formatTime 等（~70 行）
-│   ├── storage.js          # StorageManager 类：IndexedDB 代理（~75 行）
-│   ├── tracker.js          # VideoTracker 类：视频位置追踪（~145 行）
-│   ├── styles.js           # getStyles() 函数：CSS 样式字符串（~540 行）
-│   └── overlay.js          # OverlayManager 类：UI 核心逻辑（~770 行）
-├── background.js           # Background Service Worker（IndexedDB 操作）
-├── popup.html              # 扩展弹窗 HTML
-├── popup.js                # 扩展弹窗逻辑
-├── dashboard.html          # 笔记管理页面 HTML
-├── dashboard.js            # 笔记管理页面逻辑
-├── icons/                  # 图标资源
-│   └── icon.png
+├── src/                    # 源代码目录
+│   ├── background.js       # Background Service Worker
+│   ├── content.js          # Content Script 入口点
+│   ├── content.css         # Shadow Host 样式
+│   ├── popup.html          # 扩展弹窗 HTML
+│   ├── popup.js            # 扩展弹窗逻辑
+│   ├── dashboard.html      # 笔记管理页面 HTML
+│   ├── dashboard.js        # 笔记管理页面逻辑
+│   └── content/            # Content Script 模块化目录
+│       ├── config.js       # 配置常量
+│       ├── utils.js        # 工具函数
+│       ├── storage.js      # IndexedDB 代理
+│       ├── tracker.js      # VideoTracker 类
+│       ├── styles.js       # CSS 样式字符串
+│       └── overlay.js      # OverlayManager 类
+├── public/                 # 静态资源
+│   └── icons/              # 图标资源
+├── dist/                   # 构建输出目录（加载此目录）
+├── vite.config.js          # Vite 配置
+├── manifest.json           # Manifest 配置
+├── package.json            # 项目依赖
 ├── doc/                    # 文档目录
 ├── test/                   # 测试文件
 └── temp/                   # 临时文件
@@ -97,38 +101,30 @@ kairos/
 
 ### 模块依赖关系
 ```
-content.js (入口)
-    ├── content/config.js     (无依赖，定义 window.Kairos 命名空间)
-    ├── content/utils.js      (依赖 config.js)
-    ├── content/storage.js    (依赖 config.js)
-    ├── content/tracker.js    (依赖 config.js)
-    ├── content/styles.js     (依赖 config.js)
-    └── content/overlay.js    (依赖以上所有模块)
+src/content.js (入口)
+    ├── src/content/config.js     (导入)
+    ├── src/content/utils.js      (导入)
+    ├── src/content/storage.js    (导入)
+    ├── src/content/tracker.js    (导入)
+    ├── src/content/styles.js     (导入)
+    └── src/content/overlay.js    (导入)
 ```
 
 ### 模块通信机制
-所有模块通过 `window.Kairos` 全局命名空间共享：
+虽然使用了 ES Modules 进行打包，运行时仍通过 `window.Kairos` 全局命名空间共享实例，以便于各模块间的协调：
 ```javascript
-// config.js 初始化
-window.Kairos = window.Kairos || {};
-window.Kairos.CONFIG = CONFIG;
-window.Kairos.log = log;
-
-// 其他模块导出
-window.Kairos.Utils = Utils;
-window.Kairos.StorageManager = StorageManager;
-window.Kairos.VideoTracker = VideoTracker;
-window.Kairos.getStyles = getStyles;
-window.Kairos.OverlayManager = OverlayManager;
-
-// content.js 入口使用
-const { CONFIG, log, OverlayManager, VideoTracker } = window.Kairos;
+// content.js 入口
+import './content/config.js';
+import './content/utils.js';
+// ...
+const { CONFIG, log, OverlayManager } = window.Kairos;
 ```
 
 ## 🎯 开发阶段与任务
 
 ### ✅ 阶段 0 - 技术验证（已完成）
 - [x] 避免过度工程化，使用 Vanilla ES6+ JavaScript 实现
+- [x] 引入 Vite 构建系统，支持 HMR 和 NPM 包
 - [x] 全局悬浮层实现（Shadow DOM）
 - [x] 视频坐标实时追踪（YouTube/Bilibili）
 - [x] 里程碑：指示框紧贴视频播放器，支持全屏和滚动
@@ -143,6 +139,7 @@ const { CONFIG, log, OverlayManager, VideoTracker } = window.Kairos;
 - [x] 里程碑：完整记录笔记并导出 MD
 
 ### 🚧 阶段 2 - AI 大脑接入（当前）
+- [ ] 接入 Google Generative AI SDK
 - [ ] Gemini API 调用管道（Background Script）
 - [ ] 字幕抓取与解析：YouTube timedtext API
 - [ ] 多模态内容分析：截图 + 字幕 + 用户笔记 → AI 摘要

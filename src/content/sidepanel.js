@@ -414,7 +414,6 @@
         className: 'kairos-sp-note-content'
       });
       content.innerHTML = SimpleMarkdown.parse(contentText);
-      content.title = contentText;
       body.appendChild(content);
 
       item.appendChild(body);
@@ -491,7 +490,7 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 14px 16px;
+          padding: 10px 14px;
           border-bottom: 1px solid var(--kairos-sp-border);
           background: var(--kairos-sp-header-bg);
         }
@@ -499,17 +498,17 @@
         .kairos-sp-brand {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
         }
 
         .kairos-sp-logo {
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
+          width: 20px;
+          height: 20px;
+          border-radius: 5px;
         }
 
         .kairos-sp-title {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 600;
           background: linear-gradient(135deg, var(--kairos-accent-start) 0%, var(--kairos-accent-end) 100%);
           -webkit-background-clip: text;
@@ -518,14 +517,14 @@
         }
 
         .kairos-sp-subtitle-badge {
-          font-size: 10px;
-          padding: 2px 6px;
+          font-size: 9px;
+          padding: 1px 5px;
           border-radius: 4px;
           background: rgba(128, 128, 128, 0.05);
           color: var(--kairos-sp-text-muted);
           border: 1px solid var(--kairos-sp-border);
           font-weight: 600;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.02em;
           transition: all 0.3s ease;
           display: none; /* Hidden by default */
         }
@@ -547,12 +546,12 @@
         .kairos-sp-header-actions {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 2px;
         }
 
         .kairos-sp-header-btn, .kairos-sp-toggle {
-          width: 26px;
-          height: 26px;
+          width: 24px;
+          height: 24px;
           border: none;
           background: transparent;
           border-radius: 6px;
@@ -582,18 +581,18 @@
         }
 
         .kairos-sp-body {
-          padding: 16px;
+          padding: 12px 14px;
         }
 
         .kairos-sp-video-info {
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
 
         .kairos-sp-title-row {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
         }
 
         .kairos-sp-video-title {
@@ -668,25 +667,39 @@
 
         /* Timeline Container */
         .kairos-sp-notes-list {
-          max-height: 240px;
+          max-height: 320px;
           overflow-y: auto;
-          margin-bottom: 16px;
-          padding-left: 28px; /* Increased padding for line */
+          margin-bottom: 12px;
+          padding-left: 24px; /* More compact padding */
           position: relative;
           scrollbar-width: thin;
           scrollbar-color: var(--kairos-sp-border) transparent;
         }
 
-        /* Vertical Line */
-        .kairos-sp-notes-list::before {
+        /* Vertical Line Segment */
+        .kairos-sp-note-item::before {
           content: '';
           position: absolute;
-          left: 13px; /* Center of line at 14px */
+          left: -12px; /* Center of 24px padding */
           top: 0;
-          bottom: 0;
-          width: 2px;
+          bottom: -10px; /* Extend to cover the margin gap */
+          width: 1px;
           background: var(--kairos-sp-timeline-line);
-          border-radius: 1px;
+          z-index: 1;
+        }
+
+        .kairos-sp-note-item:first-child::before {
+          top: 14px; /* Starts at the center of the first dot */
+        }
+
+        .kairos-sp-note-item:last-child::before {
+          bottom: auto;
+          height: 14px; /* Ends at the center of the last dot */
+        }
+        
+        /* Single item case: hide line */
+        .kairos-sp-note-item:first-child:last-child::before {
+          display: none;
         }
 
         .kairos-sp-notes-list::-webkit-scrollbar {
@@ -705,9 +718,10 @@
         /* Note Item */
         .kairos-sp-note-item {
           position: relative;
-          margin-bottom: 12px;
-          padding-left: 0; /* Content handles its own padding */
+          margin-bottom: 10px;
+          padding-left: 0;
           transition: all 0.2s ease;
+          cursor: pointer; /* Interaction hint */
         }
 
         .kairos-sp-note-item:last-child {
@@ -717,24 +731,22 @@
         /* Timeline Dot */
         .kairos-sp-timeline-dot {
           position: absolute;
-          left: -19px; 
-          /* 
-             Calculation: 
-             Content start: 28px
-             Line Center: 14px
-             Dot Center Target: 14px
-             Dot Width: 8px -> Dot Left: 14 - 4 = 10px
-             Relative Left: 10px - 28px = -18px.
-             Tweak to -19px for visual centering with border.
-          */
-          top: 16px; /* Push down to align with header text center */
-          width: 8px;
-          height: 8px;
+          left: -12px; /* Aligns with the 12px line center relative to 24px padding */
+          transform: translateX(-50%);
+          top: 14px; /* Aligned with note header */
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           background: var(--kairos-sp-bg);
           border: 2px solid var(--kairos-accent-start);
           z-index: 2;
           box-shadow: 0 0 0 2px var(--kairos-sp-bg);
+          transition: all 0.2s ease;
+        }
+        
+        .kairos-sp-note-item:hover .kairos-sp-timeline-dot {
+          transform: translateX(-50%) scale(1.2);
+          box-shadow: 0 0 0 2px var(--kairos-sp-bg), 0 0 8px rgba(79, 182, 200, 0.4);
         }
 
         /* Active State (Current Time) */
@@ -748,7 +760,7 @@
           background: var(--kairos-sp-item-bg);
           border-radius: 10px;
           border: 1px solid var(--kairos-sp-border);
-          padding: 10px;
+          padding: 8px 10px;
           transition: all 0.2s ease;
           position: relative;
         }
@@ -767,7 +779,7 @@
           display: flex;
           align-items: center;
           gap: 6px;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
 
         .kairos-sp-note-time {
@@ -801,9 +813,9 @@
         }
 
         .kairos-sp-note-content {
-          font-size: 13px;
+          font-size: 12.5px;
           color: var(--kairos-sp-text);
-          line-height: 1.4;
+          line-height: 1.35;
           display: -webkit-box;
           -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;

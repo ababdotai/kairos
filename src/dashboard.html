@@ -158,9 +158,9 @@
         /* Main Content: Notes View */
         .main {
             flex: 1;
-            padding: 40px 60px;
+            padding: 30px 40px;
             overflow-y: auto;
-            max-width: 1600px;
+            max-width: 1400px;
             width: 100%;
             margin: 0 auto;
             box-sizing: border-box;
@@ -176,7 +176,7 @@
 
         .welcome-text {
             flex: 0 0 auto;
-            margin-top: 60px; /* 顶部距离 */
+            margin-top: 40px; /* 顶部距离 */
             font-size: 14px;
             letter-spacing: 2px;
             color: var(--text-dim);
@@ -191,22 +191,22 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            padding-bottom: 60px; /* 视觉补偿，平衡顶部的 margin */
+            padding-bottom: 40px; /* 视觉补偿，平衡顶部的 margin */
         }
 
         .quote-text {
             font-family: 'Georgia', serif;
-            font-size: 36px;
+            font-size: 32px;
             font-style: italic;
             text-align: center;
-            line-height: 1.6;
+            line-height: 1.5;
             color: var(--text-dim);
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             letter-spacing: -0.5px;
         }
 
         .quote-text div {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -223,19 +223,19 @@
             opacity: 0.4;
             font-weight: 400;
             text-align: center;
-            line-height: 1.8;
+            line-height: 1.6;
         }
 
         .note-header {
-            margin-bottom: 40px;
-            padding-bottom: 20px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
             border-bottom: 1px solid var(--border-color);
         }
 
         .note-title {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             line-height: 1.2;
         }
 
@@ -267,38 +267,65 @@
 
         .timeline {
             position: relative;
-            padding-left: 24px;
-            border-left: 2px solid var(--border-color);
+            padding-left: 20px;
         }
 
         .note-entry {
             position: relative;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
+        }
+
+        /* Vertical Line Segment */
+        .note-entry::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 0;
+            bottom: -24px; /* Cover margin gap */
+            width: 1px;
+            background: var(--border-color);
+            z-index: 1;
+            transform: translateX(-50%);
+        }
+
+        .note-entry:first-child::before {
+            top: 5px; /* Starts at dot center */
+        }
+
+        .note-entry:last-child::before {
+            bottom: auto;
+            height: 5px; /* Ends at dot center */
+        }
+
+        /* Single item case: hide line */
+        .note-entry:first-child:last-child::before {
+            display: none;
         }
 
         .timestamp-dot {
             position: absolute;
-            left: -31px;
-            /* 24px padding + 2px border + 5px radius */
-            top: 4px;
-            width: 12px;
-            height: 12px;
+            left: -20px;
+            transform: translateX(-50%);
+            top: 5px;
+            width: 10px;
+            height: 10px;
             background: var(--bg);
             border: 2px solid var(--accent);
             border-radius: 50%;
+            z-index: 2;
         }
 
         .timestamp {
             font-family: monospace;
             color: var(--accent);
-            font-size: 14px;
-            margin-bottom: 8px;
+            font-size: 13px;
+            margin-bottom: 6px;
             display: block;
         }
 
         .content {
-            font-size: 16px;
-            line-height: 1.6;
+            font-size: 15px;
+            line-height: 1.5;
             color: var(--text);
             white-space: pre-wrap;
         }

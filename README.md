@@ -124,7 +124,7 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] 整体架构：升级为Vite
   - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备
   - [ ] 对于YouTube直接将YouTube URL发送给模型指定时间分析，对于Bilibili将片段发送给Kimi 2.5进行分析（实时监听音频，偶尔查看画面）
-  - [ ] 完善核心的无感记录Context-Aware Note功能，不断让自己觉得都好用：截图/完整片段 + 字幕（可能为空） + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
+  - [ ] 完善核心的无感记录Context-Aware Note功能，不断让自己觉得都好用：截图/完整片段 + 字幕（可能为空）+ 音频 + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
   - [ ] Ceiling timeline改为可以设置位置：底部原生进度条上方，或屏幕顶部（当前），添加Hide、Move按钮
   - [ ] 画面笔记：参考选中-高亮这一类似Liner的操作对视频进行笔记，不仅是PIN
   - [ ] 使用VideoWrapper类似思路智能添加重点，AR/HUD for Video!
@@ -140,7 +140,7 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 
 ### 阶段 3：护城河建设（Week 6-7）
 - [ ] 账号体系：支持谷歌登录
-- [ ] AI服务：采用SDK调用而非URL请求
+- [x] AI服务：采用SDK调用而非URL请求
 - [ ] Obsidian 本地直连（FileSystemAccess API）
 - [ ] Notion Integration 同步
 - [ ] Deep Link 回跳支持 (生成的笔记带有直接跳转到视频特定时间的链接)
@@ -151,7 +151,6 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 ### 阶段 4：品质打磨与发布（Week 8+）
 - [ ] UI/UX 极致体现taste和on hand
 - [x] 记录上次拖动位置，切换视频依然生效
-- [ ] Sound Design（截图音效、保存音效）
 - [ ] 支持语音输入，支持文件夹分类甚至智能笔记聚类（超越单个视频）
   - Auto-Wiki: “帮我把这个 PlayList 里所有关于 Python 装饰器的内容整理成一篇文档。” -> Agent 自动后台倍速刷视频、提取、重组。
   - Interactive Tutorial: 将被动视频转化为交互式教程。

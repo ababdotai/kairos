@@ -198,6 +198,7 @@ async function callGeminiAI(payload) {
       }
     });
 
+    console.log('Gemini API Response:', response.text.trim());
     return { text: response.text.trim() };
   } catch (error) {
     console.error('Gemini API Error:', error);

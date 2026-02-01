@@ -395,6 +395,7 @@
         className: 'kairos-sp-note-content'
       });
       content.innerHTML = SimpleMarkdown.parse(contentText);
+      content.title = contentText; // Show full text on hover
       item.appendChild(content);
 
       // Delete button

@@ -845,6 +845,69 @@
         from { opacity: 0; transform: scale(0.8); }
         to { opacity: 1; transform: scale(1); }
       }
+
+      /* Error Toast */
+      .kairos-error-toast {
+        position: absolute;
+        bottom: 60px; /* Above the orb */
+        left: 0;
+        background: rgba(30, 5, 5, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 80, 80, 0.3);
+        border-radius: 12px;
+        padding: 12px 14px;
+        color: #ff8080;
+        font-size: 13px;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        z-index: 2000;
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 220px;
+        max-width: 320px;
+      }
+
+      .kairos-error-toast.active {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      .kairos-error-title {
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      .kairos-error-icon {
+        width: 16px;
+        height: 16px;
+        color: #ff6b6b;
+      }
+
+      .kairos-error-btn {
+        align-self: flex-end;
+        background: rgba(255, 80, 80, 0.1);
+        color: #ff8080;
+        border: 1px solid rgba(255, 80, 80, 0.2);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .kairos-error-btn:hover {
+        background: rgba(255, 80, 80, 0.25);
+        color: #fff;
+        border-color: rgba(255, 80, 80, 0.4);
+      }
     `;
   }
 

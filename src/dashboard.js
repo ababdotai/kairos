@@ -128,8 +128,12 @@ document.addEventListener('DOMContentLoaded', async () => {
      */
     function saveSettings() {
         const apiKey = apiKeyInput.value.trim();
-        const selectedLang = document.querySelector('input[name="noteLanguage"]:checked').value;
-        const selectedHighlight = document.querySelector('input[name="autoHighlightMode"]:checked').value;
+        const selectedLangInput = document.querySelector('input[name="noteLanguage"]:checked');
+        const selectedHighlightInput = document.querySelector('input[name="autoHighlightMode"]:checked');
+
+        const selectedLang = selectedLangInput ? selectedLangInput.value : 'auto';
+        // Default to 'basic' if not found (element might be commented out in HTML)
+        const selectedHighlight = selectedHighlightInput ? selectedHighlightInput.value : 'basic';
 
         if (!apiKey) {
             showStatus('Please enter a valid API Key', 'error');

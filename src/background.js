@@ -1,3 +1,5 @@
+import { GoogleGenAI } from '@google/genai';
+
 /**
  * Background Service Worker
  * Acts as the central data hub for Kairos using IndexedDB (Extension Origin).
@@ -123,7 +125,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * @returns {Promise<Object>} AI Response
  */
 async function callGeminiAI(payload) {
-  const { image, context, videoTitle, promptType } = payload;
+  const { image, context, videoTitle } = payload;
 
   // 1. Get API Key and Language Preference from storage
   const settings = await chrome.storage.sync.get(['geminiApiKey', 'noteLanguage']);
@@ -166,120 +168,90 @@ async function callGeminiAI(payload) {
 
   const userPrompt = "Generate note for this moment:";
 
-    // 4. Construct Gemini API Request
-    const MODEL_ID = 'gemini-3-flash-preview';
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
-  
-    // Strip base64 prefix if present
-    const base64Data = image.split(',')[1] || image;
-  
-    const requestBody = {
+  // 4. Initialize the new Gemini SDK Client
+  const ai = new GoogleGenAI({ apiKey });
+  const modelId = 'gemini-3-flash-preview'; // Recommended model for speed and multimodal
+
+  // Strip base64 prefix if present
+  const base64Data = image.split(',')[1] || image;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelId,
       contents: [
         {
+          role: 'user',
           parts: [
             { text: systemPrompt + "\n\n" + userPrompt },
             {
-              inline_data: {
-                mime_type: "image/jpeg",
+              inlineData: {
+                mimeType: "image/jpeg",
                 data: base64Data
               }
             }
           ]
         }
       ],
-      generationConfig: {
+      config: {
         temperature: 0.4,
-        topP: 0.8,
-        topK: 40,
         maxOutputTokens: 512,
       }
-    };
-  
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
     });
-  
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `API Request failed: ${response.status}`);
-    }
-  
-    const result = await response.json();
-  
-    // Extract text from Gemini response structure
-    try {
-      const aiText = result.candidates[0].content.parts[0].text;
-      return { text: aiText.trim() };
-    } catch (e) {
-      console.error('Failed to parse Gemini response:', result);
-      throw new Error('Invalid response format from AI');
-    }
+
+    return { text: response.text.trim() };
+  } catch (error) {
+    console.error('Gemini API Error:', error);
+    throw new Error(error.message || 'AI Generation failed');
   }
-  
-  /**
-   * Calls Gemini to analyze subtitle text for smart highlights
-   * @param {Object} payload - { context: string, videoTitle: string }
-   * @returns {Promise<Object>} JSON { isKeyMoment, label, emoji }
-   */
-  async function callGeminiForSubtitles(payload) {
-    const { context, videoTitle } = payload;
-  
-    const settings = await chrome.storage.sync.get(['geminiApiKey']);
-    const apiKey = settings.geminiApiKey;
-  
-    if (!apiKey) return { isKeyMoment: false }; // Silent fail if no key
-  
-    // Prompt Construction
-    let prompt = `You are an expert video editor. Analyze the transcript from the video "${videoTitle || 'Unknown'}".
+}
+
+/**
+ * Calls Gemini to analyze subtitle text for smart highlights
+ * @param {Object} payload - { context: string, videoTitle: string }
+ * @returns {Promise<Object>} JSON { isKeyMoment, label, emoji }
+ */
+async function callGeminiForSubtitles(payload) {
+  const { context, videoTitle } = payload;
+
+  const settings = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = settings.geminiApiKey;
+
+  if (!apiKey) return { isKeyMoment: false };
+
+  // Prompt Construction
+  let prompt = `You are an expert video editor. Analyze the transcript from the video "${videoTitle || 'Unknown'}".
     
-  FULL TRANSCRIPT (Current Session):
-  "${context}"
-  
-  Task: Based on the FULL CONTEXT above, determine if the MOST RECENT lines (last 15-30 seconds) contain a KEY INSIGHT, DEFINITION, or CORE CONCEPT that is worth highlighting NOW.
-  Context Usage: Use the earlier parts of the transcript to resolve pronouns, understand the arc, and ensure the highlight is meaningful, but ONLY highlight if the *newest* information is the "punchline" or key takeaway.
-  Ignore: filler talk, intro/outro, casual conversation, housekeeping, incomplete thoughts.
-  
-  Return a JSON object with:
-  - "isKeyMoment": boolean
-  - "label": string (Max 3-5 words, essentially a title for this moment)
-  - "emoji": string (1 char, relevant emoji)
-  - "reason": string (Why is this important in the context of the whole video?)
-  
-  JSON ONLY. No markdown.`;
-  
-    const MODEL_ID = 'gemini-3-flash-preview';
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
-  
-    const requestBody = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
+FULL TRANSCRIPT (Current Session):
+"${context}"
+
+Task: Based on the FULL CONTEXT above, determine if the MOST RECENT lines (last 15-30 seconds) contain a KEY INSIGHT, DEFINITION, or CORE CONCEPT that is worth highlighting NOW.
+Context Usage: Use the earlier parts of the transcript to resolve pronouns, understand the arc, and ensure the highlight is meaningful, but ONLY highlight if the *newest* information is the "punchline" or key takeaway.
+Ignore: filler talk, intro/outro, casual conversation, housekeeping, incomplete thoughts.
+
+Return a JSON object with:
+- "isKeyMoment": boolean
+- "label": string (Max 3-5 words, essentially a title for this moment)
+- "emoji": string (1 char, relevant emoji)
+- "reason": string (Why is this important in the context of the whole video?)
+
+JSON ONLY. No markdown.`;
+
+  const ai = new GoogleGenAI({ apiKey });
+  const modelId = 'gemini-3-flash-preview';
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
         temperature: 0.2,
-        response_mime_type: "application/json" 
+        responseMimeType: "application/json"
       }
-    };
-  
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-  
-          if (!response.ok) return { isKeyMoment: false };
-      
-          const result = await response.json();
-          let text = result.candidates[0].content.parts[0].text;
-      
-          // Clean up markdown code blocks if present
-          text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-          
-          return JSON.parse(text);
-        } catch (e) {
-          console.error('Smart Highlight Error:', e);
-          return { isKeyMoment: false };
-        }
-      }
+    });
+
+    return JSON.parse(response.text);
+  } catch (e) {
+    console.error('Smart Highlight Error:', e);
+    return { isKeyMoment: false };
+  }
+}

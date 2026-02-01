@@ -1287,11 +1287,63 @@
              this.savePinToStorage(pinData);
           }
         } else {
-          log('AI Analysis failed:', response ? response.error : 'Unknown error');
+          let errorMsg = response ? response.error : 'Unknown error';
+          let errorTitle = 'AI Error';
+          let actionText = null;
+          let actionCallback = null;
+
+          // Try to parse JSON error message if it looks like one
+          try {
+            if (typeof errorMsg === 'string' && (errorMsg.startsWith('{') || errorMsg.includes('{"error":'))) {
+              // Extract JSON part if mixed with text
+              const jsonStart = errorMsg.indexOf('{');
+              const jsonEnd = errorMsg.lastIndexOf('}');
+              if (jsonStart !== -1 && jsonEnd !== -1) {
+                 const jsonStr = errorMsg.substring(jsonStart, jsonEnd + 1);
+                 const errorObj = JSON.parse(jsonStr);
+                 
+                 // Handle Google API Error Structure
+                 if (errorObj.error) {
+                    const { code, status, message } = errorObj.error;
+                    if (code === 429 || status === 'RESOURCE_EXHAUSTED') {
+                       errorTitle = 'Quota Exceeded';
+                       errorMsg = 'You have exceeded the free tier rate limit. Please wait a minute or check your plan.';
+                    } else if (message) {
+                       errorMsg = message;
+                    }
+                 }
+              }
+            }
+          } catch (e) {
+            // parsing failed, use original string
+          }
+
+          log('AI Analysis failed:', errorMsg);
+          
+          this.stopLoading(); // Stop orb animation
+          
           if (this.activePin === pinData && this.noteInput) {
             this.noteInput.classList.remove('ai-loading');
             this.noteInput.placeholder = 'AI Analysis failed. Type note...';
           }
+
+          // Show user-facing error toast
+          if (typeof errorMsg === 'string') {
+             if (errorMsg.includes('API Key') || errorMsg.includes('401') || errorMsg.includes('PERMISSION_DENIED')) {
+                errorTitle = 'Authentication Failed';
+                errorMsg = 'Gemini API Key is missing or invalid.';
+                actionText = 'Configure';
+                actionCallback = () => { chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }); };
+             } else if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+                errorTitle = 'Quota Exceeded';
+                errorMsg = 'Free tier limit reached. Please wait a moment.';
+             }
+          }
+
+          // Truncate long messages for toast
+          const displayMsg = errorMsg.length > 80 ? errorMsg.substring(0, 80) + '...' : errorMsg;
+          
+          this.showError(errorTitle, displayMsg, actionText, actionCallback);
         }
       });
     }
@@ -1882,6 +1934,70 @@
         if (originalIcon) originalIcon.style.opacity = '1';
         this.orbElement.classList.remove('success');
       }, 2000);
+    }
+
+    /**
+     * Shows an error toast near the Orb
+     * @param {string} title - Error title
+     * @param {string} message - Error details
+     * @param {string} [actionText] - Optional button text
+     * @param {Function} [actionCallback] - Optional button callback
+     */
+    showError(title, message, actionText, actionCallback) {
+      if (!this.islandContainer) return;
+
+      // Remove existing toast
+      const existingToast = this.shadowRoot.querySelector('.kairos-error-toast');
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'kairos-error-toast';
+      
+      const header = document.createElement('div');
+      header.className = 'kairos-error-title';
+      header.innerHTML = `
+        <svg class="kairos-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+           <circle cx="12" cy="12" r="10"></circle>
+           <line x1="12" y1="8" x2="12" y2="12"></line>
+           <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        ${title}
+      `;
+      
+      const body = document.createElement('div');
+      body.textContent = message;
+      body.style.opacity = '0.8';
+      
+      toast.appendChild(header);
+      toast.appendChild(body);
+
+      if (actionText && actionCallback) {
+        const btn = document.createElement('button');
+        btn.className = 'kairos-error-btn';
+        btn.textContent = actionText;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          actionCallback();
+          toast.classList.remove('active');
+          setTimeout(() => toast.remove(), 300);
+        };
+        toast.appendChild(btn);
+      }
+
+      this.islandContainer.appendChild(toast);
+
+      // Animate in
+      requestAnimationFrame(() => {
+        toast.classList.add('active');
+      });
+
+      // Auto dismiss after 6s
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.classList.remove('active');
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, 6000);
     }
 
     /**

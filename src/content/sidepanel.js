@@ -382,23 +382,44 @@
       item.dataset.id = note.id;
       item.dataset.timestamp = String(note.timestamp);
 
-      // Time badge
+      // Timeline Dot
+      const dot = createElement('div', { className: 'kairos-sp-timeline-dot' });
+      item.appendChild(dot);
+
+      // Note Body Container
+      const body = createElement('div', { className: 'kairos-sp-note-body' });
+
+      // Header: Time + Badge
+      const header = createElement('div', { className: 'kairos-sp-note-header' });
+      
       const time = createElement('span', {
         className: 'kairos-sp-note-time',
         text: note.timeLabel || Utils.formatTime(note.timestamp)
       });
-      item.appendChild(time);
+      header.appendChild(time);
+
+      const source = note.source || 'user';
+      const badgeText = source === 'ai' ? 'AI' : 'YOU';
+      const badge = createElement('span', {
+        className: `kairos-badge ${source} mini`,
+        text: badgeText
+      });
+      header.appendChild(badge);
+
+      body.appendChild(header);
 
       // Content
       const contentText = note.content || note.note || '(Empty note)';
-      const content = createElement('span', {
+      const content = createElement('div', {
         className: 'kairos-sp-note-content'
       });
       content.innerHTML = SimpleMarkdown.parse(contentText);
-      content.title = contentText; // Show full text on hover
-      item.appendChild(content);
+      content.title = contentText;
+      body.appendChild(content);
 
-      // Delete button
+      item.appendChild(body);
+
+      // Delete button (Absolute positioned)
       const deleteBtn = createElement('button', { className: 'kairos-sp-note-delete', title: 'Delete note' });
       deleteBtn.appendChild(createSvgIcon('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z', 14));
       item.appendChild(deleteBtn);
@@ -434,6 +455,7 @@
           --kairos-sp-border: rgba(255, 255, 255, 0.06);
           --kairos-sp-item-bg: rgba(255, 255, 255, 0.03);
           --kairos-sp-header-bg: rgba(255, 255, 255, 0.015);
+          --kairos-sp-timeline-line: rgba(255, 255, 255, 0.1);
         }
 
         @media (prefers-color-scheme: light) {
@@ -444,6 +466,7 @@
             --kairos-sp-border: rgba(0, 0, 0, 0.08);
             --kairos-sp-item-bg: rgba(0, 0, 0, 0.03);
             --kairos-sp-header-bg: rgba(0, 0, 0, 0.01);
+            --kairos-sp-timeline-line: rgba(0, 0, 0, 0.1);
           }
         }
 
@@ -527,7 +550,7 @@
           gap: 4px;
         }
 
-        .kairos-sp-header-btn {
+        .kairos-sp-header-btn, .kairos-sp-toggle {
           width: 26px;
           height: 26px;
           border: none;
@@ -541,26 +564,7 @@
           transition: all 0.2s ease;
         }
 
-        .kairos-sp-header-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: var(--kairos-sp-text);
-        }
-
-        .kairos-sp-toggle {
-          width: 26px;
-          height: 26px;
-          border: none;
-          background: transparent;
-          border-radius: 6px;
-          color: var(--kairos-sp-text-muted);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-        }
-
-        .kairos-sp-toggle:hover {
+        .kairos-sp-header-btn:hover, .kairos-sp-toggle:hover {
           background: rgba(255, 255, 255, 0.1);
           color: var(--kairos-sp-text);
         }
@@ -619,7 +623,7 @@
           box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
 
-        .kairos-sp-note-count {
+         .kairos-sp-note-count {
           font-size: 12px;
           color: var(--kairos-sp-text-muted);
           display: none; /* Deprecated but kept for safety */
@@ -662,12 +666,27 @@
            If they are black text on transparent, we might need inversion in dark mode. 
            Let's assume they are designed for the UI. */
 
+        /* Timeline Container */
         .kairos-sp-notes-list {
           max-height: 240px;
           overflow-y: auto;
           margin-bottom: 16px;
+          padding-left: 28px; /* Increased padding for line */
+          position: relative;
           scrollbar-width: thin;
           scrollbar-color: var(--kairos-sp-border) transparent;
+        }
+
+        /* Vertical Line */
+        .kairos-sp-notes-list::before {
+          content: '';
+          position: absolute;
+          left: 13px; /* Center of line at 14px */
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: var(--kairos-sp-timeline-line);
+          border-radius: 1px;
         }
 
         .kairos-sp-notes-list::-webkit-scrollbar {
@@ -683,89 +702,125 @@
           border-radius: 2px;
         }
 
-        .kairos-sp-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 24px 16px;
-          color: var(--kairos-sp-text-muted);
-          font-size: 13px;
-          text-align: center;
-          gap: 8px;
-        }
-
-        .kairos-sp-empty-icon {
-          font-size: 28px;
-          opacity: 0.6;
-        }
-
-        .kairos-sp-empty-hint {
-          font-size: 11px;
-          color: var(--kairos-sp-text-muted);
-          opacity: 0.7;
-        }
-
+        /* Note Item */
         .kairos-sp-note-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 12px;
-          margin-bottom: 8px;
-          background: var(--kairos-sp-item-bg);
-          border-radius: 10px;
-          border: 1px solid var(--kairos-sp-border);
-          cursor: pointer;
+          position: relative;
+          margin-bottom: 12px;
+          padding-left: 0; /* Content handles its own padding */
           transition: all 0.2s ease;
-        }
-
-        .kairos-sp-note-item:hover {
-          background: rgba(128, 128, 128, 0.06);
-          border-color: rgba(0, 242, 255, 0.2);
         }
 
         .kairos-sp-note-item:last-child {
           margin-bottom: 0;
         }
 
-        .kairos-sp-note-item.active {
-          background: rgba(0, 242, 255, 0.08); /* Fallback */
-          background: var(--active-bg, rgba(0, 242, 255, 0.08));
+        /* Timeline Dot */
+        .kairos-sp-timeline-dot {
+          position: absolute;
+          left: -19px; 
+          /* 
+             Calculation: 
+             Content start: 28px
+             Line Center: 14px
+             Dot Center Target: 14px
+             Dot Width: 8px -> Dot Left: 14 - 4 = 10px
+             Relative Left: 10px - 28px = -18px.
+             Tweak to -19px for visual centering with border.
+          */
+          top: 16px; /* Push down to align with header text center */
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--kairos-sp-bg);
+          border: 2px solid var(--kairos-accent-start);
+          z-index: 2;
+          box-shadow: 0 0 0 2px var(--kairos-sp-bg);
+        }
+
+        /* Active State (Current Time) */
+        .kairos-sp-note-item.active .kairos-sp-timeline-dot {
+          background: var(--kairos-accent-start);
+          box-shadow: 0 0 0 4px rgba(79, 182, 200, 0.2);
           border-color: var(--kairos-accent-start);
-          box-shadow: 0 0 12px rgba(0, 242, 255, 0.1);
+        }
+
+        .kairos-sp-note-body {
+          background: var(--kairos-sp-item-bg);
+          border-radius: 10px;
+          border: 1px solid var(--kairos-sp-border);
+          padding: 10px;
+          transition: all 0.2s ease;
+          position: relative;
+        }
+
+        .kairos-sp-note-item:hover .kairos-sp-note-body {
+          background: rgba(128, 128, 128, 0.06);
+          border-color: rgba(0, 242, 255, 0.2);
+        }
+
+        .kairos-sp-note-item.active .kairos-sp-note-body {
+          background: rgba(0, 242, 255, 0.06);
+          border-color: var(--kairos-accent-start);
+        }
+
+        .kairos-sp-note-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 4px;
         }
 
         .kairos-sp-note-time {
-          flex-shrink: 0;
           font-size: 11px;
-          font-weight: 600;
-          color: #6fc3d6;
-          background: rgba(79, 182, 200, 0.12);
-          padding: 4px 8px;
-          border-radius: 6px;
+          font-weight: 700;
+          color: var(--kairos-accent-start);
           font-family: 'SF Mono', 'Menlo', monospace;
         }
 
+        /* Mini Badges */
+        .kairos-badge.mini {
+          padding: 1px 3px;
+          font-size: 8px;
+          border-radius: 3px;
+          line-height: 1;
+          height: auto;
+          margin-right: 0;
+          opacity: 0.8;
+        }
+        
+        .kairos-badge.ai {
+          background: rgba(138, 43, 226, 0.15);
+          color: #c471ed;
+          border: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .kairos-badge.user {
+          background: rgba(128, 128, 128, 0.15);
+          color: var(--kairos-sp-text-muted);
+          border: 1px solid var(--kairos-sp-border);
+        }
+
         .kairos-sp-note-content {
-          flex: 1;
           font-size: 13px;
           color: var(--kairos-sp-text);
-          line-height: 1.5;
+          line-height: 1.4;
           display: -webkit-box;
-          -webkit-line-clamp: 2;
+          -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
 
         .kairos-sp-note-delete {
-          flex-shrink: 0;
-          width: 24px;
-          height: 24px;
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          width: 20px;
+          height: 20px;
           border: none;
           background: transparent;
           color: var(--kairos-sp-text-muted);
           cursor: pointer;
-          border-radius: 6px;
+          border-radius: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -860,14 +915,38 @@
           box-shadow: none !important;
         }
 
+        .kairos-sp-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 24px 16px;
+          color: var(--kairos-sp-text-muted);
+          font-size: 13px;
+          text-align: center;
+          gap: 8px;
+        }
+
+        .kairos-sp-empty-icon {
+          font-size: 28px;
+          opacity: 0.6;
+        }
+
+        .kairos-sp-empty-hint {
+          font-size: 11px;
+          color: var(--kairos-sp-text-muted);
+          opacity: 0.7;
+        }
+
+        /* Animation */
         @keyframes kairos-sp-note-appear {
           from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateX(-10px);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(0);
           }
         }
 

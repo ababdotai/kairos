@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kairos",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "Your AI secretary while watching videos.. Transform linear videos into queryable knowledge bases.",
   "permissions": [
     "storage"

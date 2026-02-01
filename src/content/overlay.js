@@ -1272,6 +1272,7 @@
         if (response && response.success) {
           const aiText = response.data.text;
           pinData.note = aiText;
+          pinData.source = 'ai'; // Mark as AI-generated
 
           // Check if this was a background/silent request or the UI is closed
           const isBackground = this.activePin !== pinData;
@@ -1556,6 +1557,7 @@
           context: pinData.context || null,
           spatialX: pinData.spatialX || null,
           spatialY: pinData.spatialY || null,
+          source: pinData.source || 'user',
           createdAt: pinData.createdAt || Date.now()
         };
 
@@ -1779,6 +1781,7 @@
         percentage: percentage,
         timestamp: this.videoElement ? this.videoElement.currentTime : 0,
         note: '',
+        source: 'user', // Default to user
         createdAt: Date.now()
       };
 

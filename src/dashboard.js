@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const providerConfig = {
         google: {
             name: 'Google Gemini',
-            models: ['gemini-3-flash-preview', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+            models: ['gemini-3-flash-preview'],
             defaultModel: 'gemini-3-flash-preview',
             keyPlaceholder: 'AIza...',
             keyHelpLink: 'https://aistudio.google.com/',

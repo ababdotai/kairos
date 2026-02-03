@@ -167,26 +167,26 @@ async function callGeminiAI(payload) {
   const noteLanguage = settings.noteLanguage || 'auto';
   let languageInstruction = '';
   if (noteLanguage !== 'auto') {
-    languageInstruction = `\n- IMPORTANT: Generate the note in ${languageMap[noteLanguage]} language.`;
+    languageInstruction = `\n- IMPORTANT: Output the note in ${languageMap[noteLanguage]} language.`;
   } else {
     languageInstruction = '\n- Use the video\'s primary language (detected from title/subtitles).';
   }
 
   // 3. Prepare the prompt
-  let systemPrompt = "You are Kairos, a minimalist AI video secretary. ";
-  systemPrompt += "Analyze the video frame (visuals) and the recent transcript (audio context) to create a VERY CONCISE note. ";
-  systemPrompt += "Rules:\n";
-  systemPrompt += "- Synthesize the visual information on the slide with the speaker's explanation.\n";
-  systemPrompt += "- Limit to 1-3 short bullet points or one single sentence.\n";
-  systemPrompt += "- Use Markdown (bold key terms).\n";
-  systemPrompt += "- Focus only on high-value info (code, facts, definitions).\n";
-  systemPrompt += "- No conversational filler (no 'This video explains...')."
+  let systemPrompt = "You are Kairos, an intelligent video learning assistant. ";
+  systemPrompt += "Analyze the provided video frame (visuals) and transcript context (audio) to create a high-quality, structured note. ";
+  systemPrompt += "\nRules for Note Generation:";
+  systemPrompt += "\n1. **Capture the Core Idea**: Synthesize the visual information (slides, code, diagrams) with the speaker's explanation.";
+  systemPrompt += "\n2. **Structured Format**: Use a clear structure (e.g., a short Title/Concept followed by bullet points).";
+  systemPrompt += "\n3. **Concise but Complete**: Be brief, but ensure sentences are grammatically complete and thoughts are finished. Do not cut off mid-sentence.";
+  systemPrompt += "\n4. **No Internal Monologue**: Do NOT output internal thoughts, self-corrections, or meta-commentary (e.g., 'The prompt asks for...'). Output ONLY the final note content.";
+  systemPrompt += "\n5. **No Filler**: Avoid phrases like 'This video shows...', 'The speaker says...'. Go straight to the information.";
   systemPrompt += languageInstruction;
 
   if (videoTitle) systemPrompt += `\nVideo Title: ${videoTitle}`;
   if (context) systemPrompt += `\nTranscript (last 60s): "${context}"`;
 
-  const userPrompt = "Generate note for this moment:";
+  const userPrompt = "Generate a structured note for this moment:";
 
   // 4. Call Provider API
   try {
@@ -204,8 +204,10 @@ async function callGeminiAI(payload) {
                   ]
               }],
               config: {
-                  temperature: 0.4,
-                  maxOutputTokens: 512,
+                  maxOutputTokens: 2048,
+                  thinkingConfig: {
+                    thinkingLevel: ThinkingLevel.MINIMAL,
+                  }
               }
           });
           return { text: response.text.trim() };
@@ -236,6 +238,7 @@ async function callGeminiAI(payload) {
                   }
               ],
               temperature: 0.3, // Kimi likes lower temp for precision
+              max_tokens: 2048, // Explicitly set token limit for Kimi
           });
           
           return { text: response.choices[0].message.content.trim() };

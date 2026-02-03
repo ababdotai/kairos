@@ -91,17 +91,105 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Settings Logic ---
 
+    const providerConfig = {
+        google: {
+            name: 'Google Gemini',
+            models: ['gemini-3-flash-preview', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+            defaultModel: 'gemini-3-flash-preview',
+            keyPlaceholder: 'AIza...',
+            keyHelpLink: 'https://aistudio.google.com/',
+            keyHelpText: 'Google AI Studio'
+        },
+        moonshot: {
+            name: 'Moonshot Kimi',
+            models: ['kimi-k2.5'], // Kimi 2.5
+            defaultModel: 'kimi-k2.5',
+            keyPlaceholder: 'sk-...',
+            keyHelpLink: 'https://platform.moonshot.cn/console/api-keys',
+            keyHelpText: 'Moonshot Platform'
+        }
+    };
+
+    // Temp storage for keys while switching views so user doesn't lose input
+    const tempKeys = {
+        google: '',
+        moonshot: ''
+    };
+
+    function setupSettingsListeners() {
+        const providerRadios = document.querySelectorAll('input[name="provider"]');
+        providerRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                // Save current input to temp before switching
+                const currentKey = apiKeyInput.value.trim();
+                const previousProvider = document.querySelector('.radio-option[data-provider].selected')?.dataset.provider;
+                if (previousProvider) {
+                    tempKeys[previousProvider] = currentKey;
+                }
+
+                updateProviderUI(e.target.value);
+            });
+        });
+    }
+
+    /**
+     * Updates the UI (Model dropdown, Key Input) based on selected provider
+     */
+    function updateProviderUI(provider) {
+        const config = providerConfig[provider];
+        if (!config) return;
+
+        // Update Visual Selection
+        document.querySelectorAll('.radio-option[data-provider]').forEach(opt => {
+            if (opt.dataset.provider === provider) {
+                opt.classList.add('selected');
+                opt.querySelector('input').checked = true;
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+
+        // Update Model Dropdown
+        const modelSelect = document.getElementById('modelSelect');
+        modelSelect.innerHTML = config.models.map(m => 
+            `<option value="${m}">${m}</option>`
+        ).join('');
+        
+        // Select default or saved model (if applicable logic exists, for now default)
+        modelSelect.value = config.defaultModel;
+
+        // Update API Key Input
+        apiKeyInput.value = tempKeys[provider] || '';
+        apiKeyInput.placeholder = `Paste your ${config.name} API Key (${config.keyPlaceholder})`;
+        
+        // Update Help Link
+        const helpLink = document.querySelector('#apiKeyHelp a');
+        helpLink.href = config.keyHelpLink;
+        helpLink.textContent = config.keyHelpText;
+    }
+
     /**
      * Loads saved settings from chrome.storage.sync
      */
     function loadSettings() {
-        chrome.storage.sync.get(['geminiApiKey', 'noteLanguage', 'autoHighlightMode'], (result) => {
-            // Load API Key
-            if (result.geminiApiKey) {
-                apiKeyInput.value = result.geminiApiKey;
+        chrome.storage.sync.get(['aiProvider', 'googleApiKey', 'moonshotApiKey', 'geminiApiKey', 'aiModel', 'noteLanguage'], (result) => {
+            
+            // 1. Determine Provider
+            let currentProvider = result.aiProvider || 'google';
+            
+            // 2. Load Keys
+            tempKeys.google = result.googleApiKey || result.geminiApiKey || ''; // Migration fallback
+            tempKeys.moonshot = result.moonshotApiKey || '';
+
+            // 3. Initialize UI
+            updateProviderUI(currentProvider);
+
+            // 4. Set Specific Model if saved (and valid for current provider)
+            if (result.aiModel && providerConfig[currentProvider].models.includes(result.aiModel)) {
+                document.getElementById('modelSelect').value = result.aiModel;
             }
 
-            // Load Language Preference
+            // 5. Load Language Preference
             const savedLang = result.noteLanguage || 'auto';
             const targetLangRadio = document.querySelector(`input[name="noteLanguage"][value="${savedLang}"]`);
             if (targetLangRadio) {
@@ -110,16 +198,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 languageOptions.forEach(opt => opt.classList.remove('selected'));
                 targetLangRadio.closest('.radio-option').classList.add('selected');
             }
-
-            // Load Highlight Mode
-            const savedHighlight = result.autoHighlightMode || 'basic';
-            const targetHighlightRadio = document.querySelector(`input[name="autoHighlightMode"][value="${savedHighlight}"]`);
-            if (targetHighlightRadio) {
-                targetHighlightRadio.checked = true;
-                // Update visuals
-                highlightOptions.forEach(opt => opt.classList.remove('selected'));
-                targetHighlightRadio.closest('.radio-option').classList.add('selected');
-            }
+            
+            // Setup listeners after loading initial state
+            setupSettingsListeners();
         });
     }
 
@@ -127,29 +208,40 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Saves settings to chrome.storage.sync
      */
     function saveSettings() {
-        const apiKey = apiKeyInput.value.trim();
-        const selectedLangInput = document.querySelector('input[name="noteLanguage"]:checked');
-        const selectedHighlightInput = document.querySelector('input[name="autoHighlightMode"]:checked');
+        const currentProvider = document.querySelector('input[name="provider"]:checked').value;
+        const currentModel = document.getElementById('modelSelect').value;
+        const currentKey = apiKeyInput.value.trim();
+        const selectedLang = document.querySelector('input[name="noteLanguage"]:checked').value;
 
-        const selectedLang = selectedLangInput ? selectedLangInput.value : 'auto';
-        // Default to 'basic' if not found (element might be commented out in HTML)
-        const selectedHighlight = selectedHighlightInput ? selectedHighlightInput.value : 'basic';
-
-        if (!apiKey) {
+        if (!currentKey) {
             showStatus('Please enter a valid API Key', 'error');
             return;
         }
 
-        if (!apiKey.startsWith('AIza')) {
-            showStatus('Warning: Key typically starts with "AIza". Check if correct.', 'error');
-            // We don't block it, just warn
+        // Update temp storage
+        tempKeys[currentProvider] = currentKey;
+
+        // Validate Key Format (Basic check)
+        if (currentProvider === 'google' && !currentKey.startsWith('AIza')) {
+             showStatus('Warning: Google Keys typically start with "AIza".', 'error');
+        } else if (currentProvider === 'moonshot' && !currentKey.startsWith('sk-')) {
+             showStatus('Warning: Moonshot Keys typically start with "sk-".', 'error');
         }
 
-        chrome.storage.sync.set({
-            geminiApiKey: apiKey,
-            noteLanguage: selectedLang,
-            autoHighlightMode: selectedHighlight
-        }, () => {
+        const updates = {
+            aiProvider: currentProvider,
+            aiModel: currentModel,
+            noteLanguage: selectedLang
+        };
+
+        // Save key to specific slot
+        if (currentProvider === 'google') {
+            updates.googleApiKey = currentKey;
+        } else if (currentProvider === 'moonshot') {
+            updates.moonshotApiKey = currentKey;
+        }
+
+        chrome.storage.sync.set(updates, () => {
             showStatus('Settings saved successfully!', 'success');
             setTimeout(() => {
                 statusMessageEl.textContent = '';

@@ -17,6 +17,7 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
-    "@google/genai": "^1.39.0"
+    "@google/genai": "^1.39.0",
+    "openai": "^6.17.0"
   }
 }

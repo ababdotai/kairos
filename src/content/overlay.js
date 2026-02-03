@@ -299,6 +299,7 @@
       overlay.appendChild(spatialLayer);
 
       this.overlayElement = overlay;
+      this.islandContainer = island;
       this.spatialLayer = spatialLayer;
       this.dragHandle = dragHandle;
       this.orbElement = orb;

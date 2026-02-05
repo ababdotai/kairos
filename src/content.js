@@ -8,6 +8,8 @@ import './content/capture.js';
 import './content/subtitles.js';
 import './content/agent.js';
 import './content/styles.js';
+import './content/gen_ui.js';
+import './content/hud_agent.js';
 import './content/overlay.js';
 import './content/sidepanel.js';
 
@@ -29,6 +31,10 @@ import './content/sidepanel.js';
   async function init() {
     log('Initializing Kairos...');
 
+    // Create GenUI Manager
+    const { GenUIManager } = window.Kairos;
+    const genUiManager = new GenUIManager();
+
     // Create side panel manager
     const sidePanelManager = new SidePanelManager();
     await sidePanelManager.init();
@@ -42,9 +48,20 @@ import './content/sidepanel.js';
 
     // Create overlay manager with side panel reference
     const overlayManager = new OverlayManager();
+    window.Kairos.overlayManagerInstance = overlayManager; // Store for HUD Agent feedback
     overlayManager.sidePanel = sidePanelManager;
     overlayManager.subtitleManager = subtitleManager;
+    overlayManager.genUiManager = genUiManager; // Link HUD manager
     await overlayManager.init();
+
+    // Create HUD Agent
+    const { HUDAgent } = window.Kairos;
+    const hudAgent = new HUDAgent(subtitleManager, genUiManager);
+    await hudAgent.init();
+    overlayManager.hudAgent = hudAgent;
+
+    // Initialize GenUI with overlay's shadow root
+    genUiManager.init(overlayManager.shadowRoot);
 
     // Initialize Proactive Agent
     const { ProactiveAgent } = window.Kairos;
@@ -73,6 +90,8 @@ import './content/sidepanel.js';
         log('URL changed, reloading notes...');
         overlayManager.loadNotesForCurrentVideo();
         sidePanelManager.refresh();
+        if (genUiManager) genUiManager.clearAll();
+        if (hudAgent) hudAgent.lastAnalysisTime = 0; // Trigger scan soon
       }
     }, 2000);
 

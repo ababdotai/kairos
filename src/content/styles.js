@@ -908,6 +908,47 @@
         color: #fff;
         border-color: rgba(255, 80, 80, 0.4);
       }
+
+      /* HUD GenUI Styles */
+      .kairos-hud-component {
+        position: absolute;
+        pointer-events: auto;
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        z-index: 10;
+      }
+
+      .kairos-hud-component.active {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      .kairos-hud-component.exiting {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+      }
+
+      /* Positioning */
+      .kairos-hud-component.bottom-left { bottom: 80px; left: 24px; }
+      .kairos-hud-component.bottom-right { bottom: 80px; right: 24px; }
+      .kairos-hud-component.top-left { top: 80px; left: 24px; }
+      .kairos-hud-component.top-right { top: 80px; right: 24px; }
+      .kairos-hud-component.center-top { top: 80px; left: 50%; transform: translateX(-50%) translateY(20px) scale(0.95); }
+      .kairos-hud-component.center-top.active { transform: translateX(-50%) translateY(0) scale(1); }
+
+      /* Default HUD Card Style (Glass) */
+      .k-hud-card {
+        background: rgba(15, 15, 15, 0.7);
+        backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 16px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        min-width: 200px;
+        max-width: 320px;
+      }
     `;
   }
 

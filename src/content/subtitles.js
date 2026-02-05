@@ -120,6 +120,8 @@
       if (!currentText) return;
 
       const now = Date.now();
+      const video = document.querySelector('video');
+      const videoTime = video ? video.currentTime : 0;
 
       // --- Handle Buffer (Short-term) ---
       const lastBuffer = this.buffer[this.buffer.length - 1];
@@ -128,8 +130,9 @@
       } else if (lastBuffer && currentText.startsWith(lastBuffer.text) && currentText.length > lastBuffer.text.length) {
          lastBuffer.text = currentText;
          lastBuffer.timestamp = now;
+         lastBuffer.videoTime = videoTime;
       } else {
-         this.buffer.push({ text: currentText, timestamp: now });
+         this.buffer.push({ text: currentText, timestamp: now, videoTime: videoTime });
       }
 
       // --- Handle Full Session (Long-term) ---
@@ -141,9 +144,10 @@
       } else if (lastFull && currentText.startsWith(lastFull.text) && currentText.length > lastFull.text.length) {
          lastFull.text = currentText;
          lastFull.timestamp = now;
+         lastFull.videoTime = videoTime;
          action = 'update';
       } else {
-         this.fullSessionBuffer.push({ text: currentText, timestamp: now });
+         this.fullSessionBuffer.push({ text: currentText, timestamp: now, videoTime: videoTime });
          action = 'push';
       }
       
@@ -230,6 +234,23 @@
       // Return entire session history
       // Simple join. Improvements could include deduping more aggressively.
       return this.fullSessionBuffer.map(item => item.text).join(' ');
+    }
+
+    /**
+     * Gets context with [MM:SS] timestamps for AI analysis
+     * @param {number} windowSeconds - How many seconds of history to include
+     * @returns {string} Timestamped text
+     */
+    getTimestampedContext(windowSeconds = 60) {
+      const now = Date.now();
+      const recentItems = this.fullSessionBuffer.filter(item => (now - item.timestamp) < (windowSeconds * 1000));
+      
+      return recentItems.map(item => {
+        const m = Math.floor(item.videoTime / 60);
+        const s = Math.floor(item.videoTime % 60);
+        const timestamp = `[${m}:${s.toString().padStart(2, '0')}]`;
+        return `${timestamp} ${item.text}`;
+      }).join('\n');
     }
 
     stop() {

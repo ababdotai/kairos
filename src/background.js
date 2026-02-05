@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, VideoMetadata } from '@google/genai';
 import OpenAI from 'openai';
 
 /**
@@ -105,6 +105,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         case 'ANALYZE_SUBTITLES':
           response = await callGeminiForSubtitles(message.payload);
+          break;
+        case 'GENERATE_HUD_SCRIPT':
+          response = await callGeminiForHUD(message.payload);
           break;
         default:
           throw new Error('Unknown message type');
@@ -332,5 +335,96 @@ JSON ONLY. No markdown.`;
   } catch (e) {
     console.error('Smart Highlight Error:', e);
     return { isKeyMoment: false };
+  }
+}
+
+/**
+ * Calls AI to generate a visual HUD script from subtitles
+ * @param {Object} payload - { context: string, videoTitle: string }
+ * @returns {Promise<Array>} Array of HUD events
+ */
+async function callGeminiForHUD(payload) {
+  const { videoUrl, videoTitle } = payload;
+
+  const settings = await chrome.storage.sync.get([
+    'googleApiKey', 
+    'geminiApiKey',
+    'aiModel'
+  ]);
+
+  const apiKey = settings.googleApiKey || settings.geminiApiKey;
+  let modelId = settings.aiModel;
+  
+  if (!apiKey) throw new Error('Google API Key not found.');
+  if (!modelId || !modelId.startsWith('gemini')) modelId = 'gemini-3-flash-preview';
+
+  const systemPrompt = `You are a Visual Information Designer. Your task is to transform a video into a "Heads-Up Display" (HUD) visual script.
+    
+    The video is: "${videoTitle}"
+    URL: ${videoUrl}
+    
+    TASK:
+    Analyze the video content (via the URL provided) to create a comprehensive visual timeline of key visual events.
+    Focus on:
+    1. Chapter/Section headers when topics change.
+    2. Key data points/charts when numbers are mentioned.
+    3. "Quote Cards" for impactful statements.
+    4. Technical term definitions when new concepts are introduced.
+    
+    PROCESSING PARAMETERS:
+    - Resolution: Low (360p analysis is sufficient)
+    - FPS: 1 (Sample 1 frame per second)
+    
+    OUTPUT FORMAT (Strict JSON Array):
+    [
+      {
+        "start": number (start time in seconds. e.g. 120.5),
+        "duration": number (duration in seconds, 3-8s recommended),
+        "position": "bottom-left" | "bottom-right" | "top-left" | "top-right" | "center-top",
+        "html": "String (Raw HTML for the card content. Use Tailwind-like classes or inline styles. Wrap in <div class='k-hud-card'>)",
+        "css": "String (Optional custom CSS for this specific component)"
+      }
+    ]
+    
+    VISUAL STYLE GUIDE:
+    - Use <div class='k-hud-card'> as the container.
+    - Keep text high-contrast (white text on dark glass background).
+    - Use colors for emphasis: #00f2ff (cyan) for info, #00ff9d (green) for success/growth, #ff0095 (pink) for emphasis.
+    - Icons (Emojis) are encouraged.
+    
+    JSON ONLY. NO MARKDOWN. NO EXPLANATION.`;
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              fileData: {
+                mimeType: 'video/mp4',
+                fileUri: videoUrl,
+                videoMetadata: { fps: 5 }
+              }
+            },
+            {
+              text: systemPrompt
+            }
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        mediaResolution: 'MEDIA_RESOLUTION_LOW',
+      }
+    });
+    
+    const result = JSON.parse(response.text);
+    return Array.isArray(result) ? result : [];
+  } catch (e) {
+    console.error('HUD Script Generation Error:', e);
+    return [];
   }
 }

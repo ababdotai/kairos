@@ -662,6 +662,11 @@
         this.progressBar.setAttribute('data-time', `${minutes}:${seconds.toString().padStart(2, '0')}`);
 
         this.updateSpatialMarkers(video.currentTime);
+        
+        // Update GenUI HUD Script
+        if (this.genUiManager) {
+          this.genUiManager.update(video.currentTime);
+        }
       }
 
       this.enforceIslandBounds(rect.width, rect.height);

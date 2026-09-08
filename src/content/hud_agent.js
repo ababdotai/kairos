@@ -31,10 +31,8 @@
     }
 
     start() {
-      // Check immediately on start
-      this.checkVideoChange();
-      
       // Monitor periodically for video ID changes (SPA navigation)
+      // But DO NOT trigger analysis automatically. Analysis is triggered via onActivate.
       this.checkInterval = setInterval(() => this.checkVideoChange(), 2000);
     }
 
@@ -61,8 +59,20 @@
         // Clear previous HUD elements
         if (this.genUiManager) this.genUiManager.clearAll();
 
-        // Trigger analysis for new video
+        // DO NOT trigger analysis automatically here
+      }
+    }
+
+    /**
+     * Called when Kairos is activated by the user
+     */
+    onActivate() {
+      log('HUDAgent: Kairos activated by user. Checking analysis status...');
+      // Only analyze if we haven't done so for this video yet
+      if (!this.hasRequestedAnalysis) {
         this.analyzeVideoUrl();
+      } else {
+        log('HUDAgent: Analysis already requested for this video. Skipping.');
       }
     }
 

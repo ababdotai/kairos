@@ -3,3 +3,10 @@ node_modules
 dist
 .npmrc
 *.local
+
+# Local scratch / personal files
+temp/
+.gemini-clipboard/
+ChatHistory.md
+Video-Wrapper-Skills/
+ChatHistory.md

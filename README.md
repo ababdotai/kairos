@@ -123,12 +123,12 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
   - [x] Dashboard中note添加复制按钮，不复制图片数据
 - [ ] 功能：
   - [x] 整体架构：升级为Vite
-  - [ ] 接入Kimi 2.5作为默认云端服务，为后续订阅做准备
+  - [ ] 使用VideoWrapper类似思路智能添加重点，AR/HUD for Video! Multimodal Perception + CodeAct Execution + GenUI
+  - [ ] 接入Kimi K2.5作为默认云端服务，为后续订阅做准备，云端默认选择K2.5
   - [ ] 对于YouTube直接将YouTube URL发送给模型指定时间分析，对于Bilibili将片段发送给Kimi 2.5进行分析（实时监听音频，偶尔查看画面）
   - [ ] 完善核心的无感记录Context-Aware Note功能，不断让自己觉得都好用：截图/完整片段 + 字幕（可能为空）+ 音频 + 用户笔记（可能为空）→ AI 摘要，紧密结合Multi-modal Context的解释
   - [ ] Ceiling timeline改为可以设置位置：底部原生进度条上方，或屏幕顶部（当前），添加Hide、Move按钮
   - [ ] 画面笔记：参考选中-高亮这一类似Liner的操作对视频进行笔记，不仅是PIN
-  - [ ] 使用VideoWrapper类似思路智能添加重点，AR/HUD for Video!
 - [ ] Bug:
   - [x] B站时间轴遮挡弹幕问题、全屏无法显示的问题
   - [ ] 通过PIN/快捷键触发的笔记在播放到对应时间点时也应该有渐现渐隐的效果

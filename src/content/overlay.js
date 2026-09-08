@@ -1005,9 +1005,14 @@
 
       if (this.overlayElement) this.overlayElement.classList.add('active');
 
-      // Notify agent about activation
+      // Notify agent about activation (ProactiveAgent)
       if (this.agent && this.agent.onActivate) {
         this.agent.onActivate();
+      }
+
+      // Notify HUD Agent about activation
+      if (this.hudAgent && this.hudAgent.onActivate) {
+        this.hudAgent.onActivate();
       }
 
       // Animation effects

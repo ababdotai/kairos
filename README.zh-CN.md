@@ -1,6 +1,22 @@
-# Kairos
+<p align="center">
+  <img src="public/icons/icon.png" alt="Kairos Logo" width="128" />
+</p>
 
-> **Kairos=Vital Moments. Your AI secretary while watching videos.**
+<h1 align="center">Kairos</h1>
+
+<p align="center">
+  <em><strong>Kairos = 关键时刻。</strong></em><br/>
+  <strong>观看视频时的 AI 秘书。</strong><br/>
+  <sub>将线性视频转化为可查询的知识库。</sub>
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="#-快速开始">快速开始</a> ·
+  <a href="#-核心功能">核心功能</a>
+</p>
+
+---
 
 如何让知识载体类视频的消费过程更有价值和互动性?
 

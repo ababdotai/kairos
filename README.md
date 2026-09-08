@@ -1,8 +1,22 @@
-# Kairos
+<p align="center">
+  <img src="public/icons/icon.png" alt="Kairos Logo" width="128" />
+</p>
 
-> **Kairos = Vital Moments. Your AI secretary while watching videos.**
+<h1 align="center">Kairos</h1>
 
-[中文文档 (Chinese README)](README.zh-CN.md)
+<p align="center">
+  <em><strong>Kairos = Vital Moments.</strong></em><br/>
+  <strong>Your AI secretary while watching videos.</strong><br/>
+  <sub>Transform linear videos into queryable knowledge bases.</sub>
+</p>
+
+<p align="center">
+  <a href="README.zh-CN.md">中文文档</a> ·
+  <a href="#-quick-start">Quick Start</a> ·
+  <a href="#-key-features">Features</a>
+</p>
+
+---
 
 How can watching knowledge-dense videos become more valuable and interactive?
 

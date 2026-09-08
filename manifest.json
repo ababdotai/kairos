@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Kairos",
   "version": "1.0.0",
-  "description": "Your AI secretary while watching videos.. Transform linear videos into queryable knowledge bases.",
+  "description": "Your AI secretary while watching videos. Transform linear videos into queryable knowledge bases.",
   "permissions": [
     "storage"
   ],
@@ -25,12 +25,12 @@
   "action": {
     "default_title": "Kairos - Your AI secretary while watching videos.",
     "default_popup": "src/popup.html",
-    "default_icon": "icons/icon.png"
+    "default_icon": "icons/icon128.png"
   },
   "icons": {
-    "16": "icons/icon.png",
-    "48": "icons/icon.png",
-    "128": "icons/icon.png"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "web_accessible_resources": [
     {

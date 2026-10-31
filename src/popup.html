@@ -54,6 +54,9 @@
       gap: 8px;
     }
 
+    .brand-copy { display: flex; flex-direction: column; gap: 2px; }
+    .app-tagline { max-width: 140px; font-size: 10px; line-height: 1.4; color: var(--kairos-text-secondary); }
+
     .logo {
       width: 24px;
       height: 24px;
@@ -224,6 +227,16 @@
       line-height: 1.5;
     }
 
+    .platform-links { display: flex; gap: 12px; }
+    .platform-link {
+      display: flex; flex: 1; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 8px; border: 1px solid var(--kairos-border); border-radius: 12px;
+      color: var(--kairos-text); background: var(--kairos-surface); text-decoration: none;
+      font-size: 13px; font-weight: 500;
+    }
+    .platform-link:hover { background: var(--kairos-surface-hover); border-color: #7b9cb9; }
+    .platform-link:focus-visible { outline: 2px solid #6eade0; outline-offset: 3px; }
+    .platform-link svg { width: 28px; height: 24px; flex-shrink: 0; }
     /* Footer / Shortcuts */
     .footer {
       border-top: 1px solid var(--kairos-border);
@@ -289,7 +302,10 @@
   <div class="header">
     <div class="brand">
       <img class="logo" src="/icons/icon.png" alt="Kairos">
-      <span class="app-name">Kairos</span>
+      <div class="brand-copy">
+        <span class="app-name">Kairos</span>
+        <span class="app-tagline" data-i18n="Watch together. Remember more.">Watch together. Remember more.</span>
+      </div>
     </div>
     <div class="header-actions">
       <button id="dashboard-btn" class="icon-btn" title="Open Dashboard" data-i18n-title="Open Dashboard">
@@ -316,7 +332,16 @@
     <div class="empty-icon">👋</div>
     <h3 id="empty-state-title"><span data-i18n="No Video Detected">No Video Detected</span></h3>
     <p id="empty-state-msg"><span data-i18n="Open YouTube or Bilibili to start capturing.">Open YouTube or Bilibili to start capturing.</span></p>
-    <button id="refresh-btn" class="btn-secondary"><span data-i18n="Refresh Page">Refresh Page</span></button>
+    <div class="platform-links">
+      <a class="platform-link" href="https://www.bilibili.com/" target="_blank" rel="noopener noreferrer" aria-label="Bilibili">
+        <svg viewBox="0 0 28 24" fill="none" stroke="#fb7299" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="6" width="22" height="15" rx="3"/><path d="M9 2l4 4m6-4-4 4M8 12l3 1m6 0 3-1M11 17l3 1 3-1"/></svg>
+        <span>Bilibili</span>
+      </a>
+      <a class="platform-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+        <svg viewBox="0 0 28 24" aria-hidden="true"><rect x="1" y="3" width="26" height="18" rx="5" fill="#ff3434"/><path d="M11 8l8 4-8 4z" fill="white"/></svg>
+        <span>YouTube</span>
+      </a>
+    </div>
   </div>
 
   <!-- Footer Tips -->
@@ -329,6 +354,11 @@
         <span><span data-i18n="to activate kairos">to activate kairos</span></span>
       </div>
       <div class="shortcut-item">
+        <img src="/icons/keyboard_key_k.png" class="shortcut-icon" alt="K">
+        <kbd><span data-i18n="Start Typing">Start Typing</span></kbd>
+        <span><span data-i18n="to take a note · Esc to exit">to take a note · Esc to exit</span></span>
+      </div>
+      <div class="shortcut-item">
         <img src="/icons/mouse-double-click.png" class="shortcut-icon" alt="Click">
         <kbd><span data-i18n="Left-drag on Video">Left-drag on Video</span></kbd>
         <span><span data-i18n="to capture a region">to capture a region</span></span>
@@ -337,11 +367,6 @@
         <img src="/icons/ai_enhanced_input.png" class="shortcut-icon" alt="AI">
         <kbd><span data-i18n="Enter without Input">Enter without Input</span></kbd>
         <span><span data-i18n="to trigger AI note">to trigger AI note</span></span>
-      </div>
-      <div class="shortcut-item">
-        <img src="/icons/keyboard_key_k.png" class="shortcut-icon" alt="K">
-        <kbd><span data-i18n="Start Typing">Start Typing</span></kbd>
-        <span><span data-i18n="to take a note · Esc to exit">to take a note · Esc to exit</span></span>
       </div>
     </div>
   </div>

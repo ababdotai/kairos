@@ -671,14 +671,16 @@
         }
 
         /* Grid for Language Radio Options */
-        #languageConfig .radio-group {
+        #languageConfig .radio-group, #uiLanguageGroup {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
             flex-direction: row; /* Override column */
         }
         
-        #languageConfig .radio-option {
+        #uiLanguageGroup { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+        #languageConfig .radio-option, #uiLanguageGroup .radio-option {
             height: 100%;
             box-sizing: border-box;
         }
@@ -794,13 +796,31 @@
                 </div>
 
                 <div class="settings-section" style="grid-column: 1 / -1;">
-                    <h3><label for="uiLanguageSelect" data-i18n="Interface language">Interface language</label></h3>
-                    <select id="uiLanguageSelect">
-                        <option value="auto" data-i18n="Follow system">Follow system</option>
-                        <option value="zh">中文</option>
-                        <option value="en">English</option>
-                    </select>
+                    <h3 id="uiLanguageHeading" data-i18n="Interface language">Interface language</h3>
                     <p style="color: var(--text-dim); font-size: 14px;" data-i18n="Saved automatically. Refresh open video pages to apply. Does not change the AI note language.">Saved automatically. Refresh open video pages to apply. Does not change the AI note language.</p>
+                    <div id="uiLanguageGroup" class="radio-group" role="radiogroup" aria-labelledby="uiLanguageHeading">
+                        <label class="radio-option">
+                            <input type="radio" name="uiLanguage" value="auto" checked>
+                            <div class="radio-content">
+                                <span class="radio-title" data-i18n="Follow system">Follow system</span>
+                                <span class="radio-desc" data-i18n="Use the browser interface language">Use the browser interface language</span>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="uiLanguage" value="zh">
+                            <div class="radio-content">
+                                <span class="radio-title">中文</span>
+                                <span class="radio-desc" data-i18n="Display the interface in Chinese">Display the interface in Chinese</span>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="uiLanguage" value="en">
+                            <div class="radio-content">
+                                <span class="radio-title">English</span>
+                                <span class="radio-desc" data-i18n="Display the interface in English">Display the interface in English</span>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="settings-section" id="languageConfig">

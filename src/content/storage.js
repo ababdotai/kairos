@@ -60,12 +60,15 @@
      * @returns {Promise<void>}
      */
     async deleteNote(id) {
+      if (typeof id !== 'string' && typeof id !== 'number') throw new Error('Invalid note ID');
       return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({ type: 'DELETE_NOTE', payload: { id } }, (response) => {
-          if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-          if (response && response.success) resolve(response.data);
-          else reject(response ? response.error : 'Unknown error');
-        });
+        try {
+          chrome.runtime.sendMessage({ type: 'DELETE_NOTE', payload: { id } }, (response) => {
+            if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+            if (response && response.success) resolve(response.data);
+            else reject(new Error(response?.error || 'No response from extension'));
+          });
+        } catch (error) { reject(error); }
       });
     }
   }

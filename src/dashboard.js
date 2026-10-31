@@ -16,11 +16,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toggleKeyVisibilityBtn = document.getElementById('toggleKeyVisibility');
     const languageOptions = document.querySelectorAll('.radio-option[data-lang]');
     const highlightOptions = document.querySelectorAll('.radio-option[data-highlight]');
-    const uiLanguageSelect = document.getElementById('uiLanguageSelect');
-    uiLanguageSelect.value = window.Kairos.I18n.preference;
-    uiLanguageSelect.addEventListener('change', async () => {
-        const value = uiLanguageSelect.value;
-        uiLanguageSelect.disabled = true;
+    const uiLanguageGroup = document.getElementById('uiLanguageGroup');
+    const uiLanguageInputs = [...uiLanguageGroup.querySelectorAll('input')];
+    const syncUILanguage = () => uiLanguageInputs.forEach(input => {
+        input.checked = input.value === window.Kairos.I18n.preference;
+        input.closest('.radio-option').classList.toggle('selected', input.checked);
+    });
+    syncUILanguage();
+    uiLanguageGroup.addEventListener('change', async event => {
+        const value = event.target.value;
+        if (!['auto', 'zh', 'en'].includes(value)) return;
+        uiLanguageInputs.forEach(input => { input.disabled = true; });
         try {
             await chrome.storage.sync.set({ uiLanguage: value });
             window.Kairos.I18n.setPreference(value);
@@ -30,10 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             apiKeyInput.placeholder = t('Paste your {provider} API Key ({example})', { provider: provider.name, example: provider.keyPlaceholder });
             statusMessageEl.textContent = '';
         } catch {
-            uiLanguageSelect.value = window.Kairos.I18n.preference;
             showStatus(t('Could not save interface language. Please try again.'), 'error');
         } finally {
-            uiLanguageSelect.disabled = false;
+            syncUILanguage();
+            uiLanguageInputs.forEach(input => { input.disabled = false; });
         }
     });
 

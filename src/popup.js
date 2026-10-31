@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const emptyStateMsg = document.getElementById('empty-state-msg');
   const dashboardBtn = document.getElementById('dashboard-btn');
   const exportBtn = document.getElementById('export-btn');
-  const refreshBtn = document.getElementById('refresh-btn');
   const videoTitleEl = document.getElementById('video-title');
   const noteCountEl = document.getElementById('note-count');
 
@@ -19,39 +18,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.create({ url: '/src/dashboard.html' });
   });
 
-  // Refresh Button Logic
-  refreshBtn.addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-      chrome.tabs.reload(tab.id);
-      window.close(); // Close popup after action
-    }
+  document.querySelectorAll('.platform-link').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      chrome.tabs.create({ url: link.href });
+    });
   });
 
   // Check current tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  if (!tab || (!tab.url.includes('youtube.com') && !tab.url.includes('bilibili.com'))) {
+  let url;
+  try { url = new URL(tab?.url); } catch { /* Restricted tabs may omit their URL. */ }
+  const isHost = domain => url && (url.hostname === domain || url.hostname.endsWith('.' + domain));
+  if (!isHost('youtube.com') && !isHost('bilibili.com')) {
     showEmptyState(t("Not a Video Page"), t("Please navigate to YouTube or Bilibili to use Kairos."));
     return;
   }
 
   // Get Video ID from URL (Robust Logic)
   let videoId = null;
-  const url = new URL(tab.url);
-  if (url.hostname.includes('youtube.com')) {
+  if (isHost('youtube.com')) {
     if (url.pathname.startsWith('/shorts/')) {
-      videoId = 'yt-' + url.pathname.split('/shorts/')[1];
-    } else {
+      const id = url.pathname.split('/shorts/')[1].split('/')[0];
+      videoId = id ? 'yt-' + id : null;
+    } else if (url.pathname === '/watch' && url.searchParams.get('v')) {
       videoId = 'yt-' + url.searchParams.get('v');
     }
-  } else if (url.hostname.includes('bilibili.com')) {
+  } else if (isHost('bilibili.com')) {
     const bvid = url.pathname.split('/').find(p => p.startsWith('BV'));
     videoId = bvid ? 'bili-' + bvid : null;
   }
 
   if (!videoId) {
-    showEmptyState(t("No Video Found"), t("We couldn't detect a video on this page. Try refreshing."));
+    showEmptyState(t("No Video Found"), t("Open YouTube or Bilibili to start capturing."));
     return;
   }
 

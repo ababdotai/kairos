@@ -222,16 +222,17 @@
       }
 
       .kairos-note-wrapper {
-        background: linear-gradient(135deg, #fff7cd, #f3e6aa);
-        border: 1px solid #d9c989;
-        border-radius: 3px 3px 18px 3px;
-        box-shadow: 2px 12px 24px #0004, inset 0 1px #fff9;
-        padding-top: 12px;
+        background: linear-gradient(145deg, #ffffff12, #ffffff03), rgba(20,27,37,.72);
+        backdrop-filter: blur(14px) saturate(140%);
+        border: 1px solid #ffffff38;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px #0003, inset 0 1px #ffffff20;
+        padding-top: 10px;
         flex-wrap: wrap;
         max-width: calc(100% - 24px);
       }
       .kairos-note-wrapper::before {
-        content: '';
+        content: none;
         position: absolute;
         width: 74px;
         height: 19px;
@@ -245,24 +246,24 @@
       .kairos-note-wrapper .kairos-note-input,
       .kairos-note-wrapper .kairos-note-preview {
         background: transparent;
-        color: #443c2c;
-        font-family: 'Kaiti SC', 'STKaiti', 'Georgia', serif;
-        font-size: 16px;
-        line-height: 1.7;
+        color: #eef3f8;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 13px;
+        line-height: 1.6;
       }
-      .kairos-note-wrapper .kairos-note-input::placeholder { color: #6b5b36; }
+      .kairos-note-wrapper .kairos-note-input::placeholder { color: #bbc6d2; opacity: .85; font-style: normal; }
       .kairos-capture-preview {
         width: calc(100% - 20px);
-        max-height: 150px;
+        height: 76px;
         object-fit: contain;
         margin: 0 10px 6px;
-        background: #fff;
-        border: 5px solid white;
-        box-shadow: 0 2px 5px #0002;
+        background: #0002;
+        border: 1px solid #ffffff20;
+        border-radius: 8px;
       }
       .kairos-capture-preview[hidden], .kairos-companion-hint[hidden] { display: none; }
       .kairos-capture-surface {
-        position: absolute; inset: 32px 0 64px;
+        position: absolute; inset: 32px 0 96px;
         z-index: 10; pointer-events: none; cursor: crosshair;
         touch-action: none; user-select: none; -webkit-user-select: none;
       }
@@ -272,15 +273,15 @@
         position: absolute; inset: 0; width: 100%; height: 100%;
         pointer-events: none; z-index: 999;
       }
-      .kairos-ink-layer polyline {
-        fill: #ffd65a22; stroke: #ffe482; stroke-width: 3;
-        stroke-linecap: round; stroke-linejoin: round;
-        filter: drop-shadow(0 1px 2px #0009);
+      .kairos-ink-layer rect {
+        fill: #ffffff06; stroke: #fff; stroke-width: 1.5;
+        stroke-dasharray: 6 4; vector-effect: non-scaling-stroke;
+        filter: drop-shadow(0 1px 1px #000b);
       }
       .kairos-companion-hint {
         position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
         padding: 8px 14px; border-radius: 20px; background: #242422dd;
-        color: #fff3c2; font: 12px/1.5 system-ui; white-space: nowrap;
+        color: #edf3fa; font: 12px/1.5 system-ui; white-space: nowrap;
         pointer-events: none;
       }
       .kairos-spatial-tooltip img { display: block; max-width: 190px; max-height: 120px; margin-bottom: 6px; }
@@ -879,15 +880,16 @@
       /* Ephemeral Spatial Note Tooltip */
       .kairos-spatial-tooltip {
         position: absolute;
-        background: linear-gradient(135deg, #fff7cd, #f3e6aa);
-        border: 1px solid #d9c989;
-        border-radius: 3px 3px 14px 3px;
+        background: rgba(20,27,37,.72);
+        backdrop-filter: blur(12px) saturate(140%);
+        border: 1px solid #ffffff30;
+        border-radius: 10px;
         padding: 8px 12px;
-        color: #443c2c;
-        font-family: 'Kaiti SC', 'STKaiti', 'Georgia', serif;
+        color: #edf3fa;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 13px;
         max-width: 240px;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 101;
         opacity: 0;
         transform: translate(-50%, -100%) translateY(-15px) scale(0.95);
@@ -1076,6 +1078,23 @@
         display: block; width: 23px; height: 23px; min-width: 23px;
         transform: none; flex-shrink: 0;
       }
+      .kairos-island-feedback {
+        position: absolute; left: 48px; top: 0; bottom: 0;
+        display: flex; align-items: center; gap: 5px; opacity: 0;
+        pointer-events: none; white-space: nowrap; color: #e4eee9;
+        font: 500 12px/1 system-ui; letter-spacing: -.02em;
+        transition: opacity 180ms ease;
+      }
+      .kairos-feedback-mark { color: #a7e7c6; font-size: 15px; }
+      .kairos-orb[data-feedback] .kairos-island-feedback { opacity: 1; }
+      .kairos-orb[data-feedback] .kairos-island-brand,
+      .kairos-orb[data-feedback] .kairos-island-status { opacity: 0; }
+      .kairos-orb[data-feedback=discarded] .kairos-feedback-mark { color: #bdc7d4; }
+      .kairos-orb[data-feedback=error] .kairos-feedback-mark { color: #f2bb9c; }
+      .kairos-island-brand, .kairos-island-status { transition: opacity 180ms ease; }
+      @media (prefers-reduced-motion: reduce) {
+        .kairos-island-feedback, .kairos-island-brand, .kairos-island-status { transition: none; }
+      }
       .kairos-island-brand {
         font: 600 14px/1 -apple-system, BlinkMacSystemFont, sans-serif;
         letter-spacing: .025em; text-shadow: 0 1px 4px #0005;
@@ -1147,6 +1166,8 @@
       .kairos-island-note span:first-child { color: #afe2f5; font-size: 11px; flex-shrink: 0; }
       .kairos-island-note span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
       .kairos-island-delete { background: transparent; color: #becfda; border: 0; cursor: pointer; padding: 6px; }
+      .kairos-island-delete { display: inline-flex; align-items: center; flex-shrink: 0; }
+      .kairos-island-delete.is-confirming { white-space: nowrap; color: #ffb7b0; background: #b6373025; border-radius: 6px; font: 11px/1.4 system-ui; }
       .kairos-island-note:hover, .kairos-island-delete:hover { background: #ffffff12; border-radius: 6px; }
       .kairos-island-library { background: transparent; color: #cee4f0; border: 0; padding: 10px 0 0; font: inherit; cursor: pointer; }
       .kairos-island-empty { margin: 6px 0 10px; color: #becfda; font-size: 11px; }
@@ -1167,7 +1188,31 @@
       }
       .kairos-island-pin-toggle[aria-pressed=true] { color: #bcf0ff; background: #77d6ff26; border-color: #a0e2ff66; }
       .kairos-island-panel .kairos-timeline-container { height: 24px; }
-      .kairos-island-panel .kairos-timeline-rail { height: 3px; background: #ffffff26; }
+      .kairos-island-panel .kairos-timeline-rail { height: 4px; background: #c4d6e52e; box-shadow: inset 0 1px 2px #0003; }
+      .kairos-island-panel .kairos-progress-bar { background: linear-gradient(90deg, #a6c6da, #eef7ff) !important; }
+      .kairos-island-panel .kairos-progress-bar::after {
+        content: ''; display: block; width: 0; min-width: 0; padding: 0; right: -5px; top: -7px;
+        height: 0; border-radius: 0; background: transparent; backdrop-filter: none;
+        opacity: 1; box-shadow: none; border: 0;
+        border-left: 5px solid transparent; border-right: 5px solid transparent;
+        border-top: 8px solid #f4f8fc; transform: none;
+        filter: drop-shadow(0 1px 2px #0008);
+      }
+      .kairos-island-panel .kairos-timeline-container:hover .kairos-progress-bar::after { transform: none; }
+      .kairos-timeline-note-marks { position: absolute; inset: 0; pointer-events: none; }
+      .kairos-timeline-note-mark {
+        position: absolute; top: calc(var(--note-y, 12px) - 4px); height: 8px; width: 8px; padding: 0;
+        transform: translateX(-50%); border: 0; background: transparent; cursor: pointer; pointer-events: auto;
+      }
+      .kairos-timeline-note-mark::before {
+        content: ''; position: absolute; left: 2.5px; top: 2.5px; width: 3px; height: 3px;
+        border-radius: 50%; background: #d1efff;
+        box-shadow: 0 0 4px #a9ddff70;
+        transition: background 160ms ease, box-shadow 160ms ease;
+      }
+      .kairos-timeline-note-mark.is-current::before,
+      .kairos-timeline-note-mark:hover::before { background: #f0faff; box-shadow: 0 0 0 1px #b5e6ff22, 0 0 6px #b5e6ff90; }
+      .kairos-timeline-note-mark:focus-visible { outline: 1px solid #b5edff; border-radius: 5px; }
       .kairos-island-panel .kairos-pin { display: none; }
       .kairos-island-moments {
         display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin;
@@ -1198,6 +1243,16 @@
         scrollbar-color: rgba(192,220,240,.35) transparent; color-scheme: dark;
       }
       .kairos-island-moment:focus-visible, .kairos-island-pin-toggle:focus-visible { outline: 2px solid #bceeff; outline-offset: -2px; }
+      .kairos-note-wrapper .kairos-note-action-btn {
+        background: #ffffff0d; border: 1px solid #ffffff24; color: #dbe5ef;
+        box-shadow: none;
+      }
+      .kairos-note-wrapper .kairos-note-action-btn:hover { background: #ffffff25; color: white; box-shadow: none; }
+      .kairos-note-wrapper .kairos-note-preview strong,
+      .kairos-note-wrapper .kairos-note-preview h1,
+      .kairos-note-wrapper .kairos-note-preview h2,
+      .kairos-note-wrapper .kairos-note-preview h3 { color: #fff; }
+      .kairos-overlay:has(.kairos-note-wrapper.active) .kairos-spatial-tooltip { display: none; }
       @media (prefers-reduced-motion: reduce) {
         .docked .kairos-orb, .docked .kairos-orb .kairos-orb-menu { transition: none; }
       }

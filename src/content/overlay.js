@@ -224,7 +224,7 @@
     setIslandPinned(pinned, persist = false) {
       this.islandContainer.classList.toggle('is-pinned', pinned);
       this.islandPinButton.setAttribute('aria-pressed', String(pinned));
-      this.islandPinButton.textContent = pinned ? t("Pinned") : t("Pin");
+      this.islandPinButton.textContent = pinned ? t("Expanded") : t("Expand");
       this.islandPinButton.title = pinned ? t("Unpin to expand only on hover") : t("Keep expanded when the pointer leaves");
       this.positionIsland();
       if (persist) {
@@ -271,6 +271,9 @@
       rail.appendChild(progressBar);
       timeline.appendChild(rail);
       timeline.appendChild(ticksContainer);
+      this.islandTimelineMarks = document.createElement('div');
+      this.islandTimelineMarks.className = 'kairos-timeline-note-marks';
+      timeline.appendChild(this.islandTimelineMarks);
 
       timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
       timeline.addEventListener('mousedown', (e) => this.handleTimelineMouseDown(e));
@@ -343,6 +346,12 @@
       orb.appendChild(brand);
       orb.appendChild(statusDot);
       orb.appendChild(orbMenu);
+      this.islandFeedback = document.createElement('span');
+      this.islandFeedback.className = 'kairos-island-feedback';
+      this.islandFeedback.setAttribute('role', 'status');
+      this.islandFeedback.setAttribute('aria-live', 'polite');
+      this.islandFeedback.setAttribute('aria-atomic', 'true');
+      orb.appendChild(this.islandFeedback);
 
       // Spotlight Note Input
       const noteWrapper = document.createElement('div');
@@ -422,7 +431,7 @@
       toolbar.className = 'kairos-island-toolbar';
       this.islandPinButton = document.createElement('button');
       this.islandPinButton.className = 'kairos-island-pin-toggle';
-      this.islandPinButton.textContent = t("Pin");
+      this.islandPinButton.textContent = t("Expand");
       this.islandPinButton.title = t("Keep expanded when the pointer leaves");
       this.islandPinButton.setAttribute('aria-pressed', 'false');
       this.islandPinButton.addEventListener('click', event => {
@@ -529,6 +538,7 @@
       const scrollTop = this.islandList.scrollTop;
       const scrollLeft = this.islandMoments.scrollLeft;
       this.islandEntries = [];
+      this.timelineMarksKey = null;
       this.islandList.replaceChildren();
       this.islandMoments.replaceChildren();
       const notes = (this.pins || []).filter(pin => pin.savedToStorage).sort((a, b) => a.timestamp - b.timestamp);
@@ -541,6 +551,8 @@
         hint.textContent = t("No note markers yet");
         hint.className = 'kairos-island-empty';
         this.islandMoments.appendChild(hint);
+        this.islandTimelineMarks.replaceChildren();
+        this.timelineMarkGroups = [];
         return;
       }
       for (const pin of notes) {
@@ -580,20 +592,23 @@
         this.islandMoments.appendChild(moment);
         const remove = document.createElement('button');
         remove.className = 'kairos-island-delete';
-        remove.textContent = '×';
-        remove.setAttribute('aria-label', t("Delete {time} note", { time: time.textContent }));
-        remove.addEventListener('click', async (event) => {
-          event.stopPropagation();
-          if (!confirm(t("Delete this note?"))) return;
+        window.Kairos.bindDeleteButton(remove, async () => {
           try {
             await this.storage.deleteNote(pin.id);
+          } catch (error) {
+            log('Note deletion failed', error);
+            this.showError(t("Delete failed"), window.Kairos.deletionError(error));
+            return;
+          }
+          try {
             if (this.activePin === pin) this.closeNoteInput(true);
             this.removePinByNoteId(pin.id);
             this.sidePanel?.refresh();
           } catch (error) {
-            this.showError(t("Delete failed"), t("Your note is still saved. Please try again."));
+            log('Note deleted but view refresh failed', error);
+            this.loadNotesForCurrentVideo();
           }
-        });
+        }, t("Delete {time} note", { time: time.textContent }));
         row.append(open, remove);
         this.islandList.appendChild(row);
         this.islandEntries.push({ pin, row, open, moment });
@@ -607,6 +622,7 @@
     updateIslandPlayback(currentTime) {
       const entries = this.islandEntries || [];
       const current = entries.findLast(entry => entry.pin.timestamp <= currentTime);
+      this.updateTimelineNoteMarks(current);
       for (const entry of entries) {
         const selected = entry === current;
         entry.row.classList.toggle('is-current', selected);
@@ -627,6 +643,70 @@
           ? (target.left < viewport.left ? target.left - viewport.left : Math.max(0, target.right - viewport.right))
           : (target.top < viewport.top ? target.top - viewport.top : Math.max(0, target.bottom - viewport.bottom));
         if (Math.abs(delta) > 1) container[horizontal ? 'scrollLeft' : 'scrollTop'] += delta;
+      }
+    }
+
+    /** Spread dense notes gently around their timestamps along a static wave. */
+    updateTimelineNoteMarks(current) {
+      if (!this.islandTimelineMarks || !this.timeline) return;
+      const duration = this.videoElement?.duration;
+      const width = Math.round(this.timeline.clientWidth);
+      if (!Number.isFinite(duration) || duration <= 0 || !width) return;
+      const key = `${duration}:${width}`;
+      if (this.timelineMarksKey !== key) {
+        this.timelineMarksKey = key;
+        this.islandTimelineMarks.replaceChildren();
+        const groups = [];
+        for (const entry of this.islandEntries || []) {
+          if (!Number.isFinite(entry.pin.timestamp) || entry.pin.timestamp < 0 || entry.pin.timestamp > duration) continue;
+          const x = entry.pin.timestamp / duration * width;
+          groups.push({ x, displayX: x, y: 12, entries: [entry] });
+        }
+        // Give dense clusters room to trace a wave instead of a vertical stack.
+        // Visual displacement is at most 12px; click targets retain real times.
+        for (let start = 0; start < groups.length;) {
+          let end = start + 1;
+          while (end < groups.length && groups[end].x - groups[end - 1].x < 10) end++;
+          if (end - start > 1) {
+            const count = end - start;
+            const center = (groups[start].x + groups[end - 1].x) / 2;
+            const naturalSpan = groups[end - 1].x - groups[start].x;
+            const span = Math.max(naturalSpan, Math.min((count - 1) * 6, naturalSpan + 24));
+            const left = start ? (groups[start - 1].x + groups[start].x) / 2 : 3;
+            const right = end < groups.length ? (groups[end - 1].x + groups[end].x) / 2 : width - 3;
+            for (let index = start; index < end; index++) {
+              const point = groups[index];
+              const target = center - span / 2 + (index - start) * span / (count - 1);
+              point.displayX = Math.max(left, Math.min(right, Math.max(point.x - 12, Math.min(point.x + 12, target))));
+              point.y = 12 + 5.5 * Math.sin((point.displayX - center) * Math.PI / 16);
+            }
+          }
+          start = end;
+        }
+        for (const group of groups) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'kairos-timeline-note-mark';
+          button.style.left = `${group.displayX / width * 100}%`;
+          button.style.setProperty('--note-y', `${group.y.toFixed(2)}px`);
+          button.dataset.timestamp = String(group.entries[0].pin.timestamp);
+          button.title = group.entries.map(entry => `${Utils.formatTime(entry.pin.timestamp)} · ${entry.open.title}`).join('\n');
+          button.setAttribute('aria-label', button.title);
+          for (const type of ['mousedown', 'pointerdown']) button.addEventListener(type, event => event.stopPropagation());
+          button.addEventListener('click', event => {
+            event.stopPropagation();
+            group.entries[0].open.click();
+          });
+          group.button = button;
+          this.islandTimelineMarks.appendChild(button);
+        }
+        this.timelineMarkGroups = groups;
+      }
+      for (const group of this.timelineMarkGroups || []) {
+        const selected = group.entries.includes(current);
+        group.button.classList.toggle('is-current', selected);
+        if (selected) group.button.setAttribute('aria-current', 'true');
+        else group.button.removeAttribute('aria-current');
       }
     }
 
@@ -905,6 +985,7 @@
       this.overlayElement.style.left = `${rect.left}px`;
       this.overlayElement.style.width = `${rect.width}px`;
       this.overlayElement.style.height = `${rect.height}px`;
+      this.companionInput?.updateSafeArea(rect);
       this.islandContainer.style.setProperty('--island-max-height', `${Math.max(90, rect.height - 28)}px`);
       this.positionIsland();
       if (this.islandTime && video) {
@@ -1045,6 +1126,7 @@
      * @param {number} currentTime - Current video time in seconds
      */
     updateSpatialMarkers(currentTime) {
+      this.spatialPlaybackTime = currentTime;
       if (!this.isActive || !this.spatialLayer || !this.pins) {
         if (!this.isActive) this.clearAllSpatialMarkers();
         return;
@@ -1053,20 +1135,25 @@
       const WINDOW = 2; // Visibility window in seconds
 
       this.pins.forEach(pin => {
-        if (pin.spatialX === null || pin.spatialX === undefined) return;
-
         const timeDiff = Math.abs(currentTime - pin.timestamp);
-        const shouldBeVisible = timeDiff < WINDOW || pin.isHovered;
+        if (timeDiff >= WINDOW) pin.spatialDismissed = false;
+        const held = pin.isHovered || pin.spatialHovered;
+        const shouldBeVisible = (timeDiff < WINDOW && !pin.spatialDismissed) || held;
+        if (shouldBeVisible && pin.spatialFadeTimer) {
+          clearTimeout(pin.spatialFadeTimer);
+          pin.spatialFadeTimer = null;
+        }
 
         if (shouldBeVisible && !pin.spatialMarker) {
           this.renderSpatialMarker(pin);
         } else if (!shouldBeVisible && pin.spatialMarker) {
-          this.removeSpatialMarker(pin);
+          this.fadeSpatialMarker(pin);
         }
+        if (pin.spatialFadeTimer) return;
 
         // Update opacity for fade effect
         if (pin.spatialMarker) {
-          const opacity = pin.isHovered ? 1 : Math.max(0, 1 - (timeDiff / WINDOW));
+          const opacity = held ? 1 : Math.max(0, 1 - (timeDiff / WINDOW));
           pin.spatialMarker.style.opacity = opacity;
           if (pin.spatialTooltip) pin.spatialTooltip.style.opacity = opacity;
           
@@ -1086,7 +1173,10 @@
      */
     clearAllSpatialMarkers() {
       if (!this.pins) return;
-      this.pins.forEach(pin => this.removeSpatialMarker(pin));
+      this.pins.forEach(pin => {
+        this.removeSpatialMarker(pin);
+        pin.spatialDismissed = false;
+      });
     }
 
     /**
@@ -1122,16 +1212,32 @@
      * @param {Object} pin - Pin data
      */
     renderSpatialMarker(pin) {
+      // Typed and legacy notes may have no capture coordinates. Use the same
+      // default anchor as the editor so they also appear during playback.
+      const x = Number.isFinite(pin.spatialX) ? pin.spatialX : 50;
+      const y = Number.isFinite(pin.spatialY) ? pin.spatialY : 40;
       const marker = document.createElement('div');
       marker.className = 'kairos-spatial-marker';
-      marker.style.left = `${pin.spatialX}%`;
-      marker.style.top = `${pin.spatialY}%`;
+      marker.style.left = `${x}%`;
+      marker.style.top = `${y}%`;
 
       const tooltip = document.createElement('div');
       tooltip.className = 'kairos-spatial-tooltip';
-      tooltip.style.left = `${pin.spatialX}%`;
-      tooltip.style.top = `${pin.spatialY}%`;
+      tooltip.style.left = `${x}%`;
+      tooltip.style.top = `${y}%`;
       tooltip.textContent = pin.note || '';
+      tooltip.addEventListener('pointerenter', () => {
+        clearTimeout(pin.spatialFadeTimer);
+        pin.spatialFadeTimer = null;
+        pin.spatialHovered = true;
+        pin.spatialDismissed = false;
+        this.updateSpatialMarkers(this.spatialPlaybackTime ?? this.videoElement.currentTime);
+      });
+      tooltip.addEventListener('pointerleave', () => {
+        pin.spatialHovered = false;
+        pin.spatialDismissed = Math.abs((this.spatialPlaybackTime ?? this.videoElement.currentTime) - pin.timestamp) < 2;
+        this.fadeSpatialMarker(pin);
+      });
       if (pin.region && pin.imageUrl) {
         const image = document.createElement('img');
         image.src = pin.imageUrl;
@@ -1144,11 +1250,22 @@
       pin.spatialTooltip = tooltip;
     }
 
+    /** Fade only after the reader leaves; keep the node available for re-entry. */
+    fadeSpatialMarker(pin) {
+      if (pin.spatialFadeTimer) return;
+      if (pin.spatialMarker) pin.spatialMarker.style.opacity = '0';
+      if (pin.spatialTooltip) pin.spatialTooltip.style.opacity = '0';
+      pin.spatialFadeTimer = setTimeout(() => this.removeSpatialMarker(pin), 300);
+    }
+
     /**
      * Removes a spatial marker from the DOM
      * @param {Object} pin - Pin data
      */
     removeSpatialMarker(pin) {
+      clearTimeout(pin.spatialFadeTimer);
+      pin.spatialFadeTimer = null;
+      pin.spatialHovered = false;
       if (pin.spatialMarker) {
         pin.spatialMarker.remove();
         pin.spatialMarker = null;
@@ -1263,6 +1380,7 @@
       this.companionHintTimer = setTimeout(() => { this.companionHint.hidden = true; }, 6000);
 
       if (this.overlayElement) this.overlayElement.classList.add('active');
+      this.companionInput?.prepareTyping(true);
 
       // Notify agent about activation (ProactiveAgent)
       if (this.agent && this.agent.onActivate) {
@@ -1433,7 +1551,8 @@
         if (captureUrl !== location.href || videoId !== this.currentVideoId || !this.pins.includes(pinData)) return;
         pinData.imageUrl = screenshot;
         if (this.activePin === pinData) this.updateCapturePreview(pinData);
-        if (options.region || pinData.savedToStorage) await this.savePinToStorage(pinData);
+        // Captures remain drafts. Only attach a late image to an already saved note.
+        if (pinData.savedToStorage) await this.savePinToStorage(pinData, false);
         
         if (silent) {
            pinData.isAnalyzing = true;
@@ -1573,7 +1692,7 @@
             this.switchToViewMode(aiText);
           } else {
              // Background completion
-             this.showSuccess();
+             this.stopLoading();
              this.savePinToStorage(pinData);
           }
         } else {
@@ -1835,14 +1954,27 @@
      * Saves the current note and persists to Storage
      */
     async saveNote() {
+      const pin = this.activePin;
+      if (!pin) return;
       const content = this.noteInput.value.trim();
-
-      if (this.activePin) {
-        this.activePin.note = content;
-        const saved = await this.savePinToStorage(this.activePin);
-        if (!saved) return;
+      if (this.activePin && !this.activePin.savedToStorage && !content) {
+        this.cancelNote();
+        return;
+      }
+      if (pin.savedToStorage && content === (pin.note || '').trim()) {
+        // Browsing an existing note is not a write and must not announce a save.
+        this.closeNoteInput(true);
+        return;
       }
 
+      const previousContent = pin.note;
+      pin.note = content;
+      const saved = await this.savePinToStorage(pin);
+      if (!saved) { pin.note = previousContent; return; }
+      if (this.activePin !== pin) return;
+      // Successful saving finishes the note-taking pause, even if playback
+      // was already paused when the user opened this note.
+      this.wasPlaying = true;
       this.closeNoteInput(true);
     }
 
@@ -1850,8 +1982,9 @@
      * Persists a pin data object to storage
      * @param {Object} pinData - The pin object to save
      */
-    async savePinToStorage(pinData) {
+    async savePinToStorage(pinData, notify = true) {
         if (!pinData) return;
+        if (!pinData.savedToStorage && !pinData.note?.trim()) return false;
 
         const info = Utils.getVideoInfo();
         const noteRecord = {
@@ -1889,9 +2022,11 @@
           if (this.sidePanel) {
             this.sidePanel.addNote(noteRecord);
           }
+          if (notify) this.showIslandFeedback('saved');
           return true;
         } catch (err) {
           log('Failed to persist note:', err);
+          this.showIslandFeedback('error');
           this.showError(t("Note not saved"), t("Storage failed. Your text is preserved; click Save to retry."));
           return false;
         }
@@ -1903,6 +2038,13 @@
      */
     closeNoteInput(force = false) {
       if (!this.noteWrapper || (!force && this.isEditing)) return;
+      if (this.activePin?.region && !this.activePin.savedToStorage &&
+          !this.activePin.isAnalyzing && !this.noteInput.value.trim()) {
+        if (this.pins.includes(this.activePin)) this.showIslandFeedback('discarded');
+        this.removeSpatialMarker(this.activePin);
+        this.activePin.element?.remove();
+        this.pins = this.pins.filter(pin => pin !== this.activePin);
+      }
 
       this.noteWrapper.classList.remove('active');
       this.noteInput.blur();
@@ -1937,12 +2079,17 @@
         document.removeEventListener('click', this.clickOutsideListener, true);
         this.clickOutsideListener = null;
       }
+      // The next keystroke must already have a native editable target, even
+      // when the mouse has not moved since saving/cancelling this note.
+      this.companionInput?.scheduleTyping();
     }
 
     /**
      * Cancels the current note without saving, removes unsaved pin
      */
     cancelNote() {
+      const discarded = this.activePin && (!this.activePin.savedToStorage ||
+        (this.isEditing && this.noteInput.value.trim() !== (this.activePin.note || '').trim()));
       if (this.activePin) {
         // If this is a new unsaved pin (no id saved to storage yet), remove it
         if (!this.activePin.savedToStorage) {
@@ -1968,6 +2115,32 @@
 
       this.noteInput.value = '';
       this.closeNoteInput(true);
+      if (discarded) this.showIslandFeedback('discarded');
+    }
+
+    /** A transient in-place status; never changes pinning, focus or island position. */
+    showIslandFeedback(state) {
+      if (!this.islandFeedback) return;
+      clearTimeout(this.islandFeedbackTimer);
+      this.islandFeedback.getAnimations().forEach(animation => animation.cancel());
+      const labels = { saved: t('Saved'), discarded: t('Not saved'), error: t('Save failed') };
+      const mark = document.createElement('span');
+      mark.className = 'kairos-feedback-mark';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = state === 'saved' ? '✓' : state === 'error' ? '!' : '−';
+      this.islandFeedback.replaceChildren(mark, document.createTextNode(labels[state]));
+      this.orbElement.dataset.feedback = state;
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        this.islandFeedback.animate([
+          { opacity: 0, transform: 'translateY(5px) scale(.95)' },
+          { opacity: 1, transform: 'translateY(-1px) scale(1.02)', offset: .7 },
+          { opacity: 1, transform: 'translateY(0) scale(1)' }
+        ], { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' });
+      }
+      this.islandFeedbackTimer = setTimeout(() => {
+        delete this.orbElement.dataset.feedback;
+        this.islandFeedback.textContent = '';
+      }, state === 'error' ? 3200 : 1800);
     }
 
     /**
@@ -2325,6 +2498,7 @@
      * Destroys the overlay
      */
     destroy() {
+      clearTimeout(this.islandFeedbackTimer);
       this.islandDragController?.abort();
       this.islandResizeObserver?.disconnect();
       this.companionInput?.destroy();

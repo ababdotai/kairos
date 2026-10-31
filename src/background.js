@@ -66,9 +66,12 @@ async function deleteNote(id) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    const request = store.delete(id);
-    request.onsuccess = () => resolve({ status: 'deleted' });
-    request.onerror = (e) => reject(e.target.error);
+    // Report success only after the transaction commits, not just the request.
+    tx.oncomplete = () => { db.close(); resolve({ status: 'deleted' }); };
+    tx.onabort = () => { db.close(); reject(tx.error || new Error('Delete transaction aborted')); };
+    tx.onerror = () => { /* onabort reports the final transaction outcome. */ };
+    try { store.delete(id); }
+    catch (error) { db.close(); reject(error); }
   });
 }
 

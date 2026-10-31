@@ -18,12 +18,29 @@
         pointerup: 'pointerup', pointercancel: 'cancel', blur: 'cancel',
         click: 'click', dblclick: 'click', dragstart: 'dragstart',
         mousedown: 'mouse', mousemove: 'mouse', mouseup: 'mouse',
-        wheel: 'wheel', lostpointercapture: 'lostcapture'
+        wheel: 'wheel', lostpointercapture: 'lostcapture', focusout: 'scheduleTyping', focus: 'windowFocus'
       })) {
         const listener = event => this[method](event);
         window.addEventListener(type, listener, { capture: true, passive: false });
         this.listeners.push([type, listener]);
       }
+    }
+
+    /** Reserve the player's bottom controls, even while auto-hidden. */
+    updateSafeArea(rect = this.overlay.videoElement?.getBoundingClientRect()) {
+      if (!rect?.height) return;
+      const video = this.overlay.videoElement;
+      const player = video.closest('.bpx-player-container, .bilibili-player, .html5-video-player') || video.parentElement;
+      let bottom = Math.max(80, Math.min(144, rect.height * .16));
+      for (const control of player?.querySelectorAll('.bpx-player-control-wrap, .bpx-player-control-bottom, .bpx-player-progress-wrap, .bilibili-player-video-control, .ytp-chrome-bottom') || []) {
+        const bounds = control.getBoundingClientRect();
+        if (bounds.width && bounds.height && bounds.top >= rect.top + rect.height * .5 &&
+            bounds.top < rect.bottom && bounds.right > rect.left && bounds.left < rect.right) {
+          bottom = Math.max(bottom, rect.bottom - bounds.top + 12);
+        }
+      }
+      this.captureBottom = Math.min(rect.height, bottom);
+      this.surface.style.bottom = `${this.captureBottom}px`;
     }
 
     /** Keeps native editors, controls, links and extension UI interactive. */
@@ -42,16 +59,52 @@
       event.stopImmediatePropagation();
     }
 
-    /** Opens the editor synchronously so subsequent typing and IME reach it. */
+    /** Give the OS a real text target before the first IME keystroke. */
+    prepareTyping(activating = false) {
+      const o = this.overlay;
+      if (this.destroyed || !o.isActive || o.isEditing || o.activePin || this.gesture || (!activating && !document.hasFocus())) return;
+      if (o.shadowRoot.activeElement === o.noteInput) return;
+      let active = document.activeElement;
+      while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+      if (active && active !== o.container && (active.isContentEditable || active.matches('input, textarea, select'))) return;
+      o.noteInput.classList.remove('hidden');
+      o.noteInput.value = '';
+      o.noteInput.focus({ preventScroll: true });
+    }
+
+    /** Recover idle focus after page/video blur without taking focus from controls. */
+    scheduleTyping() {
+      clearTimeout(this.typingTimer);
+      this.typingTimer = setTimeout(() => {
+        let active = document.activeElement;
+        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+        if (active && active !== this.overlay.noteInput && !this.overlay.noteWrapper.contains(active) &&
+            (active.isContentEditable || active.matches('input, textarea, select, button, a, [role="slider"], [role="textbox"]'))) return;
+        this.prepareTyping();
+      }, 0);
+    }
+
+    windowFocus(event) {
+      if (event.target === window) this.scheduleTyping();
+    }
+
+    /** Reveal the same editor and let native input/IME insert text. */
     keydown(event) {
       const o = this.overlay;
+      const confirming = event.composedPath().find(node => node instanceof Element && node.matches('[data-delete-confirm].is-confirming'));
+      if (event.key === 'Escape' && confirming) {
+        this.consume(event);
+        confirming.dispatchEvent(new Event('kairos-cancel-delete'));
+        return;
+      }
       if (!o.isActive || !o.videoElement) return;
       if (event.key === 'Escape' && this.gesture) {
         this.consume(event);
         this.cancel();
         return;
       }
-      if (this.isControl(event) || event.metaKey || event.ctrlKey || event.altKey) return;
+      const prepared = !o.isEditing && !o.activePin && event.composedPath().includes(o.noteInput);
+      if ((!prepared && this.isControl(event)) || event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === 'Escape') {
         this.consume(event);
         if (o.activePin) o.cancelNote();
@@ -61,27 +114,28 @@
       const rect = o.videoElement.getBoundingClientRect();
       if (rect.bottom <= 0 || rect.top >= window.innerHeight || this.gesture) return;
       const composing = event.isComposing || event.key === 'Process' || event.keyCode === 229;
+      if (prepared && event.key === ' ' && !composing) {
+        this.consume(event);
+        if (o.videoElement.paused) o.videoElement.play().catch(() => {});
+        else o.videoElement.pause();
+        return;
+      }
       if (!composing && (event.key.length !== 1 || event.key === ' ')) return;
       if (o.activePin) o.switchToEditMode();
       else o.handlePinCapture();
-      if (composing) {
-        // Let the native IME deliver composition to the newly focused textarea.
-        event.stopImmediatePropagation();
-      } else {
-        this.consume(event);
-        o.noteInput.setRangeText(event.key, o.noteInput.selectionStart, o.noteInput.selectionEnd, 'end');
-        o.adjustInputHeight();
-      }
+      // Never synthesize the first letter: that bypasses the operating system IME.
+      event.stopImmediatePropagation();
     }
 
-    /** Starts a freehand selection only on the video image, away from controls. */
+    /** Starts a rectangular selection on the video image, away from controls. */
     pointerdown(event) {
       const o = this.overlay;
       if (this.gesture || !o.isActive || o.isEditing || !o.videoElement || event.button !== 0 ||
           event.pointerType === 'touch' || event.metaKey || event.ctrlKey || event.altKey || this.isControl(event, true)) return;
       const rect = o.videoElement.getBoundingClientRect();
+      this.updateSafeArea(rect);
       const x = event.clientX - rect.left, y = event.clientY - rect.top;
-      if (x < 0 || x > rect.width || y < 0 || y > rect.height - 48) return;
+      if (x < 0 || x > rect.width || y < 32 || y >= rect.height - this.captureBottom) return;
       // Claim the press before the player starts its own mouse/drag gesture.
       this.consume(event);
       this.surface.classList.add('capturing');
@@ -89,9 +143,10 @@
       if (event.isTrusted) this.surface.setPointerCapture(event.pointerId);
     }
 
-    /** Draws an ink trail after a movement threshold, preserving ordinary clicks. */
+    /** Draws the rectangle between press and current pointer, preserving clicks. */
     pointermove(event) {
       const g = this.gesture;
+      if (!g && event.composedPath().includes(this.surface)) this.prepareTyping();
       if (!g || event.pointerId !== g.id) return;
       if (!this.overlay.isActive || location.href !== g.url) return this.cancel();
       this.consume(event);
@@ -105,18 +160,22 @@
         g.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         g.svg.setAttribute('viewBox', `0 0 ${g.rect.width} ${g.rect.height}`);
         g.svg.setAttribute('class', 'kairos-ink-layer');
-        g.path = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        g.path = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         g.svg.appendChild(g.path);
         this.overlay.overlayElement.appendChild(g.svg);
       }
-      g.points.push([x, y]);
-      g.path.setAttribute('points', g.points.map(point => point.join(',')).join(' '));
+      g.points[1] = [x, y];
+      g.path.setAttribute('x', Math.min(g.points[0][0], x));
+      g.path.setAttribute('y', Math.min(g.points[0][1], y));
+      g.path.setAttribute('width', Math.abs(x - g.points[0][0]));
+      g.path.setAttribute('height', Math.abs(y - g.points[0][1]));
     }
 
-    /** Saves the circled region immediately and opens its optional caption. */
+    /** Saves the rectangle immediately and opens its optional caption. */
     async pointerup(event) {
       const g = this.gesture;
       if (!g || event.pointerId !== g.id || event.button !== 0) return;
+      if (g.svg) this.pointermove(event);
       this.consume(event);
       this.release(g);
       if (!g.svg) {
@@ -126,6 +185,7 @@
           if (g.video.paused) g.video.play().catch(() => {});
           else g.video.pause();
         }
+        this.prepareTyping();
         return;
       }
       this.suppressClickUntil = Date.now() + 500;
@@ -211,11 +271,14 @@
         if (g.wasPlaying) g.video.play().catch(() => {});
       }
       this.gesture = null;
+      this.scheduleTyping();
     }
 
     /** Releases all listeners when the overlay is destroyed. */
     destroy() {
+      this.destroyed = true;
       this.cancel();
+      clearTimeout(this.typingTimer);
       for (const [type, listener] of this.listeners) window.removeEventListener(type, listener, true);
       this.surface.remove();
     }

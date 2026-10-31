@@ -239,8 +239,11 @@
       logo.alt = t("Kairos: AI Video Notepad");
       brand.appendChild(logo);
 
-      const title = createElement('span', { className: 'kairos-sp-title', text: t("Kairos: AI Video Notepad") });
-      brand.appendChild(title);
+      const title = createElement('span', { className: 'kairos-sp-title', text: 'Kairos', title: t("Kairos: AI Video Notepad") });
+      const brandCopy = createElement('div', { className: 'kairos-sp-brand-copy' });
+      brandCopy.appendChild(title);
+      brandCopy.appendChild(createElement('span', { className: 'kairos-sp-tagline', text: t('Watch together. Remember more.') }));
+      brand.appendChild(brandCopy);
 
       // Subtitle Badge
       const subBadge = createElement('span', {
@@ -339,11 +342,13 @@
      */
     buildHelpSection() {
         const help = createElement('div', { className: 'kairos-sp-help' });
+        help.appendChild(createElement('div', { className: 'kairos-sp-help-title', text: t('Quick Actions') }));
         
         const items = [
-            { icon: 'icons/mouse-double-click.png', text: t("Left-drag = Region capture") },
-            { icon: 'icons/keyboard_key_k.png', text: t("Type = Note · Esc = Exit") },
-            { icon: 'icons/ai_enhanced_input.png', text: t("= You+AI Note") }
+            { icon: 'icons/icon.png', key: t('Click Enable'), text: t('to activate kairos') },
+            { icon: 'icons/keyboard_key_k.png', key: t('Start Typing'), text: t('to take a note · Esc to exit') },
+            { icon: 'icons/mouse-double-click.png', key: t('Left-drag on Video'), text: t('to capture a region') },
+            { icon: 'icons/ai_enhanced_input.png', key: t('Enter without Input'), text: t('to trigger AI note') },
         ];
 
         items.forEach(item => {
@@ -352,10 +357,13 @@
             const img = document.createElement('img');
             img.src = chrome.runtime.getURL(item.icon);
             img.className = 'kairos-sp-help-img';
-            img.alt = item.text;
+            img.alt = '';
             
             row.appendChild(img);
-            row.appendChild(createElement('span', { className: 'kairos-sp-help-text', text: item.text }));
+            const text = createElement('div', { className: 'kairos-sp-help-text' });
+            text.appendChild(createElement('kbd', { text: item.key }));
+            text.appendChild(createElement('span', { text: item.text }));
+            row.appendChild(text);
             help.appendChild(row);
         });
 
@@ -422,7 +430,6 @@
 
       // Delete button (Absolute positioned)
       const deleteBtn = createElement('button', { className: 'kairos-sp-note-delete', title: t("Delete note") });
-      deleteBtn.appendChild(createSvgIcon('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z', 14));
       item.appendChild(deleteBtn);
 
       return item;
@@ -845,6 +852,13 @@
         .kairos-sp-note-item:hover .kairos-sp-note-delete {
           opacity: 1;
         }
+        .kairos-sp-note-delete:focus-visible { opacity: 1; outline: 2px solid currentColor; }
+        .kairos-sp-note-delete.is-confirming {
+          opacity: 1; width: auto; height: 26px; padding: 0 8px;
+          white-space: nowrap; font: 12px/1.4 system-ui;
+          color: #dc514b; background: rgba(220,81,75,.12);
+        }
+        .kairos-sp-note-item:has(.is-confirming) .kairos-sp-note-header { padding-right: 90px; }
 
         .kairos-sp-note-delete:hover {
           background: rgba(255, 80, 80, 0.15);
@@ -967,6 +981,57 @@
         .kairos-sp-note-item.new {
           animation: kairos-sp-note-appear 0.3s ease-out;
         }
+
+        /* Shared glass and quiet playback indicators with the video island. */
+        #kairos-sidepanel {
+          --kairos-sp-text: #eef3fa;
+          --kairos-sp-text-muted: #b5c1ce;
+          --kairos-sp-border: #ffffff20;
+          --kairos-sp-item-bg: #ffffff06;
+          --kairos-sp-header-bg: #ffffff04;
+          color-scheme: dark;
+        }
+        #kairos-sidepanel .kairos-sp-card {
+          background: linear-gradient(145deg, #ffffff12, #ffffff03), rgba(20,27,37,.84);
+          backdrop-filter: blur(14px) saturate(150%);
+          -webkit-backdrop-filter: blur(14px) saturate(150%);
+          border: 1px solid #ffffff38; border-radius: 22px;
+          box-shadow: inset 0 1px #ffffff30, 0 8px 24px #0002;
+        }
+        #kairos-sidepanel .kairos-sp-header { min-height: 54px; box-sizing: border-box; gap: 8px; }
+        #kairos-sidepanel .kairos-sp-brand { min-width: 0; }
+        #kairos-sidepanel .kairos-sp-brand-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        #kairos-sidepanel .kairos-sp-tagline { font-size: 10px; line-height: 1.4; color: #b8cbdc; }
+        #kairos-sidepanel .kairos-sp-title { background: none; -webkit-text-fill-color: currentColor; color: #fff; letter-spacing: .025em; }
+        #kairos-sidepanel .kairos-sp-logo { width: 23px; height: 23px; }
+        #kairos-sidepanel .kairos-sp-header-actions { flex-shrink: 0; }
+        #kairos-sidepanel .kairos-sp-subtitle-badge { color: #d5e2ec; background: #ffffff0a; border-color: #ffffff26; box-shadow: none; }
+        #kairos-sidepanel .kairos-sp-subtitle-badge.active { color: #a7e7c6; }
+        #kairos-sidepanel .kairos-sp-count-badge { background: #ffffff0e; color: #dbe7f1; border: 1px solid #ffffff20; box-shadow: none; }
+        #kairos-sidepanel .kairos-sp-video-title { font-size: 13px; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
+        #kairos-sidepanel .kairos-sp-notes-list { padding-left: 0; overscroll-behavior: contain; }
+        #kairos-sidepanel .kairos-sp-note-item { margin: 0; border-top: 1px solid #ffffff14; }
+        #kairos-sidepanel .kairos-sp-note-item::before,
+        #kairos-sidepanel .kairos-sp-timeline-dot { display: none; }
+        #kairos-sidepanel .kairos-sp-note-body { background: transparent; border: 0; border-radius: 6px; padding: 10px 28px 10px 13px; }
+        #kairos-sidepanel .kairos-sp-note-item:hover .kairos-sp-note-body { background: #ffffff08; }
+        #kairos-sidepanel .kairos-sp-note-item.active .kairos-sp-note-body { background: linear-gradient(90deg, #ffffff09, transparent); }
+        #kairos-sidepanel .kairos-sp-note-item.active::after {
+          content: ''; position: absolute; left: 2px; top: 16px;
+          border-left: 4px solid #fff; border-top: 3px solid transparent; border-bottom: 3px solid transparent;
+        }
+        #kairos-sidepanel .kairos-sp-note-time { color: #b8cbdc; font: 500 11px/1.5 system-ui; font-variant-numeric: tabular-nums; }
+        #kairos-sidepanel .active .kairos-sp-note-time { color: #fff; font-weight: 600; }
+        #kairos-sidepanel .kairos-sp-note-content { line-height: 1.5; overflow-wrap: anywhere; }
+        #kairos-sidepanel .kairos-sp-note-content p { margin: 0; }
+        #kairos-sidepanel .kairos-sp-note-content ul { margin: 3px 0; padding-left: 16px; }
+        #kairos-sidepanel .kairos-badge.mini { background: transparent; border: 0; color: #aab7c5; }
+        #kairos-sidepanel .kairos-sp-help { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding-top: 12px; }
+        #kairos-sidepanel .kairos-sp-help-title { font: 600 10px/1.5 system-ui; letter-spacing: .07em; color: #b5c1ce; text-transform: uppercase; }
+        #kairos-sidepanel .kairos-sp-help-item { display: flex; align-items: flex-start; gap: 8px; padding: 0; border: 0; background: none; font-size: 11px; line-height: 1.6; }
+        #kairos-sidepanel .kairos-sp-help-img { flex: 0 0 16px; margin-top: 2px; }
+        #kairos-sidepanel .kairos-sp-help-text { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 7px; min-width: 0; color: #b5c1ce; }
+        #kairos-sidepanel .kairos-sp-help kbd { font: 11px/1.5 system-ui; color: #e0e8f1; padding: 1px 5px; border: 1px solid #ffffff26; background: #ffffff06; border-radius: 4px; overflow-wrap: anywhere; }
       `;
       document.head.appendChild(style);
     }
@@ -1118,9 +1183,7 @@
 
       // Delete button
       const deleteBtn = item.querySelector('.kairos-sp-note-delete');
-      deleteBtn?.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (confirm(t("Delete this note?"))) {
+      if (deleteBtn) window.Kairos.bindDeleteButton(deleteBtn, async () => {
           try {
             await this.storage.deleteNote(note.id);
 
@@ -1139,8 +1202,15 @@
             }, 200);
           } catch (err) {
             log('Failed to delete note:', err);
+            let errorText = item.querySelector('.kairos-delete-error');
+            if (!errorText) {
+              errorText = createElement('div', { className: 'kairos-delete-error' });
+              errorText.setAttribute('role', 'alert');
+              errorText.style.cssText = 'padding:6px 12px;color:#ffb7b0;font-size:12px;overflow-wrap:anywhere';
+              item.appendChild(errorText);
+            }
+            errorText.textContent = window.Kairos.deletionError(err);
           }
-        }
       });
     }
 

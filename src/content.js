@@ -1,4 +1,5 @@
 import './content/i18n.js';
+import './content/delete_button.js';
 import './content.css';
 import './content/config.js';
 import './content/utils.js';

@@ -4,6 +4,7 @@
  */
 
 /* Ensure our container doesn't interfere with page layout */
+#kairos-sidepanel[hidden] { display: none !important; }
 #kairos-overlay-root {
   position: fixed;
   top: 0;

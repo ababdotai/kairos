@@ -1,3 +1,4 @@
+import './content/i18n.js';
 import './content.css';
 import './content/config.js';
 import './content/utils.js';
@@ -10,6 +11,7 @@ import './content/agent.js';
 import './content/styles.js';
 import './content/gen_ui.js';
 import './content/hud_agent.js';
+import './content/companion.js';
 import './content/overlay.js';
 import './content/sidepanel.js';
 
@@ -23,33 +25,30 @@ import './content/sidepanel.js';
 
   // Wait for modules to initialize window.Kairos
   // In a bundled environment, they execute immediately upon import.
-  const { CONFIG, log, OverlayManager, VideoTracker, SidePanelManager, SubtitleManager } = window.Kairos;
+  const { CONFIG, log, OverlayManager, VideoTracker, SubtitleManager, SidePanelManager } = window.Kairos;
 
   /**
    * Main application initialization
    */
   async function init() {
+    await window.Kairos.I18n.init();
     log('Initializing Kairos...');
 
     // Create GenUI Manager
     const { GenUIManager } = window.Kairos;
     const genUiManager = new GenUIManager();
 
-    // Create side panel manager
-    const sidePanelManager = new SidePanelManager();
-    await sidePanelManager.init();
-
     // Create subtitle manager
     const subtitleManager = new SubtitleManager();
     subtitleManager.init();
-
-    // Link subtitle manager to side panel
+    const sidePanelManager = new SidePanelManager();
     sidePanelManager.subtitleManager = subtitleManager;
+    await sidePanelManager.init();
 
-    // Create overlay manager with side panel reference
+    // Sidebar and fullscreen island share the current video's notes.
     const overlayManager = new OverlayManager();
-    window.Kairos.overlayManagerInstance = overlayManager; // Store for HUD Agent feedback
     overlayManager.sidePanel = sidePanelManager;
+    window.Kairos.overlayManagerInstance = overlayManager; // Store for HUD Agent feedback
     overlayManager.subtitleManager = subtitleManager;
     overlayManager.genUiManager = genUiManager; // Link HUD manager
     await overlayManager.init();
@@ -77,9 +76,7 @@ import './content/sidepanel.js';
     // Start tracking and update overlay position
     videoTracker.start((rect, video) => {
       overlayManager.updatePosition(rect, video);
-      if (video) {
-        sidePanelManager.updateTime(video.currentTime);
-      }
+      if (video) sidePanelManager.updateTime(video.currentTime);
     });
 
     // Monitor URL changes (for SPA like YouTube)

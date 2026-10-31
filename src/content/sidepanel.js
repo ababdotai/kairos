@@ -6,6 +6,7 @@
 
 (function () {
   'use strict';
+  const { t } = window.Kairos.I18n;
 
   const { CONFIG, log, Utils, StorageManager, SimpleMarkdown } = window.Kairos;
 
@@ -182,6 +183,7 @@
       this.retryCount = 0;
       this.injectStyles();
       this.container = this.buildPanel();
+      this.container.hidden = !!document.fullscreenElement;
 
       // Handle different injection strategies
       if (target.insertAfter) {
@@ -234,17 +236,17 @@
       const brand = createElement('div', { className: 'kairos-sp-brand' });
       const logo = createElement('img', { className: 'kairos-sp-logo' });
       logo.src = chrome.runtime.getURL('icons/icon.png');
-      logo.alt = 'Kairos: AI Video Notepad';
+      logo.alt = t("Kairos: AI Video Notepad");
       brand.appendChild(logo);
 
-      const title = createElement('span', { className: 'kairos-sp-title', text: 'Kairos: AI Video Notepad' });
+      const title = createElement('span', { className: 'kairos-sp-title', text: t("Kairos: AI Video Notepad") });
       brand.appendChild(title);
 
       // Subtitle Badge
       const subBadge = createElement('span', {
         className: 'kairos-sp-subtitle-badge',
         text: 'CC',
-        title: 'Captions available for better AI notes'
+        title: t("Captions available for better AI notes")
       });
       brand.appendChild(subBadge);
       this.elements.subBadge = subBadge;
@@ -257,7 +259,7 @@
       // Export Button
       const exportBtn = createElement('button', { 
           className: 'kairos-sp-header-btn', 
-          title: 'Export Markdown',
+          title: t("Export Markdown"),
           id: 'kairos-sp-export' 
       });
       exportBtn.appendChild(createSvgIcon('M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z', 18));
@@ -267,7 +269,7 @@
       // Dashboard Button
       const dashboardBtn = createElement('button', { 
           className: 'kairos-sp-header-btn', 
-          title: 'My Notes',
+          title: t("My Notes"),
           id: 'kairos-sp-dashboard'
       });
       dashboardBtn.appendChild(createSvgIcon('M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z', 16));
@@ -277,7 +279,7 @@
       // Settings Button
       const settingsBtn = createElement('button', { 
           className: 'kairos-sp-header-btn', 
-          title: 'Settings',
+          title: t("Settings"),
           id: 'kairos-sp-settings'
       });
       settingsBtn.appendChild(createSvgIcon('M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.57,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.08-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z', 16));
@@ -285,7 +287,7 @@
       this.elements.settingsBtn = settingsBtn;
 
       // Toggle button
-      const toggle = createElement('button', { className: 'kairos-sp-toggle', title: 'Toggle panel' });
+      const toggle = createElement('button', { className: 'kairos-sp-toggle', title: t("Toggle panel") });
       toggle.appendChild(createSvgIcon('M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'));
       headerActions.appendChild(toggle);
       this.elements.toggle = toggle;
@@ -305,7 +307,7 @@
       const videoInfo = createElement('div', { className: 'kairos-sp-video-info' });
       
       const titleRow = createElement('div', { className: 'kairos-sp-title-row' });
-      const videoTitle = createElement('div', { className: 'kairos-sp-video-title', text: 'Loading...' });
+      const videoTitle = createElement('div', { className: 'kairos-sp-video-title', text: t("Loading...") });
       
       const badge = createElement('span', { className: 'kairos-sp-count-badge', text: '0' });
       
@@ -339,9 +341,9 @@
         const help = createElement('div', { className: 'kairos-sp-help' });
         
         const items = [
-            { icon: 'icons/mouse-double-click.png', text: '= You Note' },
-            { icon: 'icons/keyboard_key_k.png', text: 'x2= AI Note' },
-            { icon: 'icons/ai_enhanced_input.png', text: '= You+AI Note' }
+            { icon: 'icons/mouse-double-click.png', text: t("Left-drag = Region capture") },
+            { icon: 'icons/keyboard_key_k.png', text: t("Type = Note · Esc = Exit") },
+            { icon: 'icons/ai_enhanced_input.png', text: t("= You+AI Note") }
         ];
 
         items.forEach(item => {
@@ -367,8 +369,8 @@
     buildEmptyState() {
       const empty = createElement('div', { className: 'kairos-sp-empty' });
       empty.appendChild(createElement('span', { className: 'kairos-sp-empty-icon', text: '📝' }));
-      empty.appendChild(createElement('span', { text: 'No notes yet' }));
-      empty.appendChild(createElement('span', { className: 'kairos-sp-empty-hint', text: 'Click the Kairos Logo to Activate!' }));
+      empty.appendChild(createElement('span', { text: t("No notes yet") }));
+      empty.appendChild(createElement('span', { className: 'kairos-sp-empty-hint', text: t("Click Enable in the island to start") }));
       return empty;
     }
 
@@ -399,7 +401,7 @@
       header.appendChild(time);
 
       const source = note.source || 'user';
-      const badgeText = source === 'ai' ? 'AI' : 'YOU';
+      const badgeText = source === 'ai' ? 'AI' : t("YOU");
       const badge = createElement('span', {
         className: `kairos-badge ${source} mini`,
         text: badgeText
@@ -409,7 +411,7 @@
       body.appendChild(header);
 
       // Content
-      const contentText = note.content || note.note || '(Empty note)';
+      const contentText = note.content || note.note || t("(Empty note)");
       const content = createElement('div', {
         className: 'kairos-sp-note-content'
       });
@@ -419,7 +421,7 @@
       item.appendChild(body);
 
       // Delete button (Absolute positioned)
-      const deleteBtn = createElement('button', { className: 'kairos-sp-note-delete', title: 'Delete note' });
+      const deleteBtn = createElement('button', { className: 'kairos-sp-note-delete', title: t("Delete note") });
       deleteBtn.appendChild(createSvgIcon('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z', 14));
       item.appendChild(deleteBtn);
 
@@ -1008,11 +1010,11 @@
 
       if (available) {
         this.elements.subBadge.classList.add('available');
-        this.elements.subBadge.title = 'Captions available - Turn them on for best AI results';
+        this.elements.subBadge.title = t("Captions available - Turn them on for best AI results");
 
         if (active) {
           this.elements.subBadge.classList.add('active');
-          this.elements.subBadge.title = 'Captions active - Kairos is listening';
+          this.elements.subBadge.title = t("Captions active - Kairos is listening");
         } else {
           this.elements.subBadge.classList.remove('active');
         }
@@ -1029,7 +1031,7 @@
       this.currentVideoId = info.videoId;
 
       if (this.elements.videoTitle) {
-        this.elements.videoTitle.textContent = info.title || 'Current Video';
+        this.elements.videoTitle.textContent = info.title || t("Current Video");
       }
 
       this.updateSubtitleBadge();
@@ -1052,7 +1054,7 @@
         }
       } catch (err) {
         log('Failed to load notes:', err);
-        this.renderEmptyState('Error loading notes');
+        this.renderEmptyState(t("Error loading notes"));
         if (this.elements.exportBtn) this.elements.exportBtn.disabled = true;
       }
     }
@@ -1118,7 +1120,7 @@
       const deleteBtn = item.querySelector('.kairos-sp-note-delete');
       deleteBtn?.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm('Delete this note?')) {
+        if (confirm(t("Delete this note?"))) {
           try {
             await this.storage.deleteNote(note.id);
 
@@ -1164,16 +1166,26 @@
       this.loadNotes();
     }
 
+    /** Keeps the page list out of fullscreen and avoids scrolling the hidden page. */
+    setFullscreen(fullscreen) {
+      this.isFullscreen = fullscreen;
+      if (this.container) this.container.hidden = fullscreen;
+    }
+
     /**
      * Adds a new note to the list with animation
      * @param {Object} note - Note data
      */
     addNote(note) {
+      this.notes = this.notes.filter(existing => existing.id !== note.id);
       this.notes.push(note);
       this.notes.sort((a, b) => a.timestamp - b.timestamp);
 
       const list = this.elements.notesList;
       if (!list) return;
+      for (const item of list.querySelectorAll('.kairos-sp-note-item')) {
+        if (item.dataset.id === note.id) item.remove();
+      }
 
       // Clear empty state if present
       const emptyState = list.querySelector('.kairos-sp-empty');
@@ -1203,6 +1215,7 @@
      * @param {number} currentTime - Current video time in seconds
      */
     updateTime(currentTime) {
+      if (this.isFullscreen || document.fullscreenElement) return;
       if (!this.notes || this.notes.length === 0 || !this.elements.notesList) return;
 
       // Find the active note (closest note before current time)

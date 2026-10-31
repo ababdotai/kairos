@@ -5,6 +5,7 @@
 
 (function () {
   'use strict';
+  const { t } = window.Kairos.I18n;
 
   const { CONFIG, log, Utils, StorageManager, getStyles, CaptureEngine, SimpleMarkdown } = window.Kairos;
 
@@ -51,6 +52,8 @@
       this.createOverlay();
 
       document.body.appendChild(this.container);
+      this.updatePresentationMode();
+      this.setupIslandDrag();
 
       // Listen for note deletion events from sidepanel
       window.addEventListener('kairos-note-deleted', (e) => {
@@ -79,6 +82,154 @@
         // Move back to body
         log('Exiting fullscreen: moving overlay back to body');
         document.body.appendChild(this.container);
+      }
+      this.updatePresentationMode();
+    }
+
+    /** Keep island notes available in both modes; hide the page sidebar in fullscreen. */
+    updatePresentationMode() {
+      const fullscreen = !!document.fullscreenElement;
+      this.overlayElement.classList.toggle('is-fullscreen', fullscreen);
+      this.sidePanel?.setFullscreen(fullscreen);
+      this.renderIslandNotes();
+      this.positionIsland();
+    }
+
+    /** Registers pointer-based dragging and restores the last video-relative anchor. */
+    setupIslandDrag() {
+      this.islandDragController = new AbortController();
+      const options = { signal: this.islandDragController.signal };
+      this.islandAnchor = { x: .5, y: 0 };
+      for (const edge of ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']) {
+        const handle = document.createElement('div');
+        handle.className = `kairos-island-resize edge-${edge}`;
+        handle.dataset.edge = edge;
+        handle.title = t("Drag to resize");
+        this.islandContainer.appendChild(handle);
+      }
+      this.islandContainer.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || event.target.closest('button, a, input, textarea, select, .kairos-timeline-container, .kairos-island-notes, .kairos-island-moments')) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const rect = this.islandContainer.getBoundingClientRect();
+        this.islandGeometryChanged = true;
+        if (event.target.dataset.edge) {
+          this.dockResize = { id: event.pointerId, edge: event.target.dataset.edge, rect, x: event.clientX, y: event.clientY };
+          this.islandContainer.classList.add('dock-dragging', 'is-resizing');
+          this.islandContainer.setPointerCapture(event.pointerId);
+          return;
+        }
+        this.dockDrag = { id: event.pointerId, dx: event.clientX - rect.left - rect.width / 2, dy: event.clientY - rect.top };
+        this.islandContainer.classList.add('dock-dragging');
+        this.islandContainer.setPointerCapture(event.pointerId);
+      }, options);
+      this.islandContainer.addEventListener('pointermove', event => {
+        if (this.dockResize?.id === event.pointerId) {
+          event.preventDefault();
+          const start = this.dockResize;
+          const bounds = this.overlayElement.getBoundingClientRect();
+          const dx = event.clientX - start.x, dy = event.clientY - start.y;
+          let left = start.rect.left, right = start.rect.right, top = start.rect.top, bottom = start.rect.bottom;
+          const maxHeight = Math.min(this.getIslandContentHeight(), bounds.height - 24);
+          const minWidth = Math.min(300, bounds.width - 24), minHeight = Math.min(190, maxHeight);
+          if (start.edge.includes('e')) right = Math.max(left + minWidth, Math.min(bounds.right - 12, right + dx));
+          if (start.edge.includes('w')) left = Math.min(right - minWidth, Math.max(bounds.left + 12, left + dx));
+          if (start.edge.includes('s')) bottom = Math.max(top + minHeight, Math.min(top + maxHeight, bounds.bottom - 12, bottom + dy));
+          if (start.edge.includes('n')) top = Math.min(bottom - minHeight, Math.max(bottom - maxHeight, bounds.top + 12, top + dy));
+          this.islandSize = { width: right - left, height: bottom - top };
+          this.islandAnchor = { x: ((left + right) / 2 - bounds.left) / bounds.width, y: (top - bounds.top) / bounds.height };
+          this.positionIsland();
+          return;
+        }
+        if (this.dockDrag?.id !== event.pointerId) return;
+        event.preventDefault();
+        const rect = this.overlayElement.getBoundingClientRect();
+        this.islandAnchor = {
+          x: Math.max(0, Math.min(1, (event.clientX - rect.left - this.dockDrag.dx) / rect.width)),
+          y: Math.max(0, Math.min(1, (event.clientY - rect.top - this.dockDrag.dy) / rect.height))
+        };
+        this.positionIsland();
+      }, options);
+      const finish = event => {
+        const gesture = this.dockResize || this.dockDrag;
+        if (!gesture || (event.pointerId !== undefined && event.pointerId !== gesture.id)) return;
+        const id = gesture.id;
+        this.dockDrag = null;
+        this.dockResize = null;
+        this.islandContainer.classList.remove('dock-dragging', 'is-resizing');
+        if (this.islandContainer.hasPointerCapture(id)) this.islandContainer.releasePointerCapture(id);
+        const preferences = { islandAnchor: this.islandAnchor };
+        if (this.islandSize) preferences.islandSize = this.islandSize;
+        chrome.storage.local.set(preferences).catch(error => log('Island position save failed', error));
+      };
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) this.islandContainer.addEventListener(type, finish, options);
+      window.addEventListener('blur', finish, options);
+      this.islandResizeObserver = new ResizeObserver(() => this.positionIsland());
+      this.islandResizeObserver.observe(this.islandContainer);
+      chrome.storage.local.get(['islandAnchor', 'islandPinned', 'islandSize']).then(({ islandAnchor, islandPinned, islandSize }) => {
+        if (this.islandDragController.signal.aborted || this.dockDrag || this.dockResize) return;
+        if (!this.islandPinChanged) this.setIslandPinned(islandPinned === true);
+        if (this.islandGeometryChanged) return;
+        if (Number.isFinite(islandSize?.width) && Number.isFinite(islandSize?.height)) {
+          this.islandSize = { width: Math.max(300, islandSize.width), height: Math.max(190, islandSize.height) };
+        }
+        if (Number.isFinite(islandAnchor?.x) && Number.isFinite(islandAnchor?.y)) {
+          this.islandAnchor = { x: Math.max(0, Math.min(1, islandAnchor.x)), y: Math.max(0, Math.min(1, islandAnchor.y)) };
+        }
+        this.positionIsland();
+      }).catch(error => log('Island position load failed', error));
+    }
+
+    /** Measure content rather than reserving blank space for the saved height. */
+    getIslandContentHeight() {
+      const panel = this.islandList?.parentElement;
+      if (!panel || !panel.getClientRects().length) return this.islandContentHeight || Infinity;
+      const style = getComputedStyle(panel);
+      let chromeHeight = 54 + ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth']
+        .reduce((sum, key) => sum + (parseFloat(style[key]) || 0), 0);
+      let listHeight = 0;
+      const outerHeight = element => {
+        const css = getComputedStyle(element);
+        return element.getBoundingClientRect().height + (parseFloat(css.marginTop) || 0) + (parseFloat(css.marginBottom) || 0);
+      };
+      for (const child of panel.children) {
+        if (child !== this.islandList) chromeHeight += outerHeight(child);
+      }
+      for (const child of this.islandList.children) listHeight += outerHeight(child);
+      this.islandContainer.style.setProperty('--island-chrome-height', `${Math.ceil(chromeHeight)}px`);
+      this.islandContentHeight = Math.ceil(chromeHeight + listHeight);
+      return this.islandContentHeight;
+    }
+
+    /** Clamps the expanded island to content and video, preserving the preference. */
+    positionIsland() {
+      if (!this.islandContainer || !this.overlayElement) return;
+      const rect = this.overlayElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      if (this.islandSize) {
+        this.islandContainer.classList.add('has-custom-size');
+        this.islandContainer.style.setProperty('--island-expanded-width', `${Math.min(this.islandSize.width, Math.max(0, rect.width - 24))}px`);
+        this.islandContainer.style.setProperty('--island-expanded-height', `${Math.min(this.islandSize.height, this.getIslandContentHeight(), Math.max(0, rect.height - 24))}px`);
+      }
+      const width = this.islandContainer.offsetWidth;
+      const height = this.islandContainer.offsetHeight;
+      const anchor = this.islandAnchor || { x: .5, y: 0 };
+      const x = Math.max(width / 2 + 12, Math.min(rect.width - width / 2 - 12, anchor.x * rect.width));
+      const y = Math.max(12, Math.min(rect.height - height - 12, anchor.y * rect.height));
+      this.islandContainer.style.setProperty('--island-x', `${x}px`);
+      this.islandContainer.style.setProperty('--island-y', `${y}px`);
+    }
+
+    /** Keeps the island open independently of hover and recording state. */
+    setIslandPinned(pinned, persist = false) {
+      this.islandContainer.classList.toggle('is-pinned', pinned);
+      this.islandPinButton.setAttribute('aria-pressed', String(pinned));
+      this.islandPinButton.textContent = pinned ? t("Pinned") : t("Pin");
+      this.islandPinButton.title = pinned ? t("Unpin to expand only on hover") : t("Keep expanded when the pointer leaves");
+      this.positionIsland();
+      if (persist) {
+        this.islandPinChanged = true;
+        chrome.storage.local.set({ islandPinned: pinned }).catch(error => log('Island preference save failed', error));
       }
     }
 
@@ -127,69 +278,61 @@
 
       // The Intelligent Island Container (Orb + Note)
       const island = document.createElement('div');
-      island.className = 'kairos-island-container orient-top';
+      island.className = 'kairos-island-container orient-top docked';
 
       // Initialize Drag Offsets
       this.xOffset = 0;
       this.yOffset = 0;
 
-      // Drag Handle
-      const dragHandle = document.createElement('div');
-      dragHandle.className = 'kairos-drag-handle';
-      dragHandle.innerHTML = `
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M9 3H11V5H9V3ZM13 3H15V5H13V3ZM9 7H11V9H9V7ZM13 7H15V9H13V7ZM9 11H11V13H9V11ZM13 11H15V13H13V11ZM9 15H11V17H9V15ZM13 15H15V17H13V15ZM9 19H11V21H9V19ZM13 19H15V21H13V19Z" />
-        </svg>
-      `;
-      dragHandle.title = 'Drag to move';
-
-      dragHandle.addEventListener('mousedown', (e) => this.dragStart(e));
-      dragHandle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      });
-
-      document.addEventListener('mousemove', (e) => this.drag(e));
-      document.addEventListener('mouseup', (e) => this.dragEnd(e));
 
       // Floating orb
       const orb = document.createElement('div');
       orb.className = 'kairos-orb';
-      orb.title = 'Click to expand menu';
+      orb.title = t("Hover to expand · Drag to move");
+      orb.tabIndex = 0;
+      orb.setAttribute('role', 'group');
+      orb.setAttribute('aria-label', t("Kairos controls"));
 
       const iconUrl = chrome.runtime.getURL('icons/icon.png');
       const iconImg = document.createElement('img');
       iconImg.src = iconUrl;
       iconImg.className = 'kairos-orb-icon';
       iconImg.draggable = false;
+      const brand = document.createElement('span');
+      brand.className = 'kairos-island-brand';
+      brand.textContent = 'Kairos';
+      const statusDot = document.createElement('span');
+      statusDot.className = 'kairos-island-status';
+      statusDot.setAttribute('aria-hidden', 'true');
 
       // Expanded Menu Container (Move - Orb - Pin)
       const orbMenu = document.createElement('div');
       orbMenu.className = 'kairos-orb-menu';
 
-      // Move Button (drag handle styled as button)
-      orb.appendChild(dragHandle);
-
       // Center Orb Icon Button (click to collapse)
       const orbIconBtn = document.createElement('button');
       orbIconBtn.className = 'kairos-orb-btn orb-icon-btn';
-      orbIconBtn.title = 'Click to collapse';
+      orbIconBtn.title = t("Enable / disable companion mode");
       const orbIconImg = document.createElement('img');
       orbIconImg.src = iconUrl;
       orbIconImg.draggable = false;
-      orbIconBtn.appendChild(orbIconImg);
+      orbIconBtn.textContent = t("Enable");
+      this.islandToggle = orbIconBtn;
+      orbIconBtn.setAttribute('aria-pressed', 'false');
       orbIconBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.collapseOrb();
+        if (this.isActive) this.collapseOrb();
+        else this.expandOrb();
       });
 
       // Pin Button
       const pinBtn = document.createElement('button');
       pinBtn.className = 'kairos-orb-btn pin-btn';
-      pinBtn.innerHTML = '📌';
-      pinBtn.title = 'Capture Moment';
+      pinBtn.textContent = t("Note");
+      pinBtn.title = t("Capture this frame and take a note");
       pinBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (!this.isActive) this.expandOrb();
         this.handlePinCapture();
       });
 
@@ -197,13 +340,9 @@
       orbMenu.appendChild(pinBtn);
 
       orb.appendChild(iconImg);
+      orb.appendChild(brand);
+      orb.appendChild(statusDot);
       orb.appendChild(orbMenu);
-
-      orb.addEventListener('click', (e) => {
-        if (!this.isDragging && !orb.classList.contains('expanded')) {
-          this.expandOrb();
-        }
-      });
 
       // Spotlight Note Input
       const noteWrapper = document.createElement('div');
@@ -212,7 +351,7 @@
       // Markdown Preview Div
       const notePreview = document.createElement('div');
       notePreview.className = 'kairos-note-preview hidden';
-      notePreview.title = 'Click to edit';
+      notePreview.title = t("Click to edit");
 
       notePreview.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -221,7 +360,7 @@
 
       const noteInput = document.createElement('textarea');
       noteInput.className = 'kairos-note-input';
-      noteInput.placeholder = 'Type note, or Enter for AI ✨';
+      noteInput.placeholder = t("Type note, or Enter for AI ✨");
       noteInput.rows = 1;
 
       const blockEvent = (e) => {
@@ -253,8 +392,8 @@
 
       const saveBtn = document.createElement('button');
       saveBtn.className = 'kairos-note-action-btn save-btn';
-      saveBtn.innerHTML = '✓';
-      saveBtn.title = 'Save (⌘↵)';
+      saveBtn.textContent = '✓';
+      saveBtn.title = t("Save (⌘↵)");
       saveBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.saveNote();
@@ -263,7 +402,8 @@
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'kairos-note-action-btn cancel-btn';
       cancelBtn.innerHTML = '✕';
-      cancelBtn.title = 'Cancel (⎋)';
+      cancelBtn.title = t("Cancel (⎋)");
+      cancelBtn.setAttribute('aria-label', t("Close note"));
       cancelBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.cancelNote();
@@ -274,6 +414,61 @@
       noteWrapper.appendChild(noteActions);
 
       island.appendChild(orb);
+      const islandPanel = document.createElement('div');
+      islandPanel.className = 'kairos-island-panel';
+      const timeLabel = document.createElement('div');
+      timeLabel.className = 'kairos-island-time';
+      const toolbar = document.createElement('div');
+      toolbar.className = 'kairos-island-toolbar';
+      this.islandPinButton = document.createElement('button');
+      this.islandPinButton.className = 'kairos-island-pin-toggle';
+      this.islandPinButton.textContent = t("Pin");
+      this.islandPinButton.title = t("Keep expanded when the pointer leaves");
+      this.islandPinButton.setAttribute('aria-pressed', 'false');
+      this.islandPinButton.addEventListener('click', event => {
+        event.stopPropagation();
+        this.setIslandPinned(!this.islandContainer.classList.contains('is-pinned'), true);
+        this.islandPinButton.blur();
+      });
+      orbMenu.appendChild(this.islandPinButton);
+      toolbar.append(timeLabel);
+      islandPanel.appendChild(toolbar);
+      islandPanel.appendChild(timeline);
+      this.islandTime = timeLabel;
+      this.islandMoments = document.createElement('div');
+      this.islandMoments.className = 'kairos-island-moments';
+      this.islandMoments.setAttribute('aria-label', t("Note timestamps"));
+      islandPanel.appendChild(this.islandMoments);
+      this.islandList = document.createElement('div');
+      this.islandList.className = 'kairos-island-notes';
+      this.islandList.setAttribute('aria-label', t("Notes for this video"));
+      for (const scroller of [this.islandList, this.islandMoments]) {
+        scroller.tabIndex = 0;
+        const pauseFollow = () => {
+          if (!document.fullscreenElement || !this.islandContainer.classList.contains('is-pinned')) return;
+          this.islandFollowPaused = true;
+        };
+        scroller.addEventListener('wheel', pauseFollow, { passive: true });
+        scroller.addEventListener('touchstart', pauseFollow, { passive: true });
+        scroller.addEventListener('pointerdown', pauseFollow);
+        scroller.addEventListener('keydown', event => {
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) pauseFollow();
+        });
+      }
+      islandPanel.appendChild(this.islandList);
+      const libraryButton = document.createElement('button');
+      libraryButton.className = 'kairos-island-library';
+      libraryButton.textContent = t("Manage all notes ↗");
+      libraryButton.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'OPEN_DASHBOARD' }));
+      islandPanel.appendChild(libraryButton);
+      island.appendChild(islandPanel);
+      const resumeFollow = () => {
+        this.islandFollowPaused = false;
+      };
+      islandPanel.addEventListener('pointerleave', resumeFollow);
+      islandPanel.addEventListener('focusout', event => {
+        if (!islandPanel.contains(event.relatedTarget)) resumeFollow();
+      });
       // noteWrapper moved to overlay for spatial positioning
       overlay.appendChild(island);
       overlay.appendChild(noteWrapper);
@@ -301,7 +496,7 @@
       this.overlayElement = overlay;
       this.islandContainer = island;
       this.spatialLayer = spatialLayer;
-      this.dragHandle = dragHandle;
+      this.dragHandle = null;
       this.orbElement = orb;
       this.orbMenu = orbMenu;
       this.timeline = timeline;
@@ -311,6 +506,7 @@
       this.noteInput = noteInput;
       this.notePreview = notePreview;
       this.pins = [];
+      this.renderIslandNotes();
       this.spatialMarkers = [];
 
       this.shadowRoot.appendChild(overlay);
@@ -322,46 +518,124 @@
       this.boundGlobalDblClick = (e) => this.handleGlobalDoubleClick(e);
       document.addEventListener('dblclick', this.boundGlobalDblClick, true);
 
-      // Global double-click K listener
-      this.lastKPress = 0;
-      this.kPressTimeout = null;
-      window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'k' && this.isActive && !this.isEditing) {
-          // Always prevent default to stop native handlers (YouTube toggling play/pause)
-          // immediately. We will emulate the single-press behavior if no second press occurs.
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-
-          const now = Date.now();
-          if (now - this.lastKPress < 400) {
-            // Double click K detected
-            clearTimeout(this.kPressTimeout);
-            this.handlePinCapture({ silent: true });
-            this.lastKPress = 0;
-          } else {
-            this.lastKPress = now;
-            // Wait to see if it's a double press
-            this.kPressTimeout = setTimeout(() => {
-              // Single press confirmed: Emulate native Play/Pause behavior
-              if (this.videoElement) {
-                if (this.videoElement.paused) this.videoElement.play();
-                else this.videoElement.pause();
-              }
-              this.lastKPress = 0;
-            }, 400);
-          }
-        }
-      }, true);
+      this.companionInput = new window.Kairos.CompanionInput(this);
     }
 
     /* --- Dragging Logic --- */
+
+    /** Renders the current video's saved notes inside the island in both modes. */
+    renderIslandNotes() {
+      if (!this.islandList) return;
+      const scrollTop = this.islandList.scrollTop;
+      const scrollLeft = this.islandMoments.scrollLeft;
+      this.islandEntries = [];
+      this.islandList.replaceChildren();
+      this.islandMoments.replaceChildren();
+      const notes = (this.pins || []).filter(pin => pin.savedToStorage).sort((a, b) => a.timestamp - b.timestamp);
+      if (!notes.length) {
+        const empty = document.createElement('p');
+        empty.className = 'kairos-island-empty';
+        empty.textContent = t("No notes yet · Enable, then type or draw with the left mouse button");
+        this.islandList.appendChild(empty);
+        const hint = document.createElement('span');
+        hint.textContent = t("No note markers yet");
+        hint.className = 'kairos-island-empty';
+        this.islandMoments.appendChild(hint);
+        return;
+      }
+      for (const pin of notes) {
+        const row = document.createElement('div');
+        row.className = 'kairos-island-note-row';
+        const open = document.createElement('button');
+        open.className = 'kairos-island-note';
+        const time = document.createElement('span');
+        time.textContent = Utils.formatTime(pin.timestamp);
+        const content = document.createElement('span');
+        content.textContent = pin.note || (pin.imageUrl ? t("Screenshot") : t("Empty note"));
+        open.title = content.textContent;
+        open.append(time, content);
+        open.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          if (this.isEditing) {
+            await this.saveNote();
+            if (this.isEditing) return;
+          }
+          if (!this.isActive) this.expandOrb();
+          if (this.videoElement) {
+            this.wasPlaying = !this.videoElement.paused;
+            this.videoElement.pause();
+            this.videoElement.currentTime = pin.timestamp;
+          }
+          this.openNoteInput(pin, true);
+        });
+        const moment = document.createElement('button');
+        moment.className = 'kairos-island-moment';
+        moment.textContent = `${this.islandMoments.childElementCount + 1} · ${time.textContent}`;
+        moment.title = content.textContent;
+        moment.setAttribute('aria-label', `${time.textContent}：${content.textContent}`);
+        moment.addEventListener('click', event => {
+          event.stopPropagation();
+          open.click();
+        });
+        this.islandMoments.appendChild(moment);
+        const remove = document.createElement('button');
+        remove.className = 'kairos-island-delete';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', t("Delete {time} note", { time: time.textContent }));
+        remove.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          if (!confirm(t("Delete this note?"))) return;
+          try {
+            await this.storage.deleteNote(pin.id);
+            if (this.activePin === pin) this.closeNoteInput(true);
+            this.removePinByNoteId(pin.id);
+            this.sidePanel?.refresh();
+          } catch (error) {
+            this.showError(t("Delete failed"), t("Your note is still saved. Please try again."));
+          }
+        });
+        row.append(open, remove);
+        this.islandList.appendChild(row);
+        this.islandEntries.push({ pin, row, open, moment });
+      }
+      this.islandList.scrollTop = scrollTop;
+      this.islandMoments.scrollLeft = scrollLeft;
+      this.updateIslandPlayback(this.videoElement?.currentTime || 0);
+    }
+
+    /** Playback highlighting stays live even while the user browses elsewhere. */
+    updateIslandPlayback(currentTime) {
+      const entries = this.islandEntries || [];
+      const current = entries.findLast(entry => entry.pin.timestamp <= currentTime);
+      for (const entry of entries) {
+        const selected = entry === current;
+        entry.row.classList.toggle('is-current', selected);
+        entry.moment.classList.toggle('is-current', selected);
+        for (const element of [entry.open, entry.moment]) {
+          if (selected) element.setAttribute('aria-current', 'true');
+          else element.removeAttribute('aria-current');
+        }
+      }
+      const following = !!document.fullscreenElement && this.islandContainer.classList.contains('is-pinned');
+      if (!following || this.islandFollowPaused || !current || this.dockDrag || this.dockResize) return;
+      // Scroll only our two containers, never the page or the video underneath.
+      for (const [container, item, horizontal] of [[this.islandList, current.row, false], [this.islandMoments, current.moment, true]]) {
+        if (!container.clientHeight || !container.clientWidth) continue;
+        const viewport = container.getBoundingClientRect();
+        const target = item.getBoundingClientRect();
+        const delta = horizontal
+          ? (target.left < viewport.left ? target.left - viewport.left : Math.max(0, target.right - viewport.right))
+          : (target.top < viewport.top ? target.top - viewport.top : Math.max(0, target.bottom - viewport.bottom));
+        if (Math.abs(delta) > 1) container[horizontal ? 'scrollLeft' : 'scrollTop'] += delta;
+      }
+    }
 
     /**
      * Handles drag start event
      * @param {MouseEvent} e - Mouse event
      */
     dragStart(e) {
+      if (this.islandContainer?.classList.contains('docked')) return;
       if (!this.overlayElement) return;
       if (!e.target.closest('.kairos-drag-handle')) return;
 
@@ -631,12 +905,18 @@
       this.overlayElement.style.left = `${rect.left}px`;
       this.overlayElement.style.width = `${rect.width}px`;
       this.overlayElement.style.height = `${rect.height}px`;
+      this.islandContainer.style.setProperty('--island-max-height', `${Math.max(90, rect.height - 28)}px`);
+      this.positionIsland();
+      if (this.islandTime && video) {
+        this.islandTime.textContent = `${Utils.formatTime(video.currentTime)} / ${Number.isFinite(video.duration) ? Utils.formatTime(video.duration) : '--:--'}`;
+        this.updateIslandPlayback(video.currentTime);
+      }
 
-      // Load saved position on first update
-      if (!this.positionLoaded) {
+      // Legacy floating positions do not apply to the viewport-docked island.
+      if (!this.islandContainer.classList.contains('docked') && !this.positionLoaded) {
         this.positionLoaded = true;
         this.loadOrbPosition();
-      } else if (sizeChanged && this.savedOrbPosition) {
+      } else if (!this.islandContainer.classList.contains('docked') && sizeChanged && this.savedOrbPosition) {
         // Re-apply saved position when size changes (e.g., fullscreen toggle)
         this.applySavedPosition(this.savedOrbPosition);
       }
@@ -645,7 +925,7 @@
       this.lastOverlayWidth = rect.width;
       this.lastOverlayHeight = rect.height;
 
-      if (this.isActive && this.progressBar && video && video.duration) {
+      if (this.progressBar && video && video.duration) {
         // Render timeline scale once when duration is available
         if (!this.timelineScaleRendered) {
           this.renderTimelineScale(video.duration);
@@ -832,6 +1112,7 @@
 
       // Remove from pins array
       this.pins.splice(pinIndex, 1);
+      this.renderIslandNotes();
 
       log(`Pin removed for note ID: ${noteId}`);
     }
@@ -851,10 +1132,14 @@
       tooltip.style.left = `${pin.spatialX}%`;
       tooltip.style.top = `${pin.spatialY}%`;
       tooltip.textContent = pin.note || '';
-
+      if (pin.region && pin.imageUrl) {
+        const image = document.createElement('img');
+        image.src = pin.imageUrl;
+        image.alt = 'Captured video region';
+        tooltip.prepend(image);
+      }
       this.spatialLayer.appendChild(marker);
       this.spatialLayer.appendChild(tooltip);
-
       pin.spatialMarker = marker;
       pin.spatialTooltip = tooltip;
     }
@@ -880,6 +1165,12 @@
      * @param {number} containerHeight - Container height
      */
     enforceIslandBounds(containerWidth, containerHeight) {
+      if (this.islandContainer?.classList.contains('docked')) {
+        if (this.noteWrapper.classList.contains('active')) {
+          this.updateNoteAlignment(this.activePin, containerWidth, containerHeight);
+        }
+        return;
+      }
       if (this.activeDrag) return;
 
       const island = this.shadowRoot?.querySelector('.kairos-island-container');
@@ -930,58 +1221,14 @@
     updateNoteAlignment(pinData, containerWidth, containerHeight) {
       if (!this.noteWrapper) return;
 
-      const noteWidth = 320;
-      const PADDING = 12;
-      const MARGIN = 16;
-
-      let refX, refY, refWidth, refHeight;
-
-      // Determine reference point and dimensions
-      if (pinData && pinData.spatialX !== undefined && pinData.spatialX !== null) {
-        // Case: Spatial (Double Click)
-        refX = (pinData.spatialX / 100) * containerWidth;
-        refY = (pinData.spatialY / 100) * containerHeight;
-        refWidth = 0;
-        refHeight = 0;
-      } else {
-        // Case: Orb (KK or Pin Button)
-        const orb = this.shadowRoot?.querySelector('.kairos-orb');
-        const island = this.shadowRoot?.querySelector('.kairos-island-container');
-        if (!orb || !island) return;
-
-        const orbRect = orb.getBoundingClientRect();
-        const overlayRect = this.overlayElement.getBoundingClientRect();
-
-        refX = orbRect.left - overlayRect.left;
-        refY = orbRect.top - overlayRect.top;
-        refWidth = orb.offsetWidth;
-        refHeight = orb.offsetHeight;
-      }
-
-      // Calculate Horizontal Position (Center on refX, but clamp to bounds)
-      const centerX = refX + refWidth / 2;
-      let left = centerX - noteWidth / 2;
-
-      // Clamp to screen edges
-      left = Math.max(MARGIN, Math.min(left, containerWidth - noteWidth - MARGIN));
-
-      // Calculate Vertical Position (Prefer TOP, fallback to BOTTOM)
-      const spaceAbove = refY - MARGIN;
-      const noteHeightEstimate = this.noteWrapper.offsetHeight || 100;
-
-      let top;
-      if (spaceAbove > noteHeightEstimate + PADDING) {
-        // Place Above
-        top = refY - noteHeightEstimate - PADDING;
-        this.noteWrapper.style.transformOrigin = 'center bottom';
-      } else {
-        // Place Below
-        top = refY + refHeight + PADDING;
-        this.noteWrapper.style.transformOrigin = 'center top';
-      }
-
-      // Clamp vertical to bounds
-      top = Math.max(MARGIN, Math.min(top, containerHeight - noteHeightEstimate - MARGIN - 60));
+      const noteWidth = Math.min(320, containerWidth - 32);
+      const refX = (pinData?.spatialX ?? 50) / 100 * containerWidth;
+      const refY = (pinData?.spatialY ?? 40) / 100 * containerHeight;
+      const height = this.noteWrapper.offsetHeight || 100;
+      const left = Math.max(16, Math.min(refX - noteWidth / 2, containerWidth - noteWidth - 16));
+      const preferredTop = refY > height + 28 ? refY - height - 12 : refY + 12;
+      const top = Math.max(16, Math.min(preferredTop, containerHeight - height - 60));
+      this.noteWrapper.style.transformOrigin = 'center bottom';
 
       this.noteWrapper.style.left = `${left}px`;
       this.noteWrapper.style.top = `${top}px`;
@@ -999,9 +1246,21 @@
       const { flash, ripple, glowBorder } = this.effectElements;
 
       this.isActive = true;
+      this.islandToggle.textContent = t("Disable");
+      this.islandToggle.setAttribute('aria-pressed', 'true');
+      this.shadowRoot.activeElement?.blur();
       this.orbElement.classList.add('expanded');
       this.orbElement.classList.add('active');
-      this.orbElement.title = 'Kairos Active';
+      this.orbElement.title = t("Companion enabled · Drag to move");
+      if (!this.companionHint) {
+        this.companionHint = document.createElement('div');
+        this.companionHint.className = 'kairos-companion-hint';
+        this.companionHint.textContent = t("Type to take notes · Left-drag to capture · Esc to exit");
+        this.overlayElement.appendChild(this.companionHint);
+      }
+      this.companionHint.hidden = false;
+      clearTimeout(this.companionHintTimer);
+      this.companionHintTimer = setTimeout(() => { this.companionHint.hidden = true; }, 6000);
 
       if (this.overlayElement) this.overlayElement.classList.add('active');
 
@@ -1038,9 +1297,14 @@
       const { ripple, glowBorder } = this.effectElements;
 
       this.isActive = false;
+      this.shadowRoot.activeElement?.blur();
+      this.islandToggle.textContent = t("Enable");
+      this.islandToggle.setAttribute('aria-pressed', 'false');
+      this.companionInput?.cancel();
+      if (this.companionHint) this.companionHint.hidden = true;
       this.orbElement.classList.remove('expanded');
       this.orbElement.classList.remove('active');
-      this.orbElement.title = 'Click to expand menu';
+      this.orbElement.title = t("Hover to expand · Drag to move");
 
       glowBorder.classList.remove('active');
       if (this.overlayElement) this.overlayElement.classList.remove('active');
@@ -1060,6 +1324,7 @@
      * @param {MouseEvent} e - Mouse event
      */
     handleGlobalDoubleClick(e) {
+      if (e.composedPath().includes(this.container)) return;
       // Only intercept if Kairos is active
       if (!this.isActive || !this.overlayElement || !this.videoElement) return;
 
@@ -1112,7 +1377,7 @@
      * @param {Object} options - Options { silent: boolean, spatialX: number, spatialY: number }
      */
     async handlePinCapture(options = {}) {
-      if (!this.videoElement) return;
+      if (!this.videoElement || this.isEditing) return;
 
       const silent = options.silent || false;
       const spatialX = options.spatialX;
@@ -1148,6 +1413,8 @@
       }
 
       const pinData = this.createPin(percentage);
+      pinData.region = options.region || null;
+      if (options.wasPlaying !== undefined) this.wasPlaying = options.wasPlaying;
 
       // Add spatial coordinates if provided
       if (spatialX !== undefined) {
@@ -1155,10 +1422,18 @@
         pinData.spatialY = spatialY;
       }
 
-      // Capture Frame
+      // Focus immediately: screenshot completion must never reset typed text.
+      if (!silent) this.openNoteInput(pinData, true);
+      const videoId = this.currentVideoId;
+      const captureUrl = location.href;
       try {
-        const screenshot = await this.captureEngine.captureFrame(this.videoElement);
+        const screenshot = options.region
+          ? await this.captureEngine.captureRegion(this.videoElement, options.region)
+          : await this.captureEngine.captureFrame(this.videoElement);
+        if (captureUrl !== location.href || videoId !== this.currentVideoId || !this.pins.includes(pinData)) return;
         pinData.imageUrl = screenshot;
+        if (this.activePin === pinData) this.updateCapturePreview(pinData);
+        if (options.region || pinData.savedToStorage) await this.savePinToStorage(pinData);
         
         if (silent) {
            pinData.isAnalyzing = true;
@@ -1166,11 +1441,10 @@
            this.requestAIAnalysis(pinData, screenshot);
         } else {
            pinData.isAnalyzing = false; // Don't trigger AI yet
-           this.openNoteInput(pinData, true);
         }
       } catch (err) {
         log('Capture failed:', err);
-        if (!silent) this.openNoteInput(pinData, true);
+        this.showError(t("Capture failed"), t("You can still type a note. Retry or check whether the video is protected."));
       }
     }
 
@@ -1180,13 +1454,17 @@
      */
     handleNoteKeydown(e) {
       e.stopPropagation();
+      if (e.isComposing || e.keyCode === 229) return;
       // e.stopImmediatePropagation(); // Allow Enter key processing
 
       if (e.key === 'Enter') {
         const content = this.noteInput.value.trim();
         
         // If empty and Enter (without modifiers) -> Trigger AI
-        if (!content && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        if (!content && this.activePin?.region && !e.shiftKey) {
+          e.preventDefault();
+          this.saveNote();
+        } else if (!content && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault();
           if (this.activePin && this.activePin.imageUrl) {
             log('Empty input + Enter: Triggering background AI...');
@@ -1299,8 +1577,8 @@
              this.savePinToStorage(pinData);
           }
         } else {
-          let errorMsg = response ? response.error : 'Unknown error';
-          let errorTitle = 'AI Error';
+          let errorMsg = response ? response.error : t("Unknown error");
+          let errorTitle = t("AI Error");
           let actionText = null;
           let actionCallback = null;
 
@@ -1318,8 +1596,8 @@
                  if (errorObj.error) {
                     const { code, status, message } = errorObj.error;
                     if (code === 429 || status === 'RESOURCE_EXHAUSTED') {
-                       errorTitle = 'Quota Exceeded';
-                       errorMsg = 'You have exceeded the free tier rate limit. Please wait a minute or check your plan.';
+                       errorTitle = t("Quota Exceeded");
+                       errorMsg = t("You have exceeded the free tier rate limit. Please wait a minute or check your plan.");
                     } else if (message) {
                        errorMsg = message;
                     }
@@ -1336,19 +1614,19 @@
           
           if (this.activePin === pinData && this.noteInput) {
             this.noteInput.classList.remove('ai-loading');
-            this.noteInput.placeholder = 'AI Analysis failed. Type note...';
+            this.noteInput.placeholder = t("AI Analysis failed. Type note...");
           }
 
           // Show user-facing error toast
           if (typeof errorMsg === 'string') {
              if (errorMsg.includes('API Key') || errorMsg.includes('401') || errorMsg.includes('PERMISSION_DENIED')) {
-                errorTitle = 'Authentication Failed';
-                errorMsg = 'Gemini API Key is missing or invalid.';
-                actionText = 'Configure';
+                errorTitle = t("Authentication Failed");
+                errorMsg = t("Gemini API Key is missing or invalid.");
+                actionText = t("Configure");
                 actionCallback = () => { chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }); };
              } else if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
-                errorTitle = 'Quota Exceeded';
-                errorMsg = 'Free tier limit reached. Please wait a moment.';
+                errorTitle = t("Quota Exceeded");
+                errorMsg = t("Free tier limit reached. Please wait a moment.");
              }
           }
 
@@ -1376,7 +1654,7 @@
       this.noteInput.style.height = `${newHeight}px`;
 
       // Also update wrapper max-height to avoid clipping during animation
-      this.noteWrapper.style.maxHeight = `${newHeight + 40}px`;
+      this.noteWrapper.style.maxHeight = `${newHeight + 220}px`;
     }
 
     /**
@@ -1388,15 +1666,16 @@
       if (!this.noteWrapper || !this.noteInput) return;
 
       this.activePin = pinData;
+      this.updateCapturePreview(pinData);
       this.noteInput.value = pinData.note || '';
       this.isEditing = isEdit;
 
       if (pinData.isAnalyzing) {
-        this.noteInput.placeholder = '✨ AI is thinking...';
+        this.noteInput.placeholder = t("✨ AI is thinking...");
         this.noteInput.classList.add('ai-loading');
         this.switchToEditMode(); // Show loading input
       } else {
-        this.noteInput.placeholder = 'Type note, or Enter for AI ✨';
+        this.noteInput.placeholder = t("Type note, or Enter for AI ✨");
         this.noteInput.classList.remove('ai-loading');
 
         if (!isEdit && pinData.note) {
@@ -1451,6 +1730,7 @@
             const path = e.composedPath();
             const clickedInsideNote = path.some(el =>
               el === this.noteWrapper ||
+              el === this.islandContainer ||
               (el.classList && el.classList.contains('kairos-pin'))
             );
             if (!clickedInsideNote) {
@@ -1464,12 +1744,28 @@
       log(isEdit ? 'Editing note' : 'Previewing note', 'at', pinData.timestamp);
     }
 
+    /** Shows a photo print above the caption for a captured region. */
+    updateCapturePreview(pinData) {
+      if (!this.capturePreview) {
+        this.capturePreview = document.createElement('img');
+        this.capturePreview.className = 'kairos-capture-preview';
+        this.capturePreview.alt = t("Selected video region");
+        this.noteWrapper.prepend(this.capturePreview);
+      }
+      this.capturePreview.hidden = !(pinData.region && pinData.imageUrl);
+      if (!this.capturePreview.hidden) this.capturePreview.src = pinData.imageUrl;
+      else this.capturePreview.removeAttribute('src');
+    }
+
     /**
      * Loads notes for the current video and renders pins
      */
     async loadNotesForCurrentVideo() {
+      this.companionInput?.cancel();
+      this.closeNoteInput(true);
       const info = Utils.getVideoInfo();
       this.currentVideoId = info.videoId;
+      this.islandFollowPaused = false;
 
       log('Loading notes for:', this.currentVideoId);
 
@@ -1477,12 +1773,15 @@
         this.pins.forEach(p => p.element.remove());
       }
       this.pins = [];
+      this.renderIslandNotes();
 
       try {
         const savedNotes = await this.storage.getNotesForVideo(this.currentVideoId);
+        if (this.currentVideoId !== info.videoId) return;
         savedNotes.forEach(noteData => {
           this.renderPin(noteData);
         });
+        this.renderIslandNotes();
         log(`Loaded ${savedNotes.length} notes.`);
       } catch (err) {
         log('Failed to load notes:', err);
@@ -1540,10 +1839,10 @@
 
       if (this.activePin) {
         this.activePin.note = content;
-        await this.savePinToStorage(this.activePin);
+        const saved = await this.savePinToStorage(this.activePin);
+        if (!saved) return;
       }
 
-      this.isEditing = false;
       this.closeNoteInput(true);
     }
 
@@ -1566,8 +1865,9 @@
           percentage: pinData.percentage,
           imageUrl: pinData.imageUrl || null,
           context: pinData.context || null,
-          spatialX: pinData.spatialX || null,
-          spatialY: pinData.spatialY || null,
+          spatialX: pinData.spatialX ?? null,
+          spatialY: pinData.spatialY ?? null,
+          region: pinData.region || null,
           source: pinData.source || 'user',
           createdAt: pinData.createdAt || Date.now()
         };
@@ -1576,6 +1876,7 @@
           await this.storage.saveNote(noteRecord);
           pinData.id = noteRecord.id;
           pinData.savedToStorage = true;
+          this.renderIslandNotes();
           
           // Force spatial marker refresh to update tooltip content
           if (pinData.spatialMarker) {
@@ -1588,8 +1889,11 @@
           if (this.sidePanel) {
             this.sidePanel.addNote(noteRecord);
           }
+          return true;
         } catch (err) {
           log('Failed to persist note:', err);
+          this.showError(t("Note not saved"), t("Storage failed. Your text is preserved; click Save to retry."));
+          return false;
         }
     }
 
@@ -1604,7 +1908,9 @@
       this.noteInput.blur();
 
       if (this.isEditing && this.wasPlaying && this.videoElement) {
-        this.videoElement.play();
+        // An intentional resume must not be rejected by the capture debounce.
+        this.capturingState = false;
+        this.videoElement.play().catch(() => {});
       }
 
       if (this.isKeyboardLocked && navigator.keyboard && navigator.keyboard.unlock) {
@@ -1677,7 +1983,7 @@
 
       e.stopPropagation();
 
-      const video = document.querySelector('video');
+      const video = this.videoElement;
       if (!video || !video.duration) return;
 
       const rect = this.timeline.getBoundingClientRect();
@@ -1694,10 +2000,11 @@
      * @param {MouseEvent} e - Mouse event
      */
     handleTimelineMouseDown(e) {
+      if (e.button !== 0 || e.target.closest('.kairos-pin')) return;
       e.preventDefault();
       e.stopPropagation();
 
-      const video = document.querySelector('video');
+      const video = this.videoElement;
       if (!video || !video.duration) return;
 
       this.isDraggingTimeline = true;
@@ -1742,7 +2049,7 @@
       this.timeline.classList.remove('dragging');
 
       // Resume video if it was playing before drag
-      const video = document.querySelector('video');
+      const video = this.videoElement;
       if (video && this.wasPlayingBeforeDrag) {
         video.play();
       }
@@ -1762,7 +2069,7 @@
      * @param {number} clientX - Mouse X coordinate
      */
     seekTimelineToPosition(clientX) {
-      const video = document.querySelector('video');
+      const video = this.videoElement;
       if (!video || !video.duration) return;
 
       const rect = this.timeline.getBoundingClientRect();
@@ -1872,7 +2179,7 @@
       if (!this.orbElement) return;
 
       this.orbElement.classList.add('ai-scanning');
-      this.orbElement.title = 'Kairos is thinking...';
+      this.orbElement.title = t("Kairos is thinking...");
 
       // Stop any existing animation
       if (this.scanAnimationTimer) {
@@ -1898,7 +2205,7 @@
       if (!this.orbElement) return;
 
       this.orbElement.classList.remove('ai-scanning');
-      this.orbElement.title = this.isActive ? 'Kairos Active' : 'Click to expand menu';
+      this.orbElement.title = this.isActive ? t("Kairos Active") : t("Click to expand menu");
 
       // Stop flip animation
       if (this.scanAnimationTimer) {
@@ -2018,6 +2325,10 @@
      * Destroys the overlay
      */
     destroy() {
+      this.islandDragController?.abort();
+      this.islandResizeObserver?.disconnect();
+      this.companionInput?.destroy();
+      clearTimeout(this.companionHintTimer);
       if (this.boundGlobalDblClick) {
         document.removeEventListener('dblclick', this.boundGlobalDblClick, true);
       }

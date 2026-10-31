@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kairos Dashboard</title>
+    <title data-i18n="Kairos Dashboard">Kairos Dashboard</title>
     <style>
         :root {
             --bg: #0f0f0f;
@@ -704,16 +704,12 @@
                 <svg viewBox="0 0 24 24">
                     <path
                         d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z" />
-                </svg>
-                My Notes
-            </div>
+                </svg><span data-i18n="My Notes">My Notes</span></div>
             <div class="nav-item" data-tab="settings">
                 <svg viewBox="0 0 24 24">
                     <path fill="currentColor"
                         d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.57,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.08-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
-                </svg>
-                Settings
-            </div>
+                </svg><span data-i18n="Settings">Settings</span></div>
         </div>
 
         <div class="video-list" id="videoList">
@@ -724,60 +720,57 @@
     <div class="main" id="mainContent">
         <div id="libraryView" style="height: 100%;">
             <div class="empty-state">
-                <div class="welcome-text">Welcome to Kairos</div>
+                <div class="welcome-text"><span data-i18n="Welcome to Kairos">Welcome to Kairos</span></div>
                 <img src="/icons/icon.png" class="welcome-logo" alt="Kairos">
                 <div class="center-content">
                     <div class="quote-text">
-                        <div>I hear and I forget.</div>
-                        <div>I see and I remember.</div>
-                        <div>I note and I understand.</div>
+                        <div><span data-i18n="I hear and I forget.">I hear and I forget.</span></div>
+                        <div><span data-i18n="I see and I remember.">I see and I remember.</span></div>
+                        <div><span data-i18n="I note and I understand.">I note and I understand.</span></div>
                     </div>
-                    <div class="hint-text">
-                        Select a video to view notes.<br>
-                        Click settings to customize.
-                    </div>
+                    <div class="hint-text"><span data-i18n="Select a video to view notes.">Select a video to view notes.</span><br><span data-i18n="Click settings to customize.">Click settings to customize.</span></div>
                 </div>
             </div>
         </div>
 
         <div id="settingsView" style="display: none; max-width: 1000px; margin: 0 auto;">
             <div class="note-header">
-                <div class="note-title">Settings</div>
+                <div class="note-title"><span data-i18n="Settings">Settings</span></div>
             </div>
 
             <div class="settings-grid">
                 <div class="settings-section">
-                    <h3>AI Model Provider</h3>
+                    <h3><span data-i18n="AI Model Provider">AI Model Provider</span></h3>
                     <div class="radio-group" id="providerGroup">
                         <label class="radio-option disabled">
                             <input type="radio" name="provider" value="kairos" disabled>
                             <div class="radio-content">
-                                <span class="radio-title">Kairos Cloud (Soon)</span>
-                                <span class="radio-desc">Zero-config, cloud sync.</span>
+                                <span class="radio-title"><span data-i18n="Kairos Cloud (Soon)">Kairos Cloud (Soon)</span></span>
+                                <span class="radio-desc"><span data-i18n="Zero-config, cloud sync.">Zero-config, cloud sync.</span></span>
                             </div>
                         </label>
                         <label class="radio-option selected" data-provider="google">
                             <input type="radio" name="provider" value="google" checked>
                             <div class="radio-content">
                                 <span class="radio-title">Google Gemini</span>
-                                <span class="radio-desc">Multimodal, Flash 2.0/3.0 models.</span>
+                                <span class="radio-desc"><span data-i18n="Multimodal, Flash 2.0/3.0 models.">Multimodal, Flash 2.0/3.0 models.</span></span>
                             </div>
                         </label>
                         <label class="radio-option" data-provider="moonshot">
                             <input type="radio" name="provider" value="moonshot">
                             <div class="radio-content">
                                 <span class="radio-title">Moonshot Kimi</span>
-                                <span class="radio-desc">Long context, Kimi 2.5 model.</span>
+                                <span class="radio-desc"><span data-i18n="Long context, Kimi 2.5 model.">Long context, Kimi 2.5 model.</span></span>
                             </div>
                         </label>
                     </div>
                 </div>
 
                 <div class="settings-section" id="modelConfig">
-                    <h3>Model Configuration</h3>
+                    <h3><span data-i18n="Model Configuration">Model Configuration</span></h3>
                     
                     <div style="margin-bottom: 16px;">
-                        <label style="display:block; color:var(--text-dim); font-size:12px; margin-bottom:6px; text-transform:uppercase; font-weight:600;">Selected Model</label>
+                        <label style="display:block; color:var(--text-dim); font-size:12px; margin-bottom:6px; text-transform:uppercase; font-weight:600;"><span data-i18n="Selected Model">Selected Model</span></label>
                         <div class="input-group">
                             <select id="modelSelect">
                                 <!-- Populated by JS -->
@@ -786,13 +779,12 @@
                     </div>
 
                     <div>
-                        <label style="display:block; color:var(--text-dim); font-size:12px; margin-bottom:6px; text-transform:uppercase; font-weight:600;">API Key</label>
-                        <p id="apiKeyHelp" style="color: var(--text-dim); font-size: 13px; margin-bottom: 8px; margin-top:0;">
-                            Get your key from <a href="#" target="_blank" style="color: var(--accent);">Provider</a>.
+                        <label style="display:block; color:var(--text-dim); font-size:12px; margin-bottom:6px; text-transform:uppercase; font-weight:600;"><span data-i18n="API Key">API Key</span></label>
+                        <p id="apiKeyHelp" style="color: var(--text-dim); font-size: 13px; margin-bottom: 8px; margin-top:0;"><span data-i18n="Get your key from">Get your key from</span> <a href="#" target="_blank" style="color: var(--accent);"><span data-i18n="Provider">Provider</span></a>.
                         </p>
                         <div class="input-group">
-                            <input type="password" id="apiKeyInput" placeholder="Paste your API key here..." spellcheck="false">
-                            <button id="toggleKeyVisibility" class="icon-btn" title="Show/Hide">
+                            <input type="password" id="apiKeyInput" placeholder="Paste your API key here..." data-i18n-placeholder="Paste your API key here..." spellcheck="false">
+                            <button id="toggleKeyVisibility" class="icon-btn" title="Show/Hide" data-i18n-title="Show/Hide">
                                 <svg viewBox="0 0 24 24" width="20" height="20">
                                     <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                                 </svg>
@@ -801,52 +793,60 @@
                     </div>
                 </div>
 
+                <div class="settings-section" style="grid-column: 1 / -1;">
+                    <h3><label for="uiLanguageSelect" data-i18n="Interface language">Interface language</label></h3>
+                    <select id="uiLanguageSelect">
+                        <option value="auto" data-i18n="Follow system">Follow system</option>
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                    </select>
+                    <p style="color: var(--text-dim); font-size: 14px;" data-i18n="Saved automatically. Refresh open video pages to apply. Does not change the AI note language.">Saved automatically. Refresh open video pages to apply. Does not change the AI note language.</p>
+                </div>
+
                 <div class="settings-section" id="languageConfig">
-                <h3>Note Language Preference</h3>
-                <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 12px;">
-                    AI will prioritize this language when generating notes. If not set, it will use the video's primary language.
-                </p>
+                <h3><span data-i18n="Note Language Preference">Note Language Preference</span></h3>
+                <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 12px;"><span data-i18n="AI will prioritize this language when generating notes. If not set, it will use the video&#x27;s primary language.">AI will prioritize this language when generating notes. If not set, it will use the video&#x27;s primary language.</span></p>
                 <div class="radio-group">
                     <label class="radio-option" data-lang="auto">
                         <input type="radio" name="noteLanguage" value="auto" checked>
                         <div class="radio-content">
-                            <span class="radio-title">AI-Decision</span>
-                            <span class="radio-desc">Use video's primary language from title/subtitles</span>
+                            <span class="radio-title"><span data-i18n="AI-Decision">AI-Decision</span></span>
+                            <span class="radio-desc"><span data-i18n="Use video&#x27;s primary language from title/subtitles">Use video&#x27;s primary language from title/subtitles</span></span>
                         </div>
                     </label>
                     <label class="radio-option" data-lang="en">
                         <input type="radio" name="noteLanguage" value="en">
                         <div class="radio-content">
                             <span class="radio-title">English</span>
-                            <span class="radio-desc">Generate notes in English</span>
+                            <span class="radio-desc"><span data-i18n="Generate notes in English">Generate notes in English</span></span>
                         </div>
                     </label>
                     <label class="radio-option" data-lang="zh">
                         <input type="radio" name="noteLanguage" value="zh">
                         <div class="radio-content">
                             <span class="radio-title">中文</span>
-                            <span class="radio-desc">使用中文生成笔记</span>
+                            <span class="radio-desc"><span data-i18n="Generate notes in Chinese">Generate notes in Chinese</span></span>
                         </div>
                     </label>
                     <label class="radio-option" data-lang="ja">
                         <input type="radio" name="noteLanguage" value="ja">
                         <div class="radio-content">
                             <span class="radio-title">日本語</span>
-                            <span class="radio-desc">日本語でノートを生成</span>
+                            <span class="radio-desc"><span data-i18n="Generate notes in Japanese">Generate notes in Japanese</span></span>
                         </div>
                     </label>
                     <label class="radio-option" data-lang="es">
                         <input type="radio" name="noteLanguage" value="es">
                         <div class="radio-content">
                             <span class="radio-title">Español</span>
-                            <span class="radio-desc">Generar notas en español</span>
+                            <span class="radio-desc"><span data-i18n="Generate notes in Spanish">Generate notes in Spanish</span></span>
                         </div>
                     </label>
                     <label class="radio-option" data-lang="fr">
                         <input type="radio" name="noteLanguage" value="fr">
                         <div class="radio-content">
                             <span class="radio-title">Français</span>
-                            <span class="radio-desc">Générer des notes en français</span>
+                            <span class="radio-desc"><span data-i18n="Generate notes in French">Generate notes in French</span></span>
                         </div>
                     </label>
                 </div>
@@ -881,8 +881,7 @@
             </div> -->
 
             <div id="statusMessage" class="status-message"></div>
-            <button id="saveSettingsBtn" class="action-btn primary" style="width: 100%; margin-top: 16px;">Save
-                Settings</button>
+            <button id="saveSettingsBtn" class="action-btn primary" style="width: 100%; margin-top: 16px;"><span data-i18n="Save Settings">Save Settings</span></button>
         </div>
     </div>
 

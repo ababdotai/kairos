@@ -1,0 +1,176 @@
+/** Shared UI locale; independent of AI noteLanguage and page content. */
+(function () {
+  const uiLanguage = globalThis.chrome?.i18n?.getUILanguage?.() || globalThis.navigator?.language || 'en';
+  let preference = 'auto';
+  let locale = /^zh(?:-|$)/i.test(uiLanguage) ? 'zh-CN' : 'en';
+  function setPreference(value) {
+    preference = ['zh', 'en'].includes(value) ? value : 'auto';
+    locale = preference === 'auto' ? (/^zh(?:-|$)/i.test(uiLanguage) ? 'zh-CN' : 'en') : (preference === 'zh' ? 'zh-CN' : 'en');
+  }
+  let ready;
+  function init() {
+    return ready ||= (async () => {
+      try {
+        const settings = await globalThis.chrome?.storage?.sync?.get('uiLanguage');
+        setPreference(settings?.uiLanguage);
+      } catch { /* Unavailable storage falls back to the browser language. */ }
+    })();
+  }
+  const zh = {
+  "Enable": "启用",
+  "Disable": "停用",
+  "Note": "记一笔",
+  "Pin": "固定",
+  "Pinned": "已固定",
+  "Drag to resize": "拖动调整大小",
+  "Unpin to expand only on hover": "取消固定，恢复悬停展开",
+  "Keep expanded when the pointer leaves": "移开鼠标后仍保持展开",
+  "Hover to expand · Drag to move": "悬停展开 · 按住拖动",
+  "Kairos controls": "Kairos 控制栏",
+  "Enable / disable companion mode": "启用 / 停用伴随模式",
+  "Capture this frame and take a note": "捕捉当前画面并记笔记",
+  "Close note": "关闭笔记",
+  "Note timestamps": "笔记时间导航",
+  "Notes for this video": "当前视频笔记",
+  "Manage all notes ↗": "管理全部笔记 ↗",
+  "No notes yet · Enable, then type or draw with the left mouse button": "还没有笔记 · 启用后打字或左键圈选",
+  "No note markers yet": "暂无笔记标记",
+  "Screenshot": "画面截图",
+  "Empty note": "空白笔记",
+  "Delete this note?": "删除这条笔记？",
+  "Delete failed": "删除失败",
+  "Your note is still saved. Please try again.": "笔记仍已保留，请重试。",
+  "Companion enabled · Drag to move": "伴随已启用 · 按住拖动",
+  "Type to take notes · Left-drag to capture · Esc to exit": "直接打字记笔记 · 按住左键画圈截图 · Esc 退出",
+  "Capture failed": "截图失败",
+  "You can still type a note. Retry or check whether the video is protected.": "仍可输入文字记录。请重试或检查视频是否受保护。",
+  "Selected video region": "圈选的视频画面",
+  "Note not saved": "笔记未保存",
+  "Storage failed. Your text is preserved; click Save to retry.": "存储失败，内容已保留，请再次点击保存。",
+  "Drag to capture · Click to play/pause": "拖动画圈截图 · 单击播放/暂停",
+  "Click to edit": "点击编辑",
+  "Type note, or Enter for AI ✨": "输入笔记，或按 Enter 让 AI 生成 ✨",
+  "Save (⌘↵)": "保存 (⌘↵)",
+  "Cancel (⎋)": "取消 (⎋)",
+  "AI Analysis failed. Type note...": "AI 分析失败，请输入笔记…",
+  "✨ AI is thinking...": "✨ AI 正在思考…",
+  "Kairos is thinking...": "Kairos 正在思考…",
+  "Kairos Active": "Kairos 已启用",
+  "Click to expand menu": "悬停展开菜单",
+  "Kairos: AI Video Notepad": "Kairos：AI 视频笔记",
+  "Captions available for better AI notes": "开启字幕可提升 AI 笔记效果",
+  "Export Markdown": "导出 Markdown",
+  "My Notes": "我的笔记",
+  "Settings": "设置",
+  "Toggle panel": "展开／收起面板",
+  "Loading...": "正在加载…",
+  "Left-drag = Region capture": "左键拖动 = 区域截图",
+  "Type = Note · Esc = Exit": "打字 = 记笔记 · Esc = 退出",
+  "= You+AI Note": "= 你与 AI 协作笔记",
+  "No notes yet": "暂无笔记",
+  "Click Enable in the island to start": "点击灵动岛中的“启用”开始记录",
+  "YOU": "你",
+  "You": "你",
+  "(Empty note)": "(空白笔记)",
+  "Delete note": "删除笔记",
+  "Captions available - Turn them on for best AI results": "检测到字幕，开启后可提升 AI 效果",
+  "Captions active - Kairos is listening": "字幕已开启，Kairos 正在读取",
+  "Current Video": "当前视频",
+  "Delete {time} note": "删除 {time} 的笔记",
+  "Welcome to Kairos": "欢迎使用 Kairos",
+  "I hear and I forget.": "听过，可能忘记。",
+  "I see and I remember.": "看过，留下印象。",
+  "I note and I understand.": "记下，才有理解。",
+  "Select a video to view notes.": "选择一个视频查看笔记。",
+  "Click settings to customize.": "前往设置调整偏好。",
+  "AI Model Provider": "AI 模型提供商",
+  "Kairos Cloud (Soon)": "Kairos 云服务（即将推出）",
+  "Zero-config, cloud sync.": "无需配置，云端同步。",
+  "Multimodal, Flash 2.0/3.0 models.": "多模态，支持 Flash 2.0/3.0 模型。",
+  "Long context, Kimi 2.5 model.": "长上下文，Kimi 2.5 模型。",
+  "Model Configuration": "模型配置",
+  "Selected Model": "所选模型",
+  "API Key": "API 密钥",
+  "Get your key from": "获取密钥：",
+  "Provider": "提供商",
+  "Show/Hide": "显示／隐藏",
+  "Paste your API key here...": "在此粘贴 API 密钥…",
+  "Note Language Preference": "AI 笔记语言偏好",
+  "AI will prioritize this language when generating notes. If not set, it will use the video's primary language.": "AI 生成笔记时优先使用此语言；自动模式使用视频的主要语言。此设置不影响界面语言。",
+  "AI-Decision": "自动判断",
+  "Use video's primary language from title/subtitles": "根据标题和字幕使用视频的主要语言",
+  "Generate notes in English": "使用英语生成笔记",
+  "Generate notes in Chinese": "使用中文生成笔记",
+  "Generate notes in Japanese": "使用日语生成笔记",
+  "Generate notes in Spanish": "使用西班牙语生成笔记",
+  "Generate notes in French": "使用法语生成笔记",
+  "Save Settings": "保存设置",
+  "Please enter a valid API Key": "请输入有效的 API 密钥",
+  "Warning: Google Keys typically start with \"AIza\".": "提示：Google 密钥通常以“AIza”开头。",
+  "Warning: Moonshot Keys typically start with \"sk-\".": "提示：Moonshot 密钥通常以“sk-”开头。",
+  "Settings saved successfully!": "设置已保存！",
+  "Paste your {provider} API Key ({example})": "粘贴 {provider} API 密钥（{example}）",
+  "View Source Video ↗": "查看原视频 ↗",
+  "Delete All": "全部删除",
+  "Copy note text": "复制笔记正文",
+  "Copy": "复制",
+  "Copied!": "已复制！",
+  "Audio Transcript": "字幕转录",
+  "Notes deleted.": "笔记已删除。",
+  "Are you sure you want to delete all notes for this video? This cannot be undone.": "确定删除此视频的全部笔记吗？此操作无法撤销。",
+  "{count} notes": "{count} 条笔记",
+  "Open Dashboard": "打开笔记管理",
+  "My Notes&Settings": "笔记与设置",
+  "Loading Video...": "正在加载视频…",
+  "0 notes": "0 条笔记",
+  "collected": "已记录",
+  "Download Markdown": "下载 Markdown",
+  "No Video Detected": "未检测到视频",
+  "Open YouTube or Bilibili to start capturing.": "打开 YouTube 或哔哩哔哩开始记录。",
+  "Refresh Page": "刷新页面",
+  "Quick Actions": "快捷操作",
+  "Click Enable": "点击“启用”",
+  "to activate kairos": "开启 Kairos",
+  "Left-drag on Video": "在视频上左键拖动",
+  "to capture a region": "截取选中区域",
+  "Enter without Input": "空白输入时按 Enter",
+  "to trigger AI note": "生成 AI 笔记",
+  "Start Typing": "直接打字",
+  "to take a note · Esc to exit": "记笔记 · Esc 退出",
+  "Not a Video Page": "当前不是视频页面",
+  "Please navigate to YouTube or Bilibili to use Kairos.": "请前往 YouTube 或哔哩哔哩使用 Kairos。",
+  "No Video Found": "未找到视频",
+  "We couldn't detect a video on this page. Try refreshing.": "未检测到视频，请尝试刷新页面。",
+  "Connection Error": "连接失败",
+  "Could not retrieve notes. Please try refreshing the page.": "无法获取笔记，请刷新页面重试。",
+  "AI Error": "AI 出错",
+  "Unknown error": "未知错误",
+  "Quota Exceeded": "已达使用限额",
+  "You have exceeded the free tier rate limit. Please wait a minute or check your plan.": "已达到免费额度的速率限制，请稍后重试或检查套餐。",
+  "Authentication Failed": "认证失败",
+  "Gemini API Key is missing or invalid.": "Gemini API 密钥缺失或无效。",
+  "Configure": "前往设置",
+  "Free tier limit reached. Please wait a moment.": "已达到免费额度限制，请稍后重试。",
+  "Kairos Dashboard": "Kairos 笔记管理",
+  "Visual Snapshot": "画面截图",
+  "Error loading notes": "笔记加载失败",
+  "Interface language": "界面语言",
+  "Follow system": "跟随系统",
+  "Saved automatically. Refresh open video pages to apply. Does not change the AI note language.": "自动保存。已打开的视频页面刷新后生效，不影响 AI 笔记语言。",
+  "Could not save interface language. Please try again.": "界面语言保存失败，请重试。"
+};
+  function t(key, values = {}) {
+    const text = locale === 'zh-CN' ? (zh[key] ?? key) :
+      (key === '{count} notes' && values.count === 1 ? '{count} note' : key);
+    return text.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
+  }
+  // Only explicitly tagged extension UI is translated, never user notes or host pages.
+  function localize(root = document) {
+    root.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    for (const attr of ['title', 'placeholder', 'aria-label']) {
+      root.querySelectorAll(`[data-i18n-${attr}]`).forEach(el => el.setAttribute(attr, t(el.getAttribute(`data-i18n-${attr}`))));
+    }
+  }
+  globalThis.Kairos = globalThis.Kairos || {};
+  globalThis.Kairos.I18n = { t, get locale() { return locale; }, get preference() { return preference; }, localize, init, setPreference };
+})();

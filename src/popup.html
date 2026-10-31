@@ -173,7 +173,7 @@
     .btn-primary:active {
       transform: translateY(0);
     }
-    
+
     .btn-primary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
@@ -292,62 +292,56 @@
       <span class="app-name">Kairos</span>
     </div>
     <div class="header-actions">
-      <button id="dashboard-btn" class="icon-btn" title="Open Dashboard">
-        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        My Notes&Settings
-      </button>
+      <button id="dashboard-btn" class="icon-btn" title="Open Dashboard" data-i18n-title="Open Dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="My Notes&amp;Settings">My Notes&amp;Settings</span></button>
     </div>
   </div>
 
   <!-- Active Video Content -->
   <div id="current-video-section" class="card" style="display: none;">
-    <h2 id="video-title" class="video-title">Loading Video...</h2>
+    <h2 id="video-title" class="video-title"><span data-i18n="Loading Video...">Loading Video...</span></h2>
     <div class="stats-row">
-      <span class="badge" id="note-count">0 notes</span>
-      <span class="status-text">collected</span>
+      <span class="badge" id="note-count"><span data-i18n="0 notes">0 notes</span></span>
+      <span class="status-text"><span data-i18n="collected">collected</span></span>
     </div>
-    
+
     <button id="export-btn" class="btn-primary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;">
         <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-      </svg>
-      Download Markdown
-    </button>
+      </svg><span data-i18n="Download Markdown">Download Markdown</span></button>
   </div>
 
   <!-- Empty / No Video State -->
   <div id="no-video-state" class="card empty-state" style="display: none;">
     <div class="empty-icon">👋</div>
-    <h3 id="empty-state-title">No Video Detected</h3>
-    <p id="empty-state-msg">Open YouTube or Bilibili to start capturing.</p>
-    <button id="refresh-btn" class="btn-secondary">
-      Refresh Page
-    </button>
+    <h3 id="empty-state-title"><span data-i18n="No Video Detected">No Video Detected</span></h3>
+    <p id="empty-state-msg"><span data-i18n="Open YouTube or Bilibili to start capturing.">Open YouTube or Bilibili to start capturing.</span></p>
+    <button id="refresh-btn" class="btn-secondary"><span data-i18n="Refresh Page">Refresh Page</span></button>
   </div>
 
   <!-- Footer Tips -->
   <div class="footer">
-    <div class="shortcuts-title">Quick Actions</div>
+    <div class="shortcuts-title"><span data-i18n="Quick Actions">Quick Actions</span></div>
     <div class="shortcut-list">
       <div class="shortcut-item">
         <img src="/icons/icon.png" class="shortcut-icon" alt="Orb">
-        <kbd>Click Orb</kbd> 
-        <span>to activate kairos</span>
+        <kbd><span data-i18n="Click Enable">Click Enable</span></kbd>
+        <span><span data-i18n="to activate kairos">to activate kairos</span></span>
       </div>
       <div class="shortcut-item">
         <img src="/icons/mouse-double-click.png" class="shortcut-icon" alt="Click">
-        <kbd>Double Click on Video</kbd> 
-        <span>to take a manual note</span>
+        <kbd><span data-i18n="Left-drag on Video">Left-drag on Video</span></kbd>
+        <span><span data-i18n="to capture a region">to capture a region</span></span>
       </div>
       <div class="shortcut-item">
         <img src="/icons/ai_enhanced_input.png" class="shortcut-icon" alt="AI">
-        <kbd>Enter without Input</kbd> 
-        <span>to trigger AI note</span>
+        <kbd><span data-i18n="Enter without Input">Enter without Input</span></kbd>
+        <span><span data-i18n="to trigger AI note">to trigger AI note</span></span>
       </div>
       <div class="shortcut-item">
         <img src="/icons/keyboard_key_k.png" class="shortcut-icon" alt="K">
-        <kbd>Double Press K</kbd> 
-        <span>to capture an AI note</span>
+        <kbd><span data-i18n="Start Typing">Start Typing</span></kbd>
+        <span><span data-i18n="to take a note · Esc to exit">to take a note · Esc to exit</span></span>
       </div>
     </div>
   </div>

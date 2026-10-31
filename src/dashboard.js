@@ -1,6 +1,11 @@
+import './content/i18n.js';
+const { t, localize } = window.Kairos.I18n;
 import './content/markdown.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  await window.Kairos.I18n.init();
+  document.documentElement.lang = window.Kairos.I18n.locale;
+  localize();
     const videoListEl = document.getElementById('videoList');
     const libraryViewEl = document.getElementById('libraryView');
     const settingsViewEl = document.getElementById('settingsView');
@@ -11,6 +16,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toggleKeyVisibilityBtn = document.getElementById('toggleKeyVisibility');
     const languageOptions = document.querySelectorAll('.radio-option[data-lang]');
     const highlightOptions = document.querySelectorAll('.radio-option[data-highlight]');
+    const uiLanguageSelect = document.getElementById('uiLanguageSelect');
+    uiLanguageSelect.value = window.Kairos.I18n.preference;
+    uiLanguageSelect.addEventListener('change', async () => {
+        const value = uiLanguageSelect.value;
+        uiLanguageSelect.disabled = true;
+        try {
+            await chrome.storage.sync.set({ uiLanguage: value });
+            window.Kairos.I18n.setPreference(value);
+            document.documentElement.lang = window.Kairos.I18n.locale;
+            localize();
+            const provider = providerConfig[document.querySelector('input[name="provider"]:checked').value];
+            apiKeyInput.placeholder = t('Paste your {provider} API Key ({example})', { provider: provider.name, example: provider.keyPlaceholder });
+            statusMessageEl.textContent = '';
+        } catch {
+            uiLanguageSelect.value = window.Kairos.I18n.preference;
+            showStatus(t('Could not save interface language. Please try again.'), 'error');
+        } finally {
+            uiLanguageSelect.disabled = false;
+        }
+    });
 
     // State
     let currentTab = 'library';
@@ -160,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Update API Key Input
         apiKeyInput.value = tempKeys[provider] || '';
-        apiKeyInput.placeholder = `Paste your ${config.name} API Key (${config.keyPlaceholder})`;
+        apiKeyInput.placeholder = t("Paste your {provider} API Key ({example})", { provider: config.name, example: config.keyPlaceholder });
         
         // Update Help Link
         const helpLink = document.querySelector('#apiKeyHelp a');
@@ -214,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedLang = document.querySelector('input[name="noteLanguage"]:checked').value;
 
         if (!currentKey) {
-            showStatus('Please enter a valid API Key', 'error');
+            showStatus(t("Please enter a valid API Key"), 'error');
             return;
         }
 
@@ -223,9 +248,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Validate Key Format (Basic check)
         if (currentProvider === 'google' && !currentKey.startsWith('AIza')) {
-             showStatus('Warning: Google Keys typically start with "AIza".', 'error');
+             showStatus(t("Warning: Google Keys typically start with \"AIza\"."), 'error');
         } else if (currentProvider === 'moonshot' && !currentKey.startsWith('sk-')) {
-             showStatus('Warning: Moonshot Keys typically start with "sk-".', 'error');
+             showStatus(t("Warning: Moonshot Keys typically start with \"sk-\"."), 'error');
         }
 
         const updates = {
@@ -242,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         chrome.storage.sync.set(updates, () => {
-            showStatus('Settings saved successfully!', 'success');
+            showStatus(t("Settings saved successfully!"), 'success');
             setTimeout(() => {
                 statusMessageEl.textContent = '';
             }, 3000);
@@ -298,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 item.innerHTML = `
                     <div class="video-item-title">${video.title}</div>
                     <div class="video-item-meta">
-                        <span>${video.notes.length} notes</span>
+                        <span>${t("{count} notes", { count: video.notes.length })}</span>
                         <span>${new Date(video.lastUpdated).toLocaleDateString()}</span>
                     </div>
                 `;
@@ -322,12 +347,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         libraryViewEl.innerHTML = `
             <div class="note-header">
                 <div class="note-meta" style="color: #aaa; font-size: 13px; margin-bottom: 8px;">
-                    <a href="${video.url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #aaa;">View Source Video ↗</a>
+                    <a href="${video.url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #aaa;">${t("View Source Video \u2197")}</a>
                 </div>
                 <div class="note-title">${video.title}</div>
                 <div class="note-actions">
-                    <button class="action-btn primary" id="btnExport">Export Markdown</button>
-                    <button class="action-btn" id="btnDelete" style="color: #ff4d4d;">Delete All</button>
+                    <button class="action-btn primary" id="btnExport">${t("Export Markdown")}</button>
+                    <button class="action-btn" id="btnDelete" style="color: #ff4d4d;">${t("Delete All")}</button>
                 </div>
             </div>
             <div class="timeline">
@@ -338,11 +363,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="note-header-row">
                              <div class="timestamp-group">
                                 <span class="timestamp">${note.timeLabel}</span>
-                                <span class="note-badge ${note.source === 'ai' ? 'ai' : 'user'}">${note.source === 'ai' ? 'AI' : 'You'}</span>
+                                <span class="note-badge ${note.source === 'ai' ? 'ai' : 'user'}">${note.source === 'ai' ? 'AI' : t("You")}</span>
                              </div>
-                             <button class="btn-copy-note" data-note-id="${note.id}" title="Copy note text">
+                             <button class="btn-copy-note" data-note-id="${note.id}" title="${t('Copy note text')}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                Copy
+                                ${t("Copy")}
                              </button>
                         </div>
 
@@ -378,10 +403,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="extra-item">
                     <div class="extra-header">
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        Visual Snapshot
+                        ${t("Visual Snapshot")}
                     </div>
                     <div class="note-screenshot-container">
-                        <img src="${note.imageUrl}" class="note-screenshot" loading="lazy" alt="Visual Snapshot">
+                        <img src="${note.imageUrl}" class="note-screenshot" loading="lazy" alt="${t('Visual Snapshot')}">
                     </div>
                 </div>
             `;
@@ -392,7 +417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="extra-item">
                      <div class="extra-header">
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                        Audio Transcript
+                        ${t("Audio Transcript")}
                      </div>
                     <div class="note-context-text">"${note.context}"</div>
                 </div>
@@ -406,7 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function copyToClipboard(text, btnElement) {
         navigator.clipboard.writeText(text).then(() => {
             const originalHTML = btnElement.innerHTML;
-            btnElement.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
+            btnElement.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${t("Copied!")}`;
             btnElement.style.color = 'var(--accent)';
             btnElement.style.borderColor = 'var(--accent)';
             
@@ -447,7 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function deleteVideoNotes(videoId, notes) {
-        if (!confirm('Are you sure you want to delete all notes for this video? This cannot be undone.')) return;
+        if (!confirm(t("Are you sure you want to delete all notes for this video? This cannot be undone."))) return;
 
         // Delete each note via message passing
         let deletedCount = 0;
@@ -459,7 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     libraryViewEl.innerHTML = `
                         <div class="empty-state">
                             <svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
-                            <p>Notes deleted.</p>
+                            <p>${t("Notes deleted.")}</p>
                         </div>
                     `;
                 }

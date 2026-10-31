@@ -221,6 +221,70 @@
         pointer-events: auto;
       }
 
+      .kairos-note-wrapper {
+        background: linear-gradient(135deg, #fff7cd, #f3e6aa);
+        border: 1px solid #d9c989;
+        border-radius: 3px 3px 18px 3px;
+        box-shadow: 2px 12px 24px #0004, inset 0 1px #fff9;
+        padding-top: 12px;
+        flex-wrap: wrap;
+        max-width: calc(100% - 24px);
+      }
+      .kairos-note-wrapper::before {
+        content: '';
+        position: absolute;
+        width: 74px;
+        height: 19px;
+        top: -10px;
+        left: calc(50% - 37px);
+        background: #fff7d5aa;
+        border: 1px solid #d4c39966;
+        transform: rotate(-4deg);
+        pointer-events: none;
+      }
+      .kairos-note-wrapper .kairos-note-input,
+      .kairos-note-wrapper .kairos-note-preview {
+        background: transparent;
+        color: #443c2c;
+        font-family: 'Kaiti SC', 'STKaiti', 'Georgia', serif;
+        font-size: 16px;
+        line-height: 1.7;
+      }
+      .kairos-note-wrapper .kairos-note-input::placeholder { color: #6b5b36; }
+      .kairos-capture-preview {
+        width: calc(100% - 20px);
+        max-height: 150px;
+        object-fit: contain;
+        margin: 0 10px 6px;
+        background: #fff;
+        border: 5px solid white;
+        box-shadow: 0 2px 5px #0002;
+      }
+      .kairos-capture-preview[hidden], .kairos-companion-hint[hidden] { display: none; }
+      .kairos-capture-surface {
+        position: absolute; inset: 32px 0 64px;
+        z-index: 10; pointer-events: none; cursor: crosshair;
+        touch-action: none; user-select: none; -webkit-user-select: none;
+      }
+      .kairos-overlay.active .kairos-capture-surface { pointer-events: auto; }
+      .kairos-overlay:has(.kairos-note-wrapper.active) .kairos-capture-surface { pointer-events: none; }
+      .kairos-ink-layer {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 999;
+      }
+      .kairos-ink-layer polyline {
+        fill: #ffd65a22; stroke: #ffe482; stroke-width: 3;
+        stroke-linecap: round; stroke-linejoin: round;
+        filter: drop-shadow(0 1px 2px #0009);
+      }
+      .kairos-companion-hint {
+        position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+        padding: 8px 14px; border-radius: 20px; background: #242422dd;
+        color: #fff3c2; font: 12px/1.5 system-ui; white-space: nowrap;
+        pointer-events: none;
+      }
+      .kairos-spatial-tooltip img { display: block; max-width: 190px; max-height: 120px; margin-bottom: 6px; }
+
       .kairos-orb.active {
         border-color: rgba(0, 242, 255, 0.5);
         box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
@@ -815,12 +879,12 @@
       /* Ephemeral Spatial Note Tooltip */
       .kairos-spatial-tooltip {
         position: absolute;
-        background: var(--kairos-bg-secondary);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 0.5px solid var(--kairos-border);
-        border-radius: 8px;
+        background: linear-gradient(135deg, #fff7cd, #f3e6aa);
+        border: 1px solid #d9c989;
+        border-radius: 3px 3px 14px 3px;
         padding: 8px 12px;
-        color: var(--kairos-text-main);
+        color: #443c2c;
+        font-family: 'Kaiti SC', 'STKaiti', 'Georgia', serif;
         font-size: 13px;
         max-width: 240px;
         pointer-events: none;
@@ -948,6 +1012,194 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         min-width: 200px;
         max-width: 320px;
+      }
+      /* Video-relative glass island; hover expansion is independent of activation. */
+      .kairos-island-container.docked {
+        position: absolute; top: var(--island-y, 12px) !important;
+        left: var(--island-x, 50%) !important; right: auto !important; bottom: auto !important;
+        transform: translateX(-50%) !important; z-index: 1100;
+        width: 148px; max-width: calc(100% - 24px);
+        align-items: stretch; will-change: auto; pointer-events: auto;
+        transition: width 360ms cubic-bezier(.22,1,.36,1);
+      }
+      .kairos-island-container.docked:hover,
+      .kairos-island-container.docked:focus-within,
+      .kairos-island-container.docked:has(.dragging),
+      .kairos-island-container.docked.dock-dragging { width: var(--island-expanded-width, 340px); }
+      .docked, .docked .kairos-orb, .docked .kairos-island-panel { cursor: grab; }
+      .docked .kairos-orb { touch-action: none; }
+      .docked.has-custom-size .kairos-island-panel { height: calc(var(--island-expanded-height) - 54px); }
+      .docked.has-custom-size .kairos-island-notes { max-height: max(0px, calc(var(--island-expanded-height) - var(--island-chrome-height, 190px))); }
+      /* Override every hover/expanded variant while the pointer owns sizing. */
+      .kairos-island-container.docked.is-resizing,
+      .kairos-island-container.docked.is-resizing .kairos-orb { transition: none !important; }
+      .kairos-island-resize { display: none; position: absolute; z-index: 5; touch-action: none; }
+      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging) > .kairos-island-resize { display: block; }
+      .kairos-island-resize.edge-n, .kairos-island-resize.edge-s { height: 8px; left: 20px; right: 20px; cursor: ns-resize; }
+      .kairos-island-resize.edge-n { top: -3px; }
+      .kairos-island-resize.edge-s { bottom: -3px; }
+      .kairos-island-resize.edge-e, .kairos-island-resize.edge-w { width: 8px; top: 20px; bottom: 20px; cursor: ew-resize; }
+      .kairos-island-resize.edge-e { right: -3px; }
+      .kairos-island-resize.edge-w { left: -3px; }
+      .kairos-island-resize.edge-ne, .kairos-island-resize.edge-nw,
+      .kairos-island-resize.edge-se, .kairos-island-resize.edge-sw { width: 18px; height: 18px; }
+      .kairos-island-resize.edge-ne { right: 0; top: 0; cursor: nesw-resize; }
+      .kairos-island-resize.edge-nw { left: 0; top: 0; cursor: nwse-resize; }
+      .kairos-island-resize.edge-se { right: 0; bottom: 0; cursor: nwse-resize; }
+      .kairos-island-resize.edge-sw { left: 0; bottom: 0; cursor: nesw-resize; }
+      .docked.dock-dragging, .docked.dock-dragging .kairos-orb,
+      .docked.dock-dragging .kairos-island-panel { cursor: grabbing; }
+      .docked .kairos-orb, .docked .kairos-orb.expanded,
+      .docked .kairos-orb:not(.expanded):hover {
+        width: 148px; min-width: 0; height: 44px;
+        max-width: 100%; padding: 0 15px;
+        justify-content: flex-start; gap: 8px;
+        border-radius: 25px; color: #fff;
+        background: linear-gradient(145deg, rgba(255,255,255,.16), rgba(255,255,255,.03) 45%, rgba(255,255,255,.09)), rgba(18,25,36,.38);
+        backdrop-filter: blur(14px) saturate(170%);
+        -webkit-backdrop-filter: blur(14px) saturate(170%);
+        border: 1px solid rgba(255,255,255,.3);
+        box-shadow: inset 0 1px 0 #ffffff66, inset 0 -1px 0 #ffffff14, 0 8px 28px #0003;
+        transition: width 360ms cubic-bezier(.22,1,.36,1), height 360ms cubic-bezier(.22,1,.36,1), box-shadow 200ms;
+      }
+      .docked .kairos-orb:not(.expanded):hover,
+      .docked .kairos-orb.expanded:hover, .docked .kairos-orb:focus-within,
+      .docked:hover .kairos-orb, .docked:focus-within .kairos-orb,
+      .docked:has(.dragging) .kairos-orb, .docked.dock-dragging .kairos-orb {
+        width: var(--island-expanded-width, 340px); height: 54px; border-radius: 25px 25px 0 0;
+      }
+      .docked .kairos-orb.active {
+        border-color: #b4e9ff99;
+        box-shadow: inset 0 1px 0 #ffffff88, 0 0 18px #6bd4ff33, 0 8px 28px #0003;
+      }
+      .docked .kairos-orb .kairos-orb-icon {
+        display: block; width: 23px; height: 23px; min-width: 23px;
+        transform: none; flex-shrink: 0;
+      }
+      .kairos-island-brand {
+        font: 600 14px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+        letter-spacing: .025em; text-shadow: 0 1px 4px #0005;
+        flex-shrink: 0;
+      }
+      .kairos-island-status {
+        width: 11px; height: 11px; border-radius: 50%; margin-left: auto;
+        background: #ffffff60; flex-shrink: 0;
+      }
+      .active .kairos-island-status { background: #57df96; box-shadow: 0 0 8px #57df9644; }
+      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging) .kairos-island-status { margin-left: 0; }
+      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging) .kairos-orb .kairos-orb-menu { margin-left: auto; }
+      .docked .kairos-orb .kairos-orb-menu {
+        max-width: 0; opacity: 0; visibility: hidden;
+        pointer-events: none; gap: 4px; margin-left: 0;
+        transition: opacity 180ms, max-width 360ms cubic-bezier(.22,1,.36,1);
+      }
+      .docked .kairos-orb:hover .kairos-orb-menu,
+      .docked .kairos-orb:focus-within .kairos-orb-menu,
+      .docked:hover .kairos-orb-menu, .docked:focus-within .kairos-orb-menu,
+      .docked.dock-dragging .kairos-orb-menu {
+        max-width: 190px; opacity: 1; visibility: visible; pointer-events: auto;
+      }
+      .docked .kairos-orb .kairos-orb-btn {
+        width: auto; height: 32px; padding: 0 8px;
+        border-radius: 17px; background: #ffffff12; color: #fff;
+        font: 500 12px/1 system-ui; white-space: nowrap;
+        border: 1px solid #ffffff20; text-shadow: 0 1px 3px #0005;
+      }
+      .docked .kairos-orb .kairos-orb-btn:hover { background: #ffffff28; transform: none; }
+      .docked .kairos-orb:focus-visible { outline: 2px solid #b4e9ff; outline-offset: 3px; }
+      .kairos-island-panel {
+        display: none; width: 100%; min-width: 0;
+        max-height: calc(var(--island-max-height, 300px) - 54px);
+        overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
+        padding: 10px 14px 12px; color: #f0f6ff;
+        background: linear-gradient(145deg, #ffffff15, #ffffff05), rgba(18,25,36,.58);
+        backdrop-filter: blur(14px) saturate(170%);
+        -webkit-backdrop-filter: blur(14px) saturate(170%);
+        border: 1px solid #ffffff40; border-top: 0;
+        border-radius: 0 0 22px 22px; box-shadow: 0 14px 28px #0003;
+        font: 12px/1.5 system-ui;
+      }
+      .docked:hover .kairos-island-panel, .docked:focus-within .kairos-island-panel,
+      .docked:has(.dragging) .kairos-island-panel,
+      .docked.dock-dragging .kairos-island-panel { display: block; }
+      .kairos-island-time { color: #cee4f0; font-variant-numeric: tabular-nums; font-size: 11px; }
+      .kairos-island-panel .kairos-timeline-container {
+        position: relative; inset: auto; height: 30px; width: 100%; padding: 0;
+        opacity: 1; pointer-events: auto;
+      }
+      .kairos-island-panel .kairos-timeline-rail {
+        left: 0; right: 0; height: 4px; border: 0; box-shadow: none;
+      }
+      .kairos-island-panel .kairos-progress-bar::after,
+      .kairos-island-panel .kairos-ticks-container { display: none; }
+      .kairos-island-panel .kairos-pin { top: 0; height: 30px; width: 16px; pointer-events: auto; }
+      .kairos-island-panel .kairos-pin:not(.kairos-marker-insight)::after {
+        content: ''; width: 5px; height: 8px; border-radius: 3px; background: #b2eaff;
+        filter: none; box-shadow: 0 0 0 2px #273d50;
+      }
+      .kairos-island-notes { max-height: 180px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+      .kairos-island-note-row { display: flex; gap: 4px; align-items: center; border-top: 1px solid #ffffff14; }
+      .kairos-island-note {
+        display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px;
+        background: transparent; border: 0; padding: 9px 3px; color: #f0f6ff;
+        font: inherit; cursor: pointer; text-align: left;
+      }
+      .kairos-island-note span:first-child { color: #afe2f5; font-size: 11px; flex-shrink: 0; }
+      .kairos-island-note span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .kairos-island-delete { background: transparent; color: #becfda; border: 0; cursor: pointer; padding: 6px; }
+      .kairos-island-note:hover, .kairos-island-delete:hover { background: #ffffff12; border-radius: 6px; }
+      .kairos-island-library { background: transparent; color: #cee4f0; border: 0; padding: 10px 0 0; font: inherit; cursor: pointer; }
+      .kairos-island-empty { margin: 6px 0 10px; color: #becfda; font-size: 11px; }
+      .kairos-island-container.docked.is-pinned { width: var(--island-expanded-width, 340px); }
+      .docked.is-pinned .kairos-orb,
+      .docked.is-pinned .kairos-orb.expanded,
+      .docked.is-pinned .kairos-orb:not(.expanded) {
+        width: var(--island-expanded-width, 340px); height: 54px; border-radius: 25px 25px 0 0;
+      }
+      .docked.is-pinned .kairos-orb .kairos-orb-menu {
+        max-width: 190px; opacity: 1; visibility: visible; pointer-events: auto;
+      }
+      .docked.is-pinned .kairos-island-panel { display: block; }
+      .kairos-island-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .kairos-island-pin-toggle {
+        border: 1px solid #ffffff24; border-radius: 16px; padding: 0 8px; height: 32px; white-space: nowrap; flex-shrink: 0;
+        background: #ffffff0d; color: #d6e7f3; font: 11px/1.4 system-ui; cursor: pointer;
+      }
+      .kairos-island-pin-toggle[aria-pressed=true] { color: #bcf0ff; background: #77d6ff26; border-color: #a0e2ff66; }
+      .kairos-island-panel .kairos-timeline-container { height: 24px; }
+      .kairos-island-panel .kairos-timeline-rail { height: 3px; background: #ffffff26; }
+      .kairos-island-panel .kairos-pin { display: none; }
+      .kairos-island-moments {
+        display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin;
+        padding: 1px 0 9px; margin-bottom: 4px; overscroll-behavior: contain;
+      }
+      .kairos-island-moment {
+        flex: 0 0 auto; padding: 6px 9px; border-radius: 8px;
+        background: #a6dbf112; color: #d4f2ff; border: 1px solid #afe0f744;
+        font: 11px/1.4 system-ui; font-variant-numeric: tabular-nums; cursor: pointer;
+      }
+      .kairos-island-moment:hover { background: #a6dbf133; border-color: #afe0f7aa; }
+      .kairos-island-note-row { position: relative; padding-left: 12px; }
+      .kairos-island-note-row.is-current { background: linear-gradient(90deg, #ffffff09, transparent); }
+      .kairos-island-note-row.is-current::before {
+        content: ''; position: absolute; left: 1px; top: calc(50% - 3px);
+        width: 0; height: 0; border-top: 3px solid transparent;
+        border-bottom: 3px solid transparent; border-left: 4px solid #fff;
+      }
+      .kairos-island-note-row.is-current .kairos-island-note span:first-child { color: #fff; font-weight: 600; }
+      .kairos-island-note-row.is-current .kairos-island-note span:last-child { color: #fff; }
+      .kairos-island-moment { position: relative; border-color: transparent; background: transparent; color: #d3dce4; }
+      .kairos-island-moment.is-current { color: #fff; border-color: transparent; background: #ffffff0a; }
+      .kairos-island-moment.is-current::after {
+        content: ''; position: absolute; bottom: 1px; left: 25%; right: 25%;
+        height: 1px; background: #ffffffd9;
+      }
+      .kairos-island-panel, .kairos-island-notes, .kairos-island-moments {
+        scrollbar-color: rgba(192,220,240,.35) transparent; color-scheme: dark;
+      }
+      .kairos-island-moment:focus-visible, .kairos-island-pin-toggle:focus-visible { outline: 2px solid #bceeff; outline-offset: -2px; }
+      @media (prefers-reduced-motion: reduce) {
+        .docked .kairos-orb, .docked .kairos-orb .kairos-orb-menu { transition: none; }
       }
     `;
   }

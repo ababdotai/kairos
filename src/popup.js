@@ -1,4 +1,9 @@
+import './content/i18n.js';
+const { t, localize } = window.Kairos.I18n;
 document.addEventListener('DOMContentLoaded', async () => {
+  await window.Kairos.I18n.init();
+  document.documentElement.lang = window.Kairos.I18n.locale;
+  localize();
   const currentVideoSection = document.getElementById('current-video-section');
   const noVideoState = document.getElementById('no-video-state');
   const emptyStateTitle = document.getElementById('empty-state-title');
@@ -27,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (!tab || (!tab.url.includes('youtube.com') && !tab.url.includes('bilibili.com'))) {
-    showEmptyState('Not a Video Page', 'Please navigate to YouTube or Bilibili to use Kairos.');
+    showEmptyState(t("Not a Video Page"), t("Please navigate to YouTube or Bilibili to use Kairos."));
     return;
   }
 
@@ -46,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (!videoId) {
-    showEmptyState('No Video Found', 'We couldn\'t detect a video on this page. Try refreshing.');
+    showEmptyState(t("No Video Found"), t("We couldn't detect a video on this page. Try refreshing."));
     return;
   }
 
@@ -61,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Use tab title as fallback if no notes yet
       videoTitleEl.textContent = (notes.length > 0 && notes[0].videoTitle) ? notes[0].videoTitle : tab.title;
-      noteCountEl.textContent = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
+      noteCountEl.textContent = t("{count} notes", { count: notes.length });
 
       if (notes.length > 0) {
         exportBtn.disabled = false;
@@ -72,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } else {
       console.error('Failed to fetch notes:', response ? response.error : 'Unknown');
-      showEmptyState('Connection Error', 'Could not retrieve notes. Please try refreshing the page.');
+      showEmptyState(t("Connection Error"), t("Could not retrieve notes. Please try refreshing the page."));
     }
   });
 

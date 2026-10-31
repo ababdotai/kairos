@@ -1032,6 +1032,21 @@
         #kairos-sidepanel .kairos-sp-help-img { flex: 0 0 16px; margin-top: 2px; }
         #kairos-sidepanel .kairos-sp-help-text { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 7px; min-width: 0; color: #b5c1ce; }
         #kairos-sidepanel .kairos-sp-help kbd { font: 11px/1.5 system-ui; color: #e0e8f1; padding: 1px 5px; border: 1px solid #ffffff26; background: #ffffff06; border-radius: 4px; overflow-wrap: anywhere; }
+        @media (prefers-color-scheme: light) {
+          #kairos-sidepanel { color-scheme: light; --kairos-sp-text: #25394b; --kairos-sp-text-muted: #60758a; --kairos-sp-border: #405d7926; --kairos-sp-item-bg: #ffffff60; --kairos-sp-header-bg: #ffffff40; }
+          #kairos-sidepanel .kairos-sp-card { background: linear-gradient(145deg, #ffffffb3, #ffffff70), rgba(231,240,248,.88); border-color: #45647c38; box-shadow: inset 0 1px #fff, 0 8px 24px #29496220; }
+          #kairos-sidepanel .kairos-sp-title { color: #25394b; }
+          #kairos-sidepanel .kairos-sp-tagline, #kairos-sidepanel .kairos-sp-note-time { color: #4c6d85; }
+          #kairos-sidepanel .kairos-sp-subtitle-badge, #kairos-sidepanel .kairos-sp-count-badge { color: #41647d; background: #496f8a0a; border-color: #496f8a25; }
+          #kairos-sidepanel .kairos-sp-subtitle-badge.active { color: #24754c; }
+          #kairos-sidepanel .kairos-sp-note-item { border-color: #496f8a20; }
+          #kairos-sidepanel .kairos-sp-note-item:hover .kairos-sp-note-body { background: #496f8a08; }
+          #kairos-sidepanel .kairos-sp-note-item.active .kairos-sp-note-body { background: linear-gradient(90deg, #496f8a0c, transparent); }
+          #kairos-sidepanel .kairos-sp-note-item.active::after { border-left-color: #234e6b; }
+          #kairos-sidepanel .active .kairos-sp-note-time { color: #234e6b; }
+          #kairos-sidepanel .kairos-badge.mini, #kairos-sidepanel .kairos-sp-help-title, #kairos-sidepanel .kairos-sp-help-text { color: #60758a; }
+          #kairos-sidepanel .kairos-sp-help kbd { color: #354e64; border-color: #496f8a2b; background: #ffffff60; }
+        }
       `;
       document.head.appendChild(style);
     }

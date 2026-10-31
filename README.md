@@ -29,6 +29,7 @@ Kairos is a **Proactive + Reactive** agent:
 
 ## Current companion experience
 
+- **Summarize & share** in the note dashboard turns a video’s saved text notes and transcript context into an editable AI summary with timestamps. Copy it with its source link or download Markdown. Summaries stay in local extension storage; screenshot images are not sent for this operation. Preview and download a locally rendered PNG share image with the video title, takeaways, source and Kairos branding. Images are 1080px wide and grow with the edited text.
 - Enable Kairos in the video’s glass island, then type to take a note or left-drag to capture a rectangular region. Player controls remain accessible. Empty captures are discarded; successfully saving a note resumes playback.
 - Hover over the island to expand it, or use **Expand** to keep it open. Drag to reposition it and resize from its edges; position and size preferences carry across videos. Notes are available in the island and in the windowed sidebar.
 - The timeline uses a triangular playhead and small glowing note markers. Dense markers form a subtle wave; clicking still seeks to the note’s exact timestamp.

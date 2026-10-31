@@ -690,14 +690,141 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Compact reading layout: personal notes first, screenshots as evidence. */
+        .note-actions { flex-wrap: wrap; gap: 8px; }
+        .note-header { margin-bottom: 16px; }
+        .timeline { padding-left: 14px; }
+        .note-entry { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); }
+        .note-entry::before { left: -14px; bottom: -14px; }
+        .timestamp-dot { left: -14px; width: 6px; height: 6px; top: 7px; border-width: 1px; }
+        .note-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 300px); gap: 20px; align-items: start; }
+        .note-body:not(:has(.extras-grid)) { grid-template-columns: 1fr; }
+        .note-body .content { min-width: 0; font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; white-space: normal; }
+        .note-body.user-note > .content { font-size: 18px; font-weight: 550; }
+        .note-body .content > :first-child { margin-top: 0; }
+        .note-body .content > :last-child { margin-bottom: 0; }
+        .extras-grid { display: flex; flex-direction: column; gap: 10px; margin: 0; min-width: 0; }
+        .extra-item { padding: 0; background: transparent; border: 0; min-width: 0; }
+        .extra-header { color: var(--text-dim); font-size: 10px; margin-bottom: 6px; letter-spacing: .04em; }
+        .note-screenshot-container { width: fit-content; max-width: 100%; justify-content: flex-start; }
+        .note-screenshot { display: block; width: auto; height: auto; max-width: 100%; max-height: 180px; border-radius: 8px; cursor: zoom-in; }
+        .note-context-text { font: 12px/1.6 system-ui; padding: 0; max-height: 140px; overflow: auto; }
+        .summary-panel { padding: 20px; margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: 14px; background: var(--extra-bg); }
+        .summary-panel[hidden] { display: none; }
+        .summary-heading { display: flex; align-items: center; justify-content: space-between; }
+        .summary-hint, .summary-status { font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+        .summary-editor { display: block; box-sizing: border-box; width: 100%; min-height: 260px; resize: vertical; padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg); color: var(--text); font: 15px/1.7 system-ui; }
+        .action-btn:disabled { opacity: .5; cursor: wait; }
+        .snapshot-dialog { max-width: 90vw; max-height: 90vh; padding: 12px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg); color: var(--text); }
+        .snapshot-dialog::backdrop { background: #000a; }
+        .snapshot-dialog img { display: block; max-width: 85vw; max-height: 75vh; object-fit: contain; }
+        @media (max-width: 850px) { .note-body { grid-template-columns: 1fr; gap: 10px; } .extras-grid { max-width: 360px; } }
+
+        /* Glass workspace: the same quiet material as the in-video island. */
+        :root {
+            color-scheme: dark;
+            --bg: #11161d; --sidebar-bg: #171e27cc; --card-bg: #ffffff04;
+            --accent: #b9dce9; --text: #edf2f7; --text-dim: #9eacbc;
+            --border-color: #d2e5fa1c; --hover-bg: #ffffff09; --active-bg: #c0dfef12;
+            --extra-bg: #ffffff04; --extra-text: #bac6d2; --input-bg: #10161c80;
+            --input-border: #d2e5fa25; --scrollbar-thumb: #bdcfdf35;
+        }
+        body { background: radial-gradient(ellipse at 85% 0%, #34465950, transparent 55%), radial-gradient(ellipse at 0% 100%, #34314735, transparent 55%), #11161d; }
+        .sidebar { width: 300px; flex-shrink: 0; background: var(--sidebar-bg); backdrop-filter: blur(24px) saturate(125%); }
+        .header { min-height: 76px; padding: 18px 24px; box-sizing: border-box; }
+        .header .logo { width: 32px; height: 32px; }
+        .header h1 { letter-spacing: .02em; }
+        .video-list { padding: 14px; }
+        .video-item { border-radius: 18px; padding: 16px; background: linear-gradient(135deg, #ffffff07, #ffffff02); border: 1px solid #ffffff0a; box-shadow: none; }
+        .video-item:hover { background: #ffffff09; border-color: #ffffff22; transform: none; }
+        .video-item.active { background: linear-gradient(135deg, #c8e7f015, #bac5e007); border-color: #c9e6f05c; box-shadow: inset 0 1px #ffffff14; }
+        .video-item-title { font-weight: 500; line-height: 1.6; }
+        .video-item-meta { color: var(--text-dim); }
+        .nav-tabs { padding: 12px 14px; }
+        .nav-item { border-radius: 12px; }
+        .nav-item.active { background: #d1e7f010; color: #e2f3fc; }
+        .note-title { font-size: clamp(24px, 2.3vw, 34px); line-height: 1.4; letter-spacing: -.025em; font-weight: 600; }
+        .note-header { padding: 8px 0 24px; margin-bottom: 24px; }
+        .action-btn { border: 1px solid #ffffff20; background: #ffffff07; border-radius: 999px; padding: 9px 17px; color: #d9e5ee; font-weight: 500; }
+        .action-btn:hover { background: #ffffff12; border-color: #ffffff40; }
+        .action-btn.primary { background: linear-gradient(135deg, #d0e8f1, #a8c4d8); color: #15232f; border-color: #e9f6ff80; box-shadow: inset 0 1px #ffffff80, 0 3px 12px #0002; }
+        .summary-panel { background: linear-gradient(135deg, #ddefff0a, #ffffff03); border: 1px solid #d6eafb2a; border-radius: 24px; padding: 24px; box-shadow: inset 0 1px #ffffff14, 0 12px 40px #0002; backdrop-filter: blur(20px); }
+        .summary-heading strong { font-size: 18px; font-weight: 550; }
+        .summary-hint { max-width: 760px; margin: 12px 0; }
+        .summary-editor { border-radius: 16px; padding: 20px; background: #0d141b55; border-color: #ffffff14; min-height: 220px; }
+        .summary-editor:focus { outline: 1px solid #bddfed70; }
+        .summary-status { min-height: 20px; }
+        .timeline { padding-left: 18px; }
+        .note-entry { border-bottom: 0; padding: 18px 20px; margin: 0 0 12px; border-radius: 18px; background: linear-gradient(110deg, #ffffff05, transparent); }
+        .note-entry::before { left: -12px; bottom: -12px; background: #d2e5fa20; }
+        .timestamp-dot { left: -12px; top: 27px; background: #b9dce9; border: 0; width: 5px; height: 5px; box-shadow: 0 0 7px #b9dce940; }
+        .note-entry:first-child::before { top: 28px; }
+        .note-header-row { margin-bottom: 12px; }
+        .timestamp { color: #adc4d5; font-size: 12px; }
+        .note-badge.user { color: #afbccb; background: #ffffff06; border-color: #ffffff10; }
+        .note-body.user-note > .content { font-weight: 500; }
+        .note-screenshot { border: 1px solid #ffffff18; }
+        .settings-section { border-radius: 20px; background: #ffffff04; }
+        .main { min-width: 0; }
+        .summary-editor[hidden], .summary-reading[hidden] { display: none; }
+        .summary-reading { max-height: 440px; overflow: auto; padding: 6px 4px 12px; font-size: 15px; line-height: 1.85; color: #d5dfe9; overflow-wrap: anywhere; }
+        .summary-reading h1, .summary-reading h2, .summary-reading h3 { color: #edf4fa; font-size: 17px; font-weight: 550; margin: 22px 0 10px; }
+        .summary-reading > :first-child { margin-top: 0; }
+        .summary-reading li { margin: 8px 0; }
+        .summary-reading li::marker { color: #aac8db; }
+        .share-image-dialog { width: min(820px, 92vw); max-width: 92vw; height: 88vh; max-height: 88vh; padding: 0; border: 1px solid #cce6fa45; border-radius: 24px; background: #19212bed; color: #edf2f7; box-shadow: 0 24px 100px #0008; backdrop-filter: blur(24px); overflow: hidden; }
+        .share-image-dialog::backdrop { background: #070d16b3; backdrop-filter: blur(8px); }
+        .share-image-toolbar { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #ffffff17; }
+        .share-image-toolbar strong { margin-right: auto; font-size: 15px; }
+        .share-image-scroll { height: calc(100% - 73px); overflow: auto; padding: 24px; box-sizing: border-box; background: #0a101840; }
+        .share-image-scroll img { display: block; width: 100%; max-width: 540px; height: auto; margin: auto; box-shadow: 0 12px 40px #0005; border-radius: 14px; }
+        @media (max-width: 900px) { .sidebar { width: 240px; } .summary-panel { padding: 18px; } }
+        @media (max-width: 650px) { .sidebar { width: 180px; } .share-image-toolbar { flex-wrap: wrap; } .share-image-toolbar strong { width: 100%; } .share-image-scroll { height: calc(100% - 110px); padding: 12px; } }
+        .brand-home { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; border: 0; background: none; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+        .brand-home .logo { margin-right: 0; flex-shrink: 0; }
+        .brand-name { font-size: 20px; font-weight: 650; letter-spacing: .02em; }
+        .brand-tagline { font-size: 11px; line-height: 1.5; color: var(--text-dim); }
+        .brand-home:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 8px; }
+        .welcome-tagline { margin-top: 18px; color: var(--text); font-size: 22px; letter-spacing: .06em; text-align: center; }
+        @media (max-width: 900px) { .brand-home { flex-wrap: wrap; } .brand-tagline { flex-basis: 100%; } }
+        @media (prefers-color-scheme: light) {
+            :root { color-scheme: light; --bg: #f3f6fa; --sidebar-bg: #ffffffb8; --card-bg: #ffffff80; --accent: #315f7c; --text: #202f3f; --text-dim: #627286; --border-color: #344f6b22; --hover-bg: #2546630a; --active-bg: #476c8f12; --extra-bg: #ffffff70; --extra-text: #4b6174; --input-bg: #ffffffa8; --input-border: #38556e30; --scrollbar-thumb: #536e8740; }
+            body { background: radial-gradient(ellipse at 85% 0%, #c4dcea70, transparent 55%), radial-gradient(ellipse at 0% 100%, #ded9ee60, transparent 55%), #f3f6fa; }
+            .video-item { background: linear-gradient(135deg, #ffffffa8, #ffffff50); border-color: #435e7517; }
+            .video-item:hover { background: #ffffffbf; border-color: #435e7538; }
+            .video-item.active { background: linear-gradient(135deg, #e0ecf6d9, #ffffff8c); border-color: #66889c70; }
+            .nav-item.active { background: #365a7510; color: #244a66; }
+            .action-btn { background: #ffffff70; border-color: #3b577b2b; color: #304a60; }
+            .action-btn:hover { background: #ffffffd9; border-color: #3b577b55; }
+            .action-btn.primary { background: linear-gradient(135deg, #d5e8f2, #b7d2e5); color: #173c55; border-color: #6a91ac45; box-shadow: inset 0 1px #fff9, 0 3px 12px #2646630c; }
+            .summary-panel { background: linear-gradient(135deg, #ffffffc9, #ffffff80); border-color: #3a567529; box-shadow: inset 0 1px #fff, 0 12px 40px #29455e09; }
+            .summary-editor { background: #ffffff90; color: var(--text); border-color: #3b577b26; }
+            .summary-reading { color: #354b60; }
+            .summary-reading h1, .summary-reading h2, .summary-reading h3 { color: #213d54; }
+            .summary-reading li::marker { color: #527b96; }
+            .note-entry { background: linear-gradient(110deg, #ffffffa8, #ffffff30); }
+            .note-entry::before { background: #3b577b25; }
+            .timestamp-dot { background: #547f99; box-shadow: 0 0 7px #547f9920; }
+            .timestamp { color: #456a83; }
+            .note-badge.user { color: #53677a; background: #314b6408; border-color: #314b641c; }
+            .note-screenshot { border-color: #314b6426; }
+            .settings-section { background: #ffffff80; }
+            .share-image-dialog { background: #f0f5faed; color: #243a50; border-color: #3b577b40; }
+            .share-image-toolbar { border-color: #3b577b25; }
+            .share-image-scroll { background: #4c6a8410; }
+        }
     </style>
 </head>
 
 <body>
     <div class="sidebar">
         <div class="header">
-            <img class="logo" src="/icons/on_left.png" alt="Kairos">
-            <h1>Kairos</h1>
+            <button class="brand-home" id="brandHome" data-i18n-aria-label="Back to welcome" aria-label="Back to welcome">
+                <img class="logo" src="/icons/on_left.png" alt="">
+                <span class="brand-name">Kairos</span>
+                <span class="brand-tagline" data-i18n="Watch together. Remember more.">Watch together. Remember more.</span>
+            </button>
         </div>
 
         <!-- Navigation Tabs -->
@@ -724,6 +851,7 @@
             <div class="empty-state">
                 <div class="welcome-text"><span data-i18n="Welcome to Kairos">Welcome to Kairos</span></div>
                 <img src="/icons/icon.png" class="welcome-logo" alt="Kairos">
+                <div class="welcome-tagline" data-i18n="Watch together. Remember more.">Watch together. Remember more.</div>
                 <div class="center-content">
                     <div class="quote-text">
                         <div><span data-i18n="I hear and I forget.">I hear and I forget.</span></div>

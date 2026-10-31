@@ -1,6 +1,7 @@
 import './content/i18n.js';
 const { t, localize } = window.Kairos.I18n;
 import './content/markdown.js';
+import { mountSummary } from './dashboard-summary.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await window.Kairos.I18n.init();
@@ -8,6 +9,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   localize();
     const videoListEl = document.getElementById('videoList');
     const libraryViewEl = document.getElementById('libraryView');
+    const welcomeMarkup = libraryViewEl.innerHTML;
+    document.getElementById('brandHome').addEventListener('click', () => {
+        switchTab('library');
+        libraryViewEl.innerHTML = welcomeMarkup;
+        localize(libraryViewEl);
+        videoListEl.querySelectorAll('.video-item.active').forEach(item => item.classList.remove('active'));
+        document.getElementById('mainContent').scrollTop = 0;
+    });
     const settingsViewEl = document.getElementById('settingsView');
     const navItems = document.querySelectorAll('.nav-item');
     const apiKeyInput = document.getElementById('apiKeyInput');
@@ -357,10 +366,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="note-title">${video.title}</div>
                 <div class="note-actions">
-                    <button class="action-btn primary" id="btnExport">${t("Export Markdown")}</button>
+                    <button class="action-btn primary" id="btnSummary">${t('Summarize & share')}</button>
+                    <button class="action-btn" id="btnExport">${t("Export Markdown")}</button>
                     <button class="action-btn" id="btnDelete" style="color: #ff4d4d;">${t("Delete All")}</button>
                 </div>
             </div>
+            <section class="summary-panel" hidden></section>
             <div class="timeline">
                 ${video.notes.map(note => `
                     <div class="note-entry" id="note-${note.id}">
@@ -377,15 +388,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                              </button>
                         </div>
 
-                        <div class="content">${Kairos.SimpleMarkdown.parse(note.content)}</div>
-                        ${renderExtras(note)}
+                        <div class="note-body ${note.source === 'ai' ? 'ai-note' : 'user-note'}">
+                            <div class="content">${Kairos.SimpleMarkdown.parse(note.content || t('Screenshot'))}</div>
+                            ${renderExtras(note)}
+                        </div>
                     </div>
                 `).join('')}
             </div>
         `;
 
         document.getElementById('btnExport').onclick = () => exportMarkdown(video);
+        const summaryPanel = libraryViewEl.querySelector('.summary-panel');
+        document.getElementById('btnSummary').onclick = () => {
+            summaryPanel.hidden = false;
+            if (!summaryPanel.dataset.initialized) {
+                summaryPanel.dataset.initialized = 'true';
+                mountSummary(summaryPanel, video);
+            }
+        };
         document.getElementById('btnDelete').onclick = () => deleteVideoNotes(video.videoId, video.notes);
+        libraryViewEl.querySelectorAll('.note-screenshot').forEach(image => {
+            image.tabIndex = 0;
+            image.setAttribute('role', 'button');
+            const open = () => {
+                const dialog = document.createElement('dialog');
+                dialog.className = 'snapshot-dialog';
+                const close = document.createElement('button');
+                close.className = 'action-btn'; close.textContent = t('Close');
+                close.onclick = () => dialog.close();
+                dialog.append(close, image.cloneNode());
+                dialog.addEventListener('close', () => dialog.remove());
+                document.body.append(dialog); dialog.showModal();
+            };
+            image.onclick = open;
+            image.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } };
+        });
 
         // Bind Copy Buttons
         document.querySelectorAll('.btn-copy-note').forEach(btn => {

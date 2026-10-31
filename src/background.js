@@ -1,5 +1,6 @@
 import { GoogleGenAI, ThinkingLevel, VideoMetadata } from '@google/genai';
 import OpenAI from 'openai';
+import { summaryPrompt, summaryFingerprint } from './note-summary.js';
 
 /**
  * Background Service Worker
@@ -83,6 +84,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       let response;
       switch (message.type) {
+        case 'SUMMARIZE_VIDEO_NOTES':
+          response = await summarizeVideoNotes(message.payload);
+          break;
         case 'SAVE_NOTE':
           response = await saveNote(message.payload);
           break;
@@ -430,4 +434,34 @@ async function callGeminiForHUD(payload) {
     console.error('HUD Script Generation Error:', e);
     return [];
   }
+}
+
+/** Summarize only this video's persisted notes, using the configured provider. */
+async function summarizeVideoNotes({ videoId, language } = {}) {
+  if (!videoId || typeof videoId !== 'string') throw new Error('Invalid video ID');
+  const notes = await getNotes(videoId);
+  if (!notes.length) throw new Error('No saved notes to summarize.');
+  const settings = await chrome.storage.sync.get(['aiProvider', 'aiModel', 'googleApiKey', 'geminiApiKey', 'moonshotApiKey', 'noteLanguage']);
+  const prompt = summaryPrompt(notes[0].videoTitle || '', notes, settings.noteLanguage && settings.noteLanguage !== 'auto' ? settings.noteLanguage : language);
+  let text;
+  if ((settings.aiProvider || 'google') === 'google') {
+    const apiKey = settings.googleApiKey || settings.geminiApiKey;
+    if (!apiKey) throw new Error('Configure your Google API key in Settings.');
+    const ai = new GoogleGenAI({ apiKey });
+    const result = await ai.models.generateContent({
+      model: settings.aiModel?.startsWith('gemini') ? settings.aiModel : 'gemini-3-flash-preview',
+      contents: prompt, config: { maxOutputTokens: 4096 }
+    });
+    text = result.text;
+  } else if (settings.aiProvider === 'moonshot') {
+    if (!settings.moonshotApiKey) throw new Error('Configure your Moonshot API key in Settings.');
+    const client = new OpenAI({ apiKey: settings.moonshotApiKey, baseURL: 'https://api.moonshot.cn/v1', dangerouslyAllowBrowser: true });
+    const result = await client.chat.completions.create({
+      model: settings.aiModel?.startsWith('kimi') ? settings.aiModel : 'kimi-k2.5',
+      messages: [{ role: 'user', content: prompt }], max_tokens: 4096
+    });
+    text = result.choices?.[0]?.message?.content;
+  } else throw new Error('Unsupported AI provider.');
+  if (!text?.trim()) throw new Error('The AI returned an empty summary. Please retry.');
+  return { text: text.trim(), fingerprint: summaryFingerprint(notes) };
 }

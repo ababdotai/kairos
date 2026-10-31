@@ -1253,6 +1253,43 @@
       .kairos-note-wrapper .kairos-note-preview h2,
       .kairos-note-wrapper .kairos-note-preview h3 { color: #fff; }
       .kairos-overlay:has(.kairos-note-wrapper.active) .kairos-spatial-tooltip { display: none; }
+      @media (prefers-color-scheme: light) {
+        .docked .kairos-orb, .docked .kairos-orb.expanded, .docked .kairos-orb:not(.expanded):hover {
+          color: #24384b; background: linear-gradient(145deg, #ffffffb3, #ffffff60), rgba(226,237,247,.72); border-color: #59788e55; text-shadow: none;
+        }
+        .docked .kairos-orb .kairos-orb-btn { background: #ffffff60; color: #304e64; border-color: #496f8a30; text-shadow: none; }
+        .docked .kairos-orb .kairos-orb-btn:hover { background: #ffffffb3; }
+        .kairos-island-brand { text-shadow: none; }
+        .kairos-island-feedback { color: #304e64; }
+        .kairos-feedback-mark { color: #26764d; }
+        .kairos-orb[data-feedback=discarded] .kairos-feedback-mark { color: #62758a; }
+        .kairos-orb[data-feedback=error] .kairos-feedback-mark { color: #a24b31; }
+        .kairos-island-panel { background: linear-gradient(145deg, #ffffffa3, #ffffff60), rgba(228,238,247,.85); color: #25394b; border-color: #59788e45; }
+        .kairos-island-note, .kairos-island-note-row.is-current .kairos-island-note span:last-child { color: #25394b; }
+        .kairos-island-note span:first-child, .kairos-island-time, .kairos-island-library, .kairos-island-empty, .kairos-island-delete { color: #4b6c83; }
+        .kairos-island-note-row { border-color: #496f8a20; }
+        .kairos-island-note:hover, .kairos-island-delete:hover { background: #496f8a0c; }
+        .kairos-island-note-row.is-current { background: linear-gradient(90deg, #496f8a10, transparent); }
+        .kairos-island-note-row.is-current::before { border-left-color: #234e6b; }
+        .kairos-island-note-row.is-current .kairos-island-note span:first-child { color: #234e6b; }
+        .kairos-island-moment { color: #526b7f; }
+        .kairos-island-moment.is-current { color: #234e6b; background: #496f8a10; }
+        .kairos-island-moment.is-current::after { background: #345f7b; }
+        .kairos-island-pin-toggle { background: #ffffff55; color: #41647d; border-color: #496f8a35; }
+        .kairos-island-pin-toggle[aria-pressed=true] { color: #245c7b; background: #638eaa20; border-color: #496f8a66; }
+        .kairos-island-panel .kairos-progress-bar { background: linear-gradient(90deg, #7c9fb6, #466d88) !important; }
+        .kairos-island-panel .kairos-progress-bar::after { border-top-color: #274e69; }
+        .kairos-timeline-note-mark::before { background: #497c9e; box-shadow: 0 0 4px #497c9e60; }
+        .kairos-timeline-note-mark.is-current::before, .kairos-timeline-note-mark:hover::before { background: #244f6c; box-shadow: 0 0 0 1px #497c9e22, 0 0 6px #497c9e80; }
+        .kairos-island-panel, .kairos-island-notes, .kairos-island-moments { color-scheme: light; scrollbar-color: #5b7a9455 transparent; }
+        .kairos-note-wrapper, .kairos-spatial-tooltip { background: rgba(239,246,252,.9); border-color: #496f8a40; color: #25394b; }
+        .kairos-note-wrapper .kairos-note-input, .kairos-note-wrapper .kairos-note-preview { color: #25394b; }
+        .kairos-note-wrapper .kairos-note-input::placeholder { color: #657b8d; }
+        .kairos-note-wrapper .kairos-note-action-btn { background: #496f8a0a; border-color: #496f8a30; color: #355a75; }
+        .kairos-note-wrapper .kairos-note-action-btn:hover { background: #496f8a20; color: #234e6b; }
+        .kairos-note-wrapper .kairos-note-preview strong, .kairos-note-wrapper .kairos-note-preview h1, .kairos-note-wrapper .kairos-note-preview h2, .kairos-note-wrapper .kairos-note-preview h3 { color: #234e6b; }
+        .kairos-island-delete.is-confirming { color: #a23b37; background: #b6373012; }
+      }
       @media (prefers-reduced-motion: reduce) {
         .docked .kairos-orb, .docked .kairos-orb .kairos-orb-menu { transition: none; }
       }

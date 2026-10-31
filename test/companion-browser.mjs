@@ -489,7 +489,19 @@ try {
   await run('sideDelete.click();new Promise(r=>setTimeout(r,250))');
   assert.equal(await run('deletes.length'),2,'Sidebar second click deletes once');
   assert.equal(await run('!!document.fullscreenElement'),true,'Sidebar deletion does not open a native dialog');
+  for (const scheme of ['light', 'dark', 'light']) {
+    await call('Emulation.setEmulatedMedia', { features: [{name:'prefers-color-scheme',value:scheme}] });
+    assert.equal(await run('getComputedStyle(o.islandList.parentElement).colorScheme'),scheme,'Island follows live system theme');
+    assert.equal(await run('getComputedStyle(side.container).colorScheme'),scheme,'Sidebar follows live system theme');
+    assert.equal(await run('getComputedStyle(o.noteInput).color'),scheme==='light'?'rgb(37, 57, 75)':'rgb(238, 243, 248)','Editor text stays legible in both themes');
+  }
   await run('o.destroy()');
+  const popupHtml = (await readFile(new URL('../src/popup.html', import.meta.url), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
+  await run(`document.documentElement.innerHTML=${JSON.stringify(popupHtml)}`);
+  for (const scheme of ['light', 'dark']) {
+    await call('Emulation.setEmulatedMedia', { features: [{name:'prefers-color-scheme',value:scheme}] });
+    assert.equal(await run('getComputedStyle(document.documentElement).colorScheme'),scheme,'Popup follows live system theme');
+  }
   const dashboardHtml = (await readFile(new URL('../src/dashboard.html', import.meta.url), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   await run(`document.documentElement.innerHTML=${JSON.stringify(dashboardHtml)};chrome.storage.sync.get=(keys,cb)=>cb?queueMicrotask(()=>cb({noteLanguage:'ja',googleApiKey:'AIza-test'})):Promise.resolve({});chrome.storage.sync.set=async(values,cb)=>{window.savedSettings=values;cb?.()};chrome.runtime.sendMessage=(msg,cb)=>cb?.({success:true,data:[]})`);
   const dashboardScript = (await readFile(new URL('../src/dashboard.js', import.meta.url), 'utf8')).replace(/^import .*;\s*$/gm, '');

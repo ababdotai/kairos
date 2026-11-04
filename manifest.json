@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kairos - Your AI Video Note-Taking Companion",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Watch with AI. You choose what matters; Kairos helps you take notes from frames and subtitles on YouTube & Bilibili.",
   "permissions": [
     "storage"

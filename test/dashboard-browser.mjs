@@ -51,9 +51,9 @@ try {
     const canvas=document.createElement('canvas');canvas.width=480;canvas.height=320;
     const c=canvas.getContext('2d');c.fillStyle='#476c79';c.fillRect(0,0,480,320);c.fillStyle='#fff';c.font='24px sans-serif';c.fillText('Video snapshot',40,160);
     window.notes=[{id:'one',videoId:'a',videoTitle:'学习如何做出更好的决定',videoUrl:'https://example.com/video',timestamp:92,timeLabel:'01:32',content:'不要只看结果，还要看当时的信息与选择。',source:'user',imageUrl:canvas.toDataURL(),createdAt:1},{id:'two',videoId:'a',videoTitle:'学习如何做出更好的决定',videoUrl:'https://example.com/video',timestamp:119,timeLabel:'01:59',content:'先记录判断依据，再回头检查。',source:'user',createdAt:1},{id:'three',videoId:'b',videoTitle:'Second video',timestamp:0,timeLabel:'00:00',content:'Other video',createdAt:0}];
-    window.chrome={storage:{sync:{get:async(keys,cb)=>{const result={uiLanguage:'zh'};if(cb)setTimeout(()=>cb(result),0);return result;},set:async()=>{}},local:{get:async k=>({[k]:cache[k]}),set:async v=>Object.assign(cache,v)}},runtime:{sendMessage:async(msg,cb)=>{requests.push(msg);if(cb){setTimeout(()=>cb({success:true,data:notes}),0);return;}if(failSummary)return {success:false,error:'Test provider unavailable'};return {success:true,data:{text:'## 我的观看收获\\n\\n- [01:32] 判断过程和结果同样重要。\\n- [01:59] 记录依据，留待复盘。',fingerprint:summaryFingerprint(notes.filter(n=>n.videoId===msg.payload.videoId))}};}}};
+    window.chrome={storage:{sync:{get:async(keys,cb)=>{const result={uiLanguage:'zh',providerModels:{openai:'gpt-5.4-nano'}};if(cb)setTimeout(()=>cb(result),0);return result;},set:async()=>{}},local:{get:async k=>({[k]:cache[k]}),set:async v=>Object.assign(cache,v)}},runtime:{sendMessage:async(msg,cb)=>{requests.push(msg);if(cb){setTimeout(()=>cb({success:true,data:notes}),0);return;}if(failSummary)return {success:false,error:'Test provider unavailable'};return {success:true,data:{text:'## 我的观看收获\\n\\n- [01:32] 判断过程和结果同样重要。\\n- [01:59] 记录依据，留待复盘。',fingerprint:summaryFingerprint(notes.filter(n=>n.videoId===msg.payload.videoId))}};}}};
     Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copied=text;}}});`);
-  for (const file of ['src/content/i18n.js','src/content/markdown.js','src/note-summary.js','src/share-image.js','src/dashboard-summary.js','src/dashboard.js']) {
+  for (const file of ['src/provider-icons.js','src/ai-providers.js','src/content/i18n.js','src/content/markdown.js','src/note-summary.js','src/share-image.js','src/dashboard-summary.js','src/dashboard.js']) {
     let code = await readFile(new URL('../'+file,import.meta.url),'utf8');
     code=code.replace(/^import .*;\s*$/gm,'').replace(/^export /gm,'');
     await run(code);
@@ -67,7 +67,18 @@ try {
   assert.equal(await run('document.querySelector(".note-screenshot-container").getBoundingClientRect().width<=300'),true,'Screenshot no longer spans the full page with empty sidebars');
   await run('document.querySelector(".note-screenshot").click()');
   assert.equal(await run('document.querySelector("dialog").open'),true,'Screenshot can be enlarged');
-  await run('document.querySelector("dialog").close();document.querySelector("#btnSummary").click();new Promise(r=>setTimeout(r,100))');
+  assert.equal(await run('(()=>{const dialog=document.querySelector(".snapshot-dialog").getBoundingClientRect(),button=document.querySelector(".snapshot-close").getBoundingClientRect();return button.left>dialog.left+dialog.width/2&&button.top<dialog.top+30})()'),true,'Close button sits in the upper right');
+  assert.equal(await run('getComputedStyle(document.querySelector(".snapshot-dialog img")).cursor'),'zoom-out');
+  await run('document.querySelector(".snapshot-dialog img").click();document.querySelector(".snapshot-dialog img").click();new Promise(r=>setTimeout(r,300))');
+  assert.equal(await run('document.querySelector(".snapshot-dialog")'),null,'Clicking the expanded image shrinks it back, including during the opening animation');
+  assert.equal(await run('document.activeElement.classList.contains("note-screenshot")'),true,'Closing restores thumbnail focus');
+  await run('document.querySelector(".note-screenshot").click();document.querySelector(".snapshot-close").click();new Promise(r=>setTimeout(r,300))');
+  assert.equal(await run('document.querySelector(".snapshot-dialog")'),null,'Top-right close uses the same animated dismissal');
+  await call('Emulation.setEmulatedMedia', { features: [{name:'prefers-reduced-motion',value:'reduce'}] });
+  await run('document.querySelector(".note-screenshot").click();document.querySelector(".snapshot-dialog").dispatchEvent(new Event("cancel",{cancelable:true}));new Promise(r=>setTimeout(r,20))');
+  assert.equal(await run('document.querySelector(".snapshot-dialog")'),null,'Escape dismissal respects reduced motion');
+  await call('Emulation.setEmulatedMedia', { features: [] });
+  await run('document.querySelector("#btnSummary").click();new Promise(r=>setTimeout(r,100))');
   assert.equal(await run('requests.filter(r=>r.type==="SUMMARIZE_VIDEO_NOTES").length'),1);
   assert.equal(await run('document.querySelector(".summary-editor").value.includes("01:32")'),true);
   assert.equal(await run('document.querySelector(".summary-editor").hidden'),true,'Summary opens as formatted reading view');
@@ -125,6 +136,24 @@ try {
   assert.equal(await run('document.querySelector(".brand-tagline").textContent'),'一起看，随手记');
   await call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
   await writeFile(join(profile,'dashboard-welcome-light.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  await run('document.querySelector(".nav-item[data-tab=settings]").click()');
+  assert.equal(await run('document.querySelectorAll(".provider-card").length'),6);
+  await run(`document.querySelector('input[value="openai"]').click()`);
+  assert.equal(await run('document.querySelector("#modelSelect").value'),'gpt-6-luna','Settings migrates legacy nano consistently with API routing');
+  assert.deepEqual(await run('[...document.querySelector("#modelSelect").options].map(o=>o.value)'),['gpt-6.1-terra','gpt-6-astra','gpt-6.1-sol','gpt-6-luna'],'Settings offers the current OpenAI family');
+
+  await run(`window.savedSettings={};chrome.storage.sync.set=async(updates,cb)=>{Object.assign(savedSettings,updates);cb?.();};
+    document.querySelector('input[value="openai"]').click();document.querySelector('#apiKeyInput').value='sk-openai-test';document.querySelector('#modelSelect').value='gpt-6-astra';
+    document.querySelector('input[value="anthropic"]').click();document.querySelector('#apiKeyInput').value='sk-ant-test';
+    document.querySelector('input[value="openai"]').click();`);
+  assert.equal(await run('document.querySelector("#apiKeyInput").value'),'sk-openai-test');
+  assert.equal(await run('document.querySelector("#modelSelect").value'),'gpt-6-astra');
+  await run('document.querySelector("#saveSettingsBtn").click()');
+  assert.equal(await run('savedSettings.anthropicApiKey'),'sk-ant-test');
+  assert.equal(await run('savedSettings.providerModels.openai'),'gpt-6-astra');
+  await writeFile(join(profile,'providers-light.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'})).data,'base64'));
+  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});
+  await writeFile(join(profile,'providers-dark.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'})).data,'base64'));
   console.log('PASS: dashboard layout, image viewer, summary generation/edit/cache/copy/error/staleness and video isolation');
   console.log('Preview: '+join(profile,'dashboard-summary.png'));
 } finally { socket?.close();chrome.kill(); }

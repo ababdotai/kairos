@@ -716,9 +716,16 @@
         .summary-hint, .summary-status { font-size: 12px; line-height: 1.6; color: var(--text-dim); }
         .summary-editor { display: block; box-sizing: border-box; width: 100%; min-height: 260px; resize: vertical; padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg); color: var(--text); font: 15px/1.7 system-ui; }
         .action-btn:disabled { opacity: .5; cursor: wait; }
-        .snapshot-dialog { max-width: 90vw; max-height: 90vh; padding: 12px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg); color: var(--text); }
-        .snapshot-dialog::backdrop { background: #000a; }
-        .snapshot-dialog img { display: block; max-width: 85vw; max-height: 75vh; object-fit: contain; }
+        .snapshot-dialog { max-width: 90vw; max-height: 90vh; padding: 60px 12px 12px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg); color: var(--text); overflow: visible; }
+        .snapshot-dialog::backdrop { background: #000a; animation: snapshot-backdrop-in 240ms ease both; }
+        .snapshot-dialog img { display: block; max-width: 85vw; max-height: min(75vh, calc(90vh - 74px)); object-fit: contain; cursor: zoom-out; transform-origin: top left; will-change: transform; }
+        .snapshot-dialog .snapshot-close { position: absolute; right: 12px; top: 12px; z-index: 1; }
+        .snapshot-dialog.is-closing { background: transparent; border-color: transparent; transition: background 200ms, border-color 200ms; }
+        .snapshot-dialog.is-closing .snapshot-close { opacity: 0; transition: opacity 120ms; }
+        .snapshot-dialog.is-closing::backdrop { animation: snapshot-backdrop-out 240ms ease both; }
+        @keyframes snapshot-backdrop-in { from { background: #0000; } to { background: #000a; } }
+        @keyframes snapshot-backdrop-out { from { background: #000a; } to { background: #0000; } }
+        @media (prefers-reduced-motion: reduce) { .snapshot-dialog::backdrop, .snapshot-dialog.is-closing::backdrop { animation: none; } }
         @media (max-width: 850px) { .note-body { grid-template-columns: 1fr; gap: 10px; } .extras-grid { max-width: 360px; } }
 
         /* Glass workspace: the same quiet material as the in-video island. */
@@ -814,6 +821,18 @@
             .share-image-toolbar { border-color: #3b577b25; }
             .share-image-scroll { background: #4c6a8410; }
         }
+        .provider-section, #modelConfig { grid-column: 1 / -1; }
+        #providerGroup { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        #providerGroup .provider-card { position: relative; align-items: flex-start; gap: 12px; padding: 20px 16px; border-radius: 18px; transition: background .18s, border-color .18s; }
+        .provider-icon svg { width: 25px; height: 25px; fill: currentColor; }
+        .provider-card input { position: absolute; right: 12px; top: 12px; margin: 0; }
+        .provider-icon { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 11px; font: 600 27px/1 system-ui; color: var(--provider-color); background: color-mix(in srgb, var(--provider-color) 12%, transparent); }
+        .provider-card .radio-title { padding-right: 14px; font-size: 15px; }
+        .provider-card .radio-desc { font-size: 13px; line-height: 1.55; margin-top: 8px; }
+        .provider-intro { color: var(--text-dim); font-size: 14px; line-height: 1.7; margin: 0 0 20px; }
+        #modelConfig select { width: 100%; }
+        @media (max-width: 1100px) { #providerGroup { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 650px) { #providerGroup { grid-template-columns: 1fr; } }
     </style>
 </head>
 
@@ -869,35 +888,15 @@
             </div>
 
             <div class="settings-grid">
-                <div class="settings-section">
+                <div class="settings-section provider-section">
                     <h3><span data-i18n="AI Model Provider">AI Model Provider</span></h3>
-                    <div class="radio-group" id="providerGroup">
-                        <label class="radio-option disabled">
-                            <input type="radio" name="provider" value="kairos" disabled>
-                            <div class="radio-content">
-                                <span class="radio-title"><span data-i18n="Kairos Cloud (Soon)">Kairos Cloud (Soon)</span></span>
-                                <span class="radio-desc"><span data-i18n="Zero-config, cloud sync.">Zero-config, cloud sync.</span></span>
-                            </div>
-                        </label>
-                        <label class="radio-option selected" data-provider="google">
-                            <input type="radio" name="provider" value="google" checked>
-                            <div class="radio-content">
-                                <span class="radio-title">Google Gemini</span>
-                                <span class="radio-desc"><span data-i18n="Multimodal, Flash 2.0/3.0 models.">Multimodal, Flash 2.0/3.0 models.</span></span>
-                            </div>
-                        </label>
-                        <label class="radio-option" data-provider="moonshot">
-                            <input type="radio" name="provider" value="moonshot">
-                            <div class="radio-content">
-                                <span class="radio-title">Moonshot Kimi</span>
-                                <span class="radio-desc"><span data-i18n="Long context, Kimi 2.5 model.">Long context, Kimi 2.5 model.</span></span>
-                            </div>
-                        </label>
-                    </div>
+                    <p class="provider-intro" data-i18n="Choose who helps Kairos read screenshots and organize notes. You only need one account.">Choose who helps Kairos read screenshots and organize notes. You only need one account.</p>
+                    <div class="radio-group" id="providerGroup" role="radiogroup" aria-label="AI provider"></div>
                 </div>
 
                 <div class="settings-section" id="modelConfig">
                     <h3><span data-i18n="Model Configuration">Model Configuration</span></h3>
+                    <p class="provider-intro" data-i18n="All listed models can read screenshots and summarize notes. Start with the first option; choose a more detailed model for complex diagrams.">All listed models can read screenshots and summarize notes. Start with the first option; choose a more detailed model for complex diagrams.</p>
                     
                     <div style="margin-bottom: 16px;">
                         <label style="display:block; color:var(--text-dim); font-size:12px; margin-bottom:6px; text-transform:uppercase; font-weight:600;"><span data-i18n="Selected Model">Selected Model</span></label>
@@ -910,6 +909,7 @@
 
                     <div>
                         <label style="display:block; color:var(--text-dim); font-size:12px; margin-bottom:6px; text-transform:uppercase; font-weight:600;"><span data-i18n="API Key">API Key</span></label>
+                        <p class="provider-intro" data-i18n="An API key connects your AI account to Kairos. Create one using the link below, paste it here, then save. API usage is billed by the provider; a chat subscription may not include it.">An API key connects your AI account to Kairos. Create one using the link below, paste it here, then save. API usage is billed by the provider; a chat subscription may not include it.</p>
                         <p id="apiKeyHelp" style="color: var(--text-dim); font-size: 13px; margin-bottom: 8px; margin-top:0;"><span data-i18n="Get your key from">Get your key from</span> <a href="#" target="_blank" style="color: var(--accent);"><span data-i18n="Provider">Provider</span></a>.
                         </p>
                         <div class="input-group">

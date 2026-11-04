@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="public/icons/icon.png" alt="Kairos Logo" width="128" />
+  <img src="screenshots/marquee.png" alt="Kairos — Watch together. Remember more." width="100%" />
+</p>
+
+<p align="center">
+  <img src="website/public/assets/avatar.gif" alt="Kairos Logo" width="128" />
 </p>
 
 <h1 align="center">Kairos</h1>
@@ -20,12 +24,23 @@
 
 How can watching knowledge-dense videos become more valuable and interactive?
 
-Kairos is a video note-taking agent built on the multimodal understanding capabilities of Gemini 3 Flash (`gemini-3-flash-preview`), currently shipped as a Chrome Extension. While you watch high-information-density videos on Coursera / Udemy / Bilibili / YouTube / TED, Kairos lets you take notes elegantly without breaking your flow. With simple, intuitive interactions combined with intelligent visual understanding and semantic analysis, every vital moment (Kairos) is captured precisely — turning your fragmented video notes into a queryable, indexable knowledge base.
+Kairos is a video note-taking agent built on multimodal AI providers, currently shipped as a Chrome Extension. While you watch high-information-density videos on Coursera / Udemy / Bilibili / YouTube / TED, Kairos lets you take notes elegantly without breaking your flow. With simple, intuitive interactions combined with intelligent visual understanding and semantic analysis, every vital moment (Kairos) is captured precisely — turning your fragmented video notes into a queryable, indexable knowledge base.
 
 Kairos is a **Proactive + Reactive** agent:
 
 - **Proactive**: Kairos watches the video with you and automatically discovers highlights and key points.
 - **Reactive**: You provide the signal; the AI reduces the noise and fills in the fidelity.
+
+### AI providers and models
+
+Settings supports Gemini, OpenAI, Anthropic Claude, DeepSeek, Kimi and OpenRouter, with independent keys and model preferences. Provider cards include brand marks, plain-language setup guidance, Chinese/English localization and system light/dark themes.
+
+Curated on 2026-11-02 for screenshot understanding and note summaries: Gemini 3.1 Flash-Lite / 3.8 Flash; GPT-6.1 Terra / GPT-6 Astra / GPT-6.1 Sol / GPT-6 Luna (OpenAI refreshed 2026-11-04); Claude Haiku / Sonnet 5.5; DeepSeek Flash; Kimi K3.1 Pro / K3; and GPT-5.4 mini / Claude Sonnet 5.5 through OpenRouter. Retired Kimi 2.5 and removed Highspeed settings migrate to K3.1 Pro. OpenAI mini/nano settings migrate to Terra/Luna respectively; existing keys are retained. Experimental video-URL HUD analysis remains Gemini-only.
+
+API billing, regional access and model availability depend on your provider account. Keys use the existing Chrome sync storage. Requests go directly to the chosen provider; OpenRouter forwards requests to its routed upstream provider. Summaries send stored text and subtitle context, not screenshots. Tests cover mocked API contracts and real Chrome settings interactions, not paid end-to-end calls to all providers.
+
+
+Model references: [Gemini](https://ai.google.dev/gemini-api/docs/models), [OpenAI](https://developers.openai.com/api/docs/guides/latest-model), [Claude](https://platform.claude.com/docs/en/models/overview), [DeepSeek](https://api-docs.deepseek.com/guides/vision/), [Kimi](https://platform.kimi.ai/docs/models), [OpenRouter](https://openrouter.ai/api/v1/models).
 
 ## Current companion experience
 
@@ -49,7 +64,7 @@ Kairos redefines how you take notes on videos:
 - **Non-linear knowledge extraction**: turn long videos into a queryable, living database
 - **Zero UI friction**: floating-orb interaction, no sidebar required
 - **Local-first**: your data stays on your device, with deep Obsidian / Notion integration
-- **Multimodal understanding**: Gemini 3 Flash's vision capabilities automatically extract code, formulas, and key concepts
+- **Multimodal understanding**: The selected visual model’s capabilities automatically extract code, formulas, and key concepts
 
 Deep understanding and active learning: not just watching efficiency, but genuine comprehension.
 
@@ -64,7 +79,7 @@ Deep understanding and active learning: not just watching efficiency, but genuin
 ## 🏗️ Tech Stack
 
 - **Build**: Vite + CRXJS Plugin
-- **AI**: Gemini 3 Flash API (multimodal understanding), OpenAI-compatible providers
+- **AI**: Gemini, OpenAI, Claude, DeepSeek, Kimi and OpenRouter (multimodal understanding)
 - **Storage**: IndexedDB (local) + FileSystemAccess API (Obsidian)
 - **Architecture**: Manifest V3, Shadow DOM isolated overlay layer
 
@@ -109,7 +124,7 @@ Load into Chrome:
 
 - **Local-first data**: all notes are stored locally (IndexedDB) by default
 - **Optional sync**: metadata syncs to Obsidian/Notion only with your authorization
-- **Serverless architecture**: no backend — calls the Gemini API directly with your own key (BYOK)
+- **Serverless architecture**: no backend — calls your selected AI provider directly with your own key (BYOK)
 - **Transparent permissions**: only the necessary host permissions, compliant with Chrome Web Store review requirements
 
 ## 📖 References

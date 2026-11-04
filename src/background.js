@@ -1,5 +1,6 @@
-import { GoogleGenAI, ThinkingLevel, VideoMetadata } from '@google/genai';
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
+import { generateAI } from './ai-client.js';
+import { AI_SETTINGS_KEYS, resolveAI } from './ai-providers.js';
 import { summaryPrompt, summaryFingerprint } from './note-summary.js';
 
 /**
@@ -138,33 +139,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function callGeminiAI(payload) {
   const { image, context, videoTitle } = payload;
 
-  // 1. Get Settings
-  const settings = await chrome.storage.sync.get([
-    'aiProvider', 
-    'googleApiKey', 
-    'moonshotApiKey', 
-    'geminiApiKey', // Legacy
-    'aiModel',
-    'noteLanguage'
-  ]);
-
-  const provider = settings.aiProvider || 'google';
-  let apiKey = '';
-  let modelId = settings.aiModel;
-
-  // Resolve Key and Model based on provider
-  if (provider === 'google') {
-      apiKey = settings.googleApiKey || settings.geminiApiKey;
-      if (!modelId || !modelId.startsWith('gemini')) modelId = 'gemini-3-flash-preview';
-  } else if (provider === 'moonshot') {
-      apiKey = settings.moonshotApiKey;
-      if (!modelId || !modelId.startsWith('kimi')) modelId = 'kimi-k2.5';
-  }
-
-  if (!apiKey) {
-    throw new Error(`${provider === 'google' ? 'Google' : 'Moonshot'} API Key not found. Please configure it in Settings.`);
-  }
-
+  const settings = await chrome.storage.sync.get(AI_SETTINGS_KEYS);
   // 2. Prepare language instruction
   const languageMap = {
     'en': 'English',
@@ -198,65 +173,7 @@ async function callGeminiAI(payload) {
 
   const userPrompt = "Generate a structured note for this moment:";
 
-  // 4. Call Provider API
-  try {
-      if (provider === 'google') {
-          const ai = new GoogleGenAI({ apiKey });
-          const base64Data = image.split(',')[1] || image;
-          
-          const response = await ai.models.generateContent({
-              model: modelId,
-              contents: [{
-                  role: 'user',
-                  parts: [
-                      { text: systemPrompt + "\n\n" + userPrompt },
-                      { inlineData: { mimeType: "image/jpeg", data: base64Data } }
-                  ]
-              }],
-              config: {
-                  maxOutputTokens: 2048,
-                  thinkingConfig: {
-                    thinkingLevel: ThinkingLevel.MINIMAL,
-                  }
-              }
-          });
-          return { text: response.text.trim() };
-
-      } else if (provider === 'moonshot') {
-          const client = new OpenAI({
-              apiKey: apiKey,
-              baseURL: "https://api.moonshot.cn/v1",
-              dangerouslyAllowBrowser: true
-          });
-
-          // Ensure full data URI for OpenAI
-          const imageUrl = image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}`;
-
-          const response = await client.chat.completions.create({
-              model: modelId,
-              messages: [
-                  {
-                      role: "system",
-                      content: systemPrompt
-                  },
-                  {
-                      role: "user",
-                      content: [
-                          { type: "text", text: userPrompt },
-                          { type: "image_url", image_url: { url: imageUrl } }
-                      ]
-                  }
-              ],
-              temperature: 0.3, // Kimi likes lower temp for precision
-              max_tokens: 2048, // Explicitly set token limit for Kimi
-          });
-          
-          return { text: response.choices[0].message.content.trim() };
-      }
-  } catch (error) {
-    console.error(`${provider} API Error:`, error);
-    throw new Error(error.message || 'AI Generation failed');
-  }
+  return { text: await generateAI(settings, { prompt: systemPrompt + "\n\n" + userPrompt, image }) };
 }
 
 /**
@@ -267,27 +184,7 @@ async function callGeminiAI(payload) {
 async function callGeminiForSubtitles(payload) {
   const { context, videoTitle } = payload;
 
-  const settings = await chrome.storage.sync.get([
-    'aiProvider', 
-    'googleApiKey', 
-    'moonshotApiKey', 
-    'geminiApiKey',
-    'aiModel'
-  ]);
-
-  const provider = settings.aiProvider || 'google';
-  let apiKey = '';
-  let modelId = settings.aiModel;
-
-  if (provider === 'google') {
-      apiKey = settings.googleApiKey || settings.geminiApiKey;
-      if (!modelId || !modelId.startsWith('gemini')) modelId = 'gemini-3-flash-preview';
-  } else if (provider === 'moonshot') {
-      apiKey = settings.moonshotApiKey;
-      if (!modelId || !modelId.startsWith('kimi')) modelId = 'kimi-k2.5';
-  }
-
-  if (!apiKey) return { isKeyMoment: false };
+  const settings = await chrome.storage.sync.get(AI_SETTINGS_KEYS);
 
   // Prompt Construction
   let prompt = `You are an expert video editor. Analyze the transcript from the video "${videoTitle || 'Unknown'}".
@@ -308,37 +205,8 @@ Return a JSON object with:
 JSON ONLY. No markdown.`;
 
   try {
-      if (provider === 'google') {
-          const ai = new GoogleGenAI({ apiKey });
-          const response = await ai.models.generateContent({
-              model: modelId,
-              contents: [{ role: 'user', parts: [{ text: prompt }] }],
-              config: {
-                  temperature: 0.2,
-                  responseMimeType: "application/json"
-              }
-          });
-          return JSON.parse(response.text);
-
-      } else if (provider === 'moonshot') {
-          const client = new OpenAI({
-              apiKey: apiKey,
-              baseURL: "https://api.moonshot.cn/v1",
-              dangerouslyAllowBrowser: true
-          });
-
-          const response = await client.chat.completions.create({
-              model: modelId,
-              messages: [
-                  { role: "system", content: "You are a helpful assistant designed to output JSON." },
-                  { role: "user", content: prompt }
-              ],
-              temperature: 0.2,
-              response_format: { type: "json_object" }
-          });
-          
-          return JSON.parse(response.choices[0].message.content);
-      }
+    const text = await generateAI(settings, { prompt });
+    return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch (e) {
     console.error('Smart Highlight Error:', e);
     return { isKeyMoment: false };
@@ -353,17 +221,9 @@ JSON ONLY. No markdown.`;
 async function callGeminiForHUD(payload) {
   const { videoUrl, videoTitle } = payload;
 
-  const settings = await chrome.storage.sync.get([
-    'googleApiKey', 
-    'geminiApiKey',
-    'aiModel'
-  ]);
-
-  const apiKey = settings.googleApiKey || settings.geminiApiKey;
-  let modelId = settings.aiModel;
-  
-  if (!apiKey) throw new Error('Google API Key not found.');
-  if (!modelId || !modelId.startsWith('gemini')) modelId = 'gemini-3-flash-preview';
+  const settings = await chrome.storage.sync.get(AI_SETTINGS_KEYS);
+  const { provider, apiKey, model: modelId } = resolveAI(settings);
+  if (provider !== 'google') throw new Error('Video URL analysis requires Google Gemini. Screenshot notes and summaries work with every provider.');
 
   const systemPrompt = `You are a Visual Information Designer. Your task is to transform a video into a "Heads-Up Display" (HUD) visual script.
     
@@ -441,27 +301,8 @@ async function summarizeVideoNotes({ videoId, language } = {}) {
   if (!videoId || typeof videoId !== 'string') throw new Error('Invalid video ID');
   const notes = await getNotes(videoId);
   if (!notes.length) throw new Error('No saved notes to summarize.');
-  const settings = await chrome.storage.sync.get(['aiProvider', 'aiModel', 'googleApiKey', 'geminiApiKey', 'moonshotApiKey', 'noteLanguage']);
+  const settings = await chrome.storage.sync.get(AI_SETTINGS_KEYS);
   const prompt = summaryPrompt(notes[0].videoTitle || '', notes, settings.noteLanguage && settings.noteLanguage !== 'auto' ? settings.noteLanguage : language);
-  let text;
-  if ((settings.aiProvider || 'google') === 'google') {
-    const apiKey = settings.googleApiKey || settings.geminiApiKey;
-    if (!apiKey) throw new Error('Configure your Google API key in Settings.');
-    const ai = new GoogleGenAI({ apiKey });
-    const result = await ai.models.generateContent({
-      model: settings.aiModel?.startsWith('gemini') ? settings.aiModel : 'gemini-3-flash-preview',
-      contents: prompt, config: { maxOutputTokens: 4096 }
-    });
-    text = result.text;
-  } else if (settings.aiProvider === 'moonshot') {
-    if (!settings.moonshotApiKey) throw new Error('Configure your Moonshot API key in Settings.');
-    const client = new OpenAI({ apiKey: settings.moonshotApiKey, baseURL: 'https://api.moonshot.cn/v1', dangerouslyAllowBrowser: true });
-    const result = await client.chat.completions.create({
-      model: settings.aiModel?.startsWith('kimi') ? settings.aiModel : 'kimi-k2.5',
-      messages: [{ role: 'user', content: prompt }], max_tokens: 4096
-    });
-    text = result.choices?.[0]?.message?.content;
-  } else throw new Error('Unsupported AI provider.');
-  if (!text?.trim()) throw new Error('The AI returned an empty summary. Please retry.');
+  const text = await generateAI(settings, { prompt });
   return { text: text.trim(), fingerprint: summaryFingerprint(notes) };
 }

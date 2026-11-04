@@ -1,0 +1,158 @@
+const translations = {
+  "看到这里，记下此刻。": "A moment worth keeping.",
+  "视频、想法和笔记，就在同一个画面里。": "Your video, thoughts, and notes. Together in one view.",
+  "查看完整产品截图": "View the full product screenshot",
+  "真实使用截图 · 点击查看大图": "Actual product screenshot · Click to enlarge",
+  "分享卡片示例 · 用户作品即将开放": "Example card · Community creations coming soon",
+  "跳到正文": "Skip to content",
+  "体验": "Experience",
+  "功能": "Features",
+  "常见问题": "FAQ",
+  "获取 Kairos": "Get Kairos",
+  "你的新视频伙伴": "Your new video companion",
+  "一起看，随手记。": "Watch together. Remember more.",
+  "好想法，不必等视频看完。": "A good thought shouldn't have to wait.",
+  "让 Kairos 陪你捕捉画面、留下想法，把看过的变成自己的。": "Capture a frame, leave a thought, and make what you watch your own.",
+  "免费使用！": "Try it free!",
+  "看看别人！": "See what others make!",
+  "哔哩哔哩": "Bilibili",
+  "免费开源 · 自选 AI": "Free & open source · Your choice of AI",
+  "产品交互演示": "Product walkthrough",
+  "/ 点击下方步骤体验": "/ Choose a step below",
+  "你正在观看：光，为什么会弯曲？": "Now watching: Why does light bend?",
+  "陪你一起看": "Watching with you",
+  "换一个角度，": "A new perspective.",
+  "看见光的轨迹。": "A different light.",
+  "区域截图": "Capture region",
+  "02:18 · 我的笔记": "02:18 · My note",
+  "不是光变了，是不同颜色折射的角度不同。": "The light hasn't changed. Each color bends at a different angle.",
+  "✓ 已保存": "✓ Saved",
+  "这一刻，记住了": "Moments to remember",
+  "光也有自己的「调色盘」。": "Light has a palette of its own.",
+  "不同波长的光，在介质中的折射角不同。": "Different wavelengths refract at different angles.",
+  "AI 整理 · 示例内容": "AI note · Illustrative content",
+  "下次看见彩虹，试着想起这个实验。": "Think of this experiment the next time you see a rainbow.",
+  "每个想法，都有迹可循。": "A place for every thought.",
+  "安静陪伴": "Stay present",
+  "框住灵感": "Capture a frame",
+  "随手记下": "Leave a thought",
+  "回到此刻": "Return to it",
+  "藏在视频里的一颗小胶囊。需要时出现，专注时退后。": "A small capsule inside your video. There when you need it, quiet when you don't.",
+  "留在视频里。": "Stay in the moment.",
+  "让想法继续。": "Keep thinking.",
+  "不用暂停思路，打开另一个笔记软件。": "No switching apps. No losing your train of thought.",
+  "你只管好奇，Kairos 帮你留下那些「原来如此」。": "Stay curious. Kairos keeps your little moments of discovery.",
+  "03:24 · 此刻的想法": "03:24 · A thought, captured",
+  "这个解释，": "That explanation",
+  "让我想到了": "reminds me of",
+  "保存": "Save",
+  "退出": "Exit",
+  "想到什么，": "Think it.",
+  "就记下什么。": "Keep it.",
+  "启用后直接打字，想法就在鼠标附近出现。左键框选一张画面，也可以让 AI 结合字幕帮你理解。": "Just start typing with Kairos enabled. Your note appears near your cursor. Drag to capture a frame, or let AI explain it using subtitle context.",
+  "第一次听到这个概念。": "The first time this idea clicked.",
+  "原来是这样。": "Now it makes sense.",
+  "把它和自己的经验联系起来。": "Connect it to your own experience.",
+  "再看时，": "Come back.",
+  "遇见当时的自己。": "Meet your past thoughts.",
+  "每条笔记都连着一个视频时刻。点一下回到原处，播放时重逢旧想法。鼠标停留，笔记就陪你多待一会。": "Every note belongs to a moment. Click to jump back, or rediscover your thoughts as the video plays. Hover over a note to keep it around a little longer.",
+  "KAIROS / 观看手记": "KAIROS / WATCHING NOTES",
+  "光，为什么": "Why does",
+  "会弯曲？": "light bend?",
+  "换一个角度，看见不同。": "A new angle changes what you see.",
+  "让抽象概念有具体画面。": "Give abstract ideas a picture.",
+  "把好奇变成自己的理解。": "Turn curiosity into understanding.",
+  "看过的，": "What you watched.",
+  "串成自己的收获。": "What you took away.",
+  "把同一视频的笔记交给 AI 整理，编辑后生成一张分享长图。也能导出 Markdown，让知识跟你走。": "Bring your notes together with AI. Edit your summary and export a shareable image, or take your notes anywhere as Markdown.",
+  "开始你的第一篇观看手记": "Make your first watching note",
+  "你的笔记，": "Your notes.",
+  "你的 AI。": "Your AI.",
+  "熟悉的 AI，接着用。": "Bring the AI you already use.",
+  "选择提供商，填入自己的 API 密钥，": "Choose a provider, add your API key,",
+  "让 Kairos 成为你顺手的那一个。": "and make Kairos your own.",
+  "扩展免费开源 · AI 调用费用由提供商收取": "Free, open-source extension · Provider API charges apply",
+  "你可能想知道": "A few things to know",
+  "现在支持哪些视频平台？": "Which video platforms are supported?",
+  "目前支持桌面 Chrome 浏览器中的 YouTube 和哔哩哔哩视频页面，支持普通播放和全屏。移动端暂不支持。": "YouTube and Bilibili video pages in desktop Chrome, in both regular and fullscreen playback. Mobile is not supported yet.",
+  "不使用 AI，也可以记笔记吗？": "Can I take notes without AI?",
+  "可以。手动记录、截图和回看不需要 AI 密钥。AI 辅助笔记和总结需要配置提供商账号，并按其规则计费。": "Yes. Manual notes, screenshots and playback don't need an API key. AI notes and summaries need a provider account and are billed by that provider.",
+  "我的笔记和截图会被发到哪里？": "Where do my notes and screenshots go?",
+  "笔记保存在当前浏览器的本地数据库。触发 AI 笔记时，画面与字幕上下文发送到你选择的提供商；生成总结只发送文字笔记与字幕上下文。密钥通过 Chrome 同步存储保存，OpenRouter 会将请求转发给其模型供应商。": "Notes are stored locally in your browser. AI notes send the frame and subtitle context to your chosen provider; summaries send only text notes and subtitle context. Keys use Chrome sync storage. OpenRouter forwards requests to its model providers.",
+  "可以迁出我的笔记吗？": "Can I export my notes?",
+  "可以导出 Markdown，或将总结下载为分享长图。建议定期导出，卸载扩展或清除扩展数据可能移除本地笔记。": "Export Markdown or download a summary image. Export regularly: uninstalling the extension or clearing its data may remove local notes.",
+  "如何安装？需要付费吗？": "How do I install it? Is it free?",
+  "当前提供开源安装方式，尚未提供商店一键安装入口。按照下方步骤构建并加载扩展即可免费使用；AI 服务的额度与费用由你选择的提供商决定。": "Build and load the open-source extension using the instructions below. A one-click store install is not available yet. The extension is free; AI quotas and charges depend on your provider.",
+  "下一个好想法，": "Your next good thought.",
+  "别让它溜走。": "Don't let it slip away.",
+  "给你的视频，添一个 Kairos。": "Add a little Kairos to what you watch.",
+  "前往 GitHub 获取": "Get Kairos on GitHub",
+  "查看安装步骤": "Show installation steps",
+  "收起安装步骤": "Hide installation steps",
+  "获取项目": "Get the project",
+  "从 GitHub 克隆或下载源码，安装 Node.js 与 pnpm。": "Clone or download the source from GitHub. Install Node.js and pnpm.",
+  "构建扩展": "Build the extension",
+  "在项目根目录运行：": "Run in the project root:",
+  "加载到 Chrome": "Load into Chrome",
+  "打开": "Open",
+  "，开启「开发者模式」，选择「加载已解压的扩展程序」，选中项目中的": ", enable Developer mode, choose Load unpacked, and select the project's",
+  "文件夹。": "folder.",
+  "打开一个视频": "Open a video",
+  "刷新 YouTube 或哔哩哔哩视频页，点击 Kairos 的「启用」。需要 AI 时，再前往设置填写密钥。": "Refresh a YouTube or Bilibili video page and click Enable in Kairos. To use AI, add your API key in Settings.",
+  "反馈": "Feedback",
+  "隐私与数据": "Privacy & data",
+  "跟随系统": "System theme",
+  "系统语言": "System language",
+  "浅色": "Light",
+  "深色": "Dark",
+  "外观": "Appearance",
+  "语言": "Language",
+  "主导航": "Main navigation",
+  "Kairos 首页": "Kairos home",
+  "播放演示": "Play demo",
+  "暂停演示": "Pause demo",
+  "演示步骤": "Demo steps",
+  "Kairos 交互演示": "Kairos interactive demo",
+  "白光穿过三棱镜，分散为不同颜色的光线": "White light passes through a prism and splits into colors",
+  "左键拖动，框住值得记下的画面。留住细节，不必离开视频。": "Drag to capture a frame worth keeping. Stay with the video.",
+  "直接打字，留下自己的理解。笔记保存后，视频继续播放。": "Type your own understanding. Save the note and playback resumes.",
+  "点击笔记回到原处。让每一次回看，都接得上当时的思路。": "Click a note to return to its moment and pick up your train of thought.",
+  "正在截图": "Capturing",
+  "已保存": "Saved",
+  "查看笔记": "Viewing note",
+  "正在输入": "Writing"
+};
+const site = window.KairosSite;
+site.t = text => site.state.locale === 'en' ? (translations[text] || text) : text;
+const localizedNodes=[];
+const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+while(walker.nextNode()) {
+ const node=walker.currentNode;
+ if(node.parentElement.closest('script,style,#typed-note,#demo-caption,#island-feedback,#play-demo,.install-toggle'))continue;
+ const original=node.nodeValue;
+ if(translations[original.trim()])localizedNodes.push({node,original});
+}
+const attributes=[];
+document.querySelectorAll('[aria-label]').forEach(node=>attributes.push({node,original:node.getAttribute('aria-label')}));
+function localizeSite(){
+ localizedNodes.forEach(({node,original})=>node.nodeValue=original.replace(original.trim(),site.t(original.trim())));
+ attributes.forEach(({node,original})=>node.setAttribute('aria-label',site.t(original)));
+ document.title=site.state.locale==='zh'?'Kairos — 一起看，随手记':'Kairos — Watch together. Remember more.';
+ document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='light'?'#ffffff':'#080808';
+ const description=site.state.locale==='zh'?'陪你看视频的 AI 笔记伙伴。随手截图、记录想法，回到值得记住的瞬间。':'Your AI video companion. Capture frames, keep your thoughts, and return to moments worth remembering.';
+ document.querySelector('meta[name="description"]').content=description;
+ document.querySelector('meta[property="og:description"]').content=description;
+ document.querySelector('meta[property="og:title"]').content=document.title;
+ const isDark=document.documentElement.dataset.theme==='dark';
+ const themeButton=document.querySelector('#theme-choice');
+ const languageButton=document.querySelector('#language-choice');
+ const themeLabel=site.state.locale==='zh'?(isDark?'切换为浅色':'切换为深色'):(isDark?'Switch to light mode':'Switch to dark mode');
+ const languageLabel=site.state.locale==='zh'?'Switch to English':'切换为中文';
+ themeButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(isDark?'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/>':'<path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/>')+'</svg>';
+ themeButton.title=themeLabel;themeButton.setAttribute('aria-label',themeLabel);
+ languageButton.title=languageLabel;languageButton.setAttribute('aria-label',languageLabel);
+}
+window.addEventListener('kairos-preference',localizeSite);
+document.querySelector('#theme-choice').addEventListener('click',()=>site.set('theme',document.documentElement.dataset.theme==='dark'?'light':'dark'));
+document.querySelector('#language-choice').addEventListener('click',()=>site.set('language',site.state.locale==='zh'?'en':'zh'));
+localizeSite();

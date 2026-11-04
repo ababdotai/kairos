@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="public/icons/icon.png" alt="Kairos Logo" width="128" />
+  <img src="screenshots/marquee.png" alt="Kairos — Watch together. Remember more." width="100%" />
+</p>
+
+<p align="center">
+  <img src="website/public/assets/avatar.gif" alt="Kairos Logo" width="128" />
 </p>
 
 <h1 align="center">Kairos</h1>
@@ -20,11 +24,33 @@
 
 如何让知识载体类视频的消费过程更有价值和互动性?
 
-Kairos 是一个基于 Gemini 3 Flash (gemini-3-flash-preview)多模态理解能力的视频笔记Agent，目前的载体为一个Chrome Extension，核心功能为在用户观看Coursera/Udemy/Bilibili/YouTube/TED等高信息密度视频时，在不打断心流的前提下优雅地做笔记，通过简单直观的操作+AI结合智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
+Kairos 是一个基于多家 AI 提供商的多模态理解能力的视频笔记Agent，目前的载体为一个Chrome Extension，核心功能为在用户观看Coursera/Udemy/Bilibili/YouTube/TED等高信息密度视频时，在不打断心流的前提下优雅地做笔记，通过简单直观的操作+AI结合智能的视觉理解和语义分析，让每个关键时刻（Kairos）都被精准捕获，将用户的碎片化视频笔记转化为可查询、可索引的知识库。
 
 Kairos 是一个Proactive+Reactive的Agent：
 - Proactive：Kairos陪用户观看视频，自动发现重点和亮点
 - Reactive：用户负责提供信号（Signal），AI 负责降低噪点（Noise）并填充细节（Fidelity）
+
+### AI 提供商与模型
+
+设置页支持 Gemini、OpenAI、Anthropic Claude、DeepSeek、Kimi 和 OpenRouter，并分别记住密钥与模型。卡片、说明和模型用途支持中英文与系统明暗主题。所有预设模型均支持截图理解和文字总结；视频 URL 的实验性 HUD 分析仍仅限 Gemini。
+
+模型按截图笔记的响应速度、视觉能力和总结需要筛选（2026-11-02 核对），不是完整模型目录：
+
+| 提供商 | 可选模型 |
+| --- | --- |
+| Gemini | `gemini-3.1-flash-lite`、`gemini-3.8-flash` |
+| OpenAI | `gpt-6.1-terra`（默认）、`gpt-6-astra`、`gpt-6.1-sol`、`gpt-6-luna` |
+| Anthropic | `claude-haiku-5-5`、`claude-sonnet-5-5` |
+| DeepSeek | `deepseek-flash` |
+| Kimi | `kimi-k3.1-pro`、`kimi-k3` |
+| OpenRouter | `openai/gpt-5.4-mini`、`anthropic/claude-sonnet-5.5` |
+
+OpenAI 列表于 2026-11-04 更新；旧 mini/nano 配置分别迁移到 Terra/Luna。旧 Kimi 2.5 和已移除的 Highspeed 配置自动改用 K3.1 Pro；原有密钥保留。API 费用、地区与模型可用性取决于提供商账号。密钥沿用扩展的 Chrome 同步存储；请求直接发送给所选提供商，OpenRouter 会转交路由供应商。总结只发送已有文字笔记和字幕上下文，不发送截图。
+
+验证覆盖模拟接口路由、图片格式、密钥隔离、错误处理，以及真实 Chrome 中的设置切换；不代表已使用真实账号完成六家付费接口验收。
+
+
+Model references: [Gemini](https://ai.google.dev/gemini-api/docs/models), [OpenAI](https://developers.openai.com/api/docs/guides/latest-model), [Claude](https://platform.claude.com/docs/en/models/overview), [DeepSeek](https://api-docs.deepseek.com/guides/vision/), [Kimi](https://platform.kimi.ai/docs/models), [OpenRouter](https://openrouter.ai/api/v1/models).
 
 ## 当前伴随体验
 
@@ -47,7 +73,7 @@ Kairos 重新定义了看视频做笔记的交互方式：
 - **非线性知识提取**：将长视频变成可查询的动态数据库
 - **零 UI 摩擦**：悬浮球交互，无需打开侧边栏
 - **本地优先**：数据存储在用户本地，深度集成 Obsidian/Notion
-- **多模态理解**：利用 Gemini 3 Flash 的视觉能力，自动提取代码、公式、关键概念
+- **多模态理解**：利用所选模型的视觉能力，自动提取代码、公式、关键概念
 
 Deep Understanding（深度理解）和Active Learning（主动学习）: 追求观看时的效率，更追求深入的理解和学习。
 
@@ -106,7 +132,7 @@ Deep Understanding（深度理解）和Active Learning（主动学习）: 追求
 - **前端框架**：React 18 + TypeScript
 - **构建工具**：Vite + CRXJS Plugin
 - **样式方案**：Tailwind CSS + Framer Motion
-- **AI 能力**：Gemini 3 Flash API (多模态理解)
+- **AI 能力**：Gemini、OpenAI、Claude、DeepSeek、Kimi 和 OpenRouter（多模态理解）
 - **存储方案**：IndexedDB (本地) + FileSystemAccess API (Obsidian)
 - **扩展架构**：Manifest V3
 
@@ -268,7 +294,7 @@ pnpm run build
 
 - **数据本地化**：所有笔记数据默认存储在用户本地（IndexedDB）
 - **可选同步**：仅在用户授权时同步元数据到 Obsidian/Notion
-- **无服务器架构**：不依赖后端服务器，直接调用 Gemini API
+- **无服务器架构**：不依赖后端服务器，直接调用所选提供商的 API
 - **透明权限**：仅申请必要的 Host Permissions，符合 Chrome Web Store 审核要求
 
 ## 📖 参考资料

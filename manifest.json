@@ -1,14 +1,20 @@
 {
   "manifest_version": 3,
-  "name": "Kairos",
-  "version": "1.0.0",
-  "description": "Your AI secretary while watching videos. Transform linear videos into queryable knowledge bases.",
+  "name": "Kairos - Your AI Video Note-Taking Companion",
+  "version": "1.0.3",
+  "description": "Watch with AI. You choose what matters; Kairos helps you take notes from frames and subtitles on YouTube & Bilibili.",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
     "*://www.youtube.com/*",
-    "*://www.bilibili.com/*"
+    "*://www.bilibili.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://api.deepseek.com/*",
+    "https://api.moonshot.cn/*",
+    "https://openrouter.ai/*"
   ],
   "content_scripts": [
     {
@@ -23,7 +29,7 @@
     }
   ],
   "action": {
-    "default_title": "Kairos - Your AI secretary while watching videos.",
+    "default_title": "Kairos \u2014 Watch together. Remember more.",
     "default_popup": "src/popup.html",
     "default_icon": "icons/icon128.png"
   },
@@ -39,7 +45,8 @@
         "icons/*.gif"
       ],
       "matches": [
-        "<all_urls>"
+        "*://www.youtube.com/*",
+        "*://www.bilibili.com/*"
       ]
     }
   ],

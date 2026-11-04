@@ -504,6 +504,9 @@ try {
   }
   const dashboardHtml = (await readFile(new URL('../src/dashboard.html', import.meta.url), 'utf8')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
   await run(`document.documentElement.innerHTML=${JSON.stringify(dashboardHtml)};chrome.storage.sync.get=(keys,cb)=>cb?queueMicrotask(()=>cb({noteLanguage:'ja',googleApiKey:'AIza-test'})):Promise.resolve({});chrome.storage.sync.set=async(values,cb)=>{window.savedSettings=values;cb?.()};chrome.runtime.sendMessage=(msg,cb)=>cb?.({success:true,data:[]})`);
+  for (const file of ['src/provider-icons.js','src/ai-providers.js']) {
+    await run((await readFile(new URL('../'+file,import.meta.url),'utf8')).replace(/^export /gm,''));
+  }
   const dashboardScript = (await readFile(new URL('../src/dashboard.js', import.meta.url), 'utf8')).replace(/^import .*;\s*$/gm, '');
   await run(dashboardScript);
   await run('document.dispatchEvent(new Event("DOMContentLoaded"));new Promise(r=>setTimeout(r,20))');

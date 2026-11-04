@@ -1,3 +1,5 @@
+import { PROVIDER_ICONS } from './provider-icons.js';
+import { AI_PROVIDERS, AI_SETTINGS_KEYS, resolveModel } from './ai-providers.js';
 import './content/i18n.js';
 const { t, localize } = window.Kairos.I18n;
 import './content/markdown.js';
@@ -41,7 +43,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.Kairos.I18n.setPreference(value);
             document.documentElement.lang = window.Kairos.I18n.locale;
             localize();
-            const provider = providerConfig[document.querySelector('input[name="provider"]:checked').value];
+            const selectedProvider = document.querySelector('input[name="provider"]:checked').value;
+            tempKeys[selectedProvider] = apiKeyInput.value.trim();
+            tempModels[selectedProvider] = document.getElementById('modelSelect').value;
+            updateProviderUI(selectedProvider);
+            const provider = providerConfig[selectedProvider];
             apiKeyInput.placeholder = t('Paste your {provider} API Key ({example})', { provider: provider.name, example: provider.keyPlaceholder });
             statusMessageEl.textContent = '';
         } catch {
@@ -64,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Init
     loadVideoList();
-    loadSettings();
+
     setupNavigation();
     switchTab(currentTab); // Apply initial tab state
 
@@ -131,30 +137,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Settings Logic ---
 
-    const providerConfig = {
-        google: {
-            name: 'Google Gemini',
-            models: ['gemini-3-flash-preview'],
-            defaultModel: 'gemini-3-flash-preview',
-            keyPlaceholder: 'AIza...',
-            keyHelpLink: 'https://aistudio.google.com/',
-            keyHelpText: 'Google AI Studio'
-        },
-        moonshot: {
-            name: 'Moonshot Kimi',
-            models: ['kimi-k2.5'], // Kimi 2.5
-            defaultModel: 'kimi-k2.5',
-            keyPlaceholder: 'sk-...',
-            keyHelpLink: 'https://platform.moonshot.cn/console/api-keys',
-            keyHelpText: 'Moonshot Platform'
-        }
-    };
-
-    // Temp storage for keys while switching views so user doesn't lose input
-    const tempKeys = {
-        google: '',
-        moonshot: ''
-    };
+    const providerConfig = AI_PROVIDERS;
+    const tempKeys = {};
+    const tempModels = {};
+    document.getElementById('providerGroup').innerHTML = Object.entries(providerConfig).map(([id, config]) => `
+      <label class="radio-option provider-card" data-provider="${id}">
+        <input type="radio" name="provider" value="${id}">
+        <span class="provider-icon" style="--provider-color:${config.color}" aria-hidden="true">${PROVIDER_ICONS[id]}</span>
+        <span class="radio-content"><span class="radio-title">${config.name}</span>
+        <span class="radio-desc" data-i18n="${config.description}">${t(config.description)}</span></span>
+      </label>`).join('');
+    loadSettings();
 
     function setupSettingsListeners() {
         const providerRadios = document.querySelectorAll('input[name="provider"]');
@@ -165,6 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const previousProvider = document.querySelector('.radio-option[data-provider].selected')?.dataset.provider;
                 if (previousProvider) {
                     tempKeys[previousProvider] = currentKey;
+                    tempModels[previousProvider] = document.getElementById('modelSelect').value;
                 }
 
                 updateProviderUI(e.target.value);
@@ -191,12 +185,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Update Model Dropdown
         const modelSelect = document.getElementById('modelSelect');
-        modelSelect.innerHTML = config.models.map(m => 
-            `<option value="${m}">${m}</option>`
+        modelSelect.innerHTML = config.models.map((m, index) =>
+            `<option value="${m}">${m} · ${t(config.labels[index])}</option>`
         ).join('');
         
         // Select default or saved model (if applicable logic exists, for now default)
-        modelSelect.value = config.defaultModel;
+        const saved = tempModels[provider];
+        if (saved && !config.models.includes(saved)) {
+            const option = document.createElement('option');
+            option.value = saved; option.textContent = saved + ' · ' + t('Previously selected');
+            modelSelect.append(option);
+        }
+        modelSelect.value = saved || config.models[0];
 
         // Update API Key Input
         apiKeyInput.value = tempKeys[provider] || '';
@@ -212,22 +212,18 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Loads saved settings from chrome.storage.sync
      */
     function loadSettings() {
-        chrome.storage.sync.get(['aiProvider', 'googleApiKey', 'moonshotApiKey', 'geminiApiKey', 'aiModel', 'noteLanguage'], (result) => {
+        chrome.storage.sync.get(AI_SETTINGS_KEYS, (result) => {
             
             // 1. Determine Provider
-            let currentProvider = result.aiProvider || 'google';
+            let currentProvider = providerConfig[result.aiProvider] ? result.aiProvider : 'google';
             
             // 2. Load Keys
-            tempKeys.google = result.googleApiKey || result.geminiApiKey || ''; // Migration fallback
-            tempKeys.moonshot = result.moonshotApiKey || '';
-
-            // 3. Initialize UI
-            updateProviderUI(currentProvider);
-
-            // 4. Set Specific Model if saved (and valid for current provider)
-            if (result.aiModel && providerConfig[currentProvider].models.includes(result.aiModel)) {
-                document.getElementById('modelSelect').value = result.aiModel;
+            for (const [id, config] of Object.entries(providerConfig)) {
+                tempKeys[id] = result[config.keyField] || (id === 'google' ? result.geminiApiKey : '') || '';
+                const saved = result.providerModels?.[id] || (id === currentProvider ? result.aiModel : '');
+                tempModels[id] = resolveModel(id, saved);
             }
+            updateProviderUI(currentProvider);
 
             // 5. Load Language Preference
             const savedLang = result.noteLanguage || 'auto';
@@ -261,27 +257,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Update temp storage
         tempKeys[currentProvider] = currentKey;
 
-        // Validate Key Format (Basic check)
-        if (currentProvider === 'google' && !currentKey.startsWith('AIza')) {
-             showStatus(t("Warning: Google Keys typically start with \"AIza\"."), 'error');
-        } else if (currentProvider === 'moonshot' && !currentKey.startsWith('sk-')) {
-             showStatus(t("Warning: Moonshot Keys typically start with \"sk-\"."), 'error');
-        }
-
+        tempModels[currentProvider] = currentModel;
         const updates = {
             aiProvider: currentProvider,
             aiModel: currentModel,
+            providerModels: { ...tempModels },
             noteLanguage: selectedLang
         };
-
-        // Save key to specific slot
-        if (currentProvider === 'google') {
-            updates.googleApiKey = currentKey;
-        } else if (currentProvider === 'moonshot') {
-            updates.moonshotApiKey = currentKey;
-        }
+        for (const [id, key] of Object.entries(tempKeys)) updates[providerConfig[id].keyField] = key;
 
         chrome.storage.sync.set(updates, () => {
+            if (chrome.runtime.lastError) {
+                showStatus(t('Could not save settings. Please try again.'), 'error');
+                return;
+            }
             showStatus(t("Settings saved successfully!"), 'success');
             setTimeout(() => {
                 statusMessageEl.textContent = '';
@@ -411,14 +400,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             image.tabIndex = 0;
             image.setAttribute('role', 'button');
             const open = () => {
+                if (document.querySelector('.snapshot-dialog')) return;
                 const dialog = document.createElement('dialog');
                 dialog.className = 'snapshot-dialog';
+                dialog.setAttribute('aria-label', t('Visual Snapshot'));
                 const close = document.createElement('button');
-                close.className = 'action-btn'; close.textContent = t('Close');
-                close.onclick = () => dialog.close();
-                dialog.append(close, image.cloneNode());
-                dialog.addEventListener('close', () => dialog.remove());
+                close.type = 'button';
+                close.className = 'action-btn snapshot-close'; close.textContent = t('Close');
+                const enlarged = image.cloneNode();
+                enlarged.loading = 'eager';
+                enlarged.setAttribute('aria-label', t('Close'));
+                enlarged.title = t('Close');
+                let animation;
+                let closing = false;
+                const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const thumbnailTransform = () => {
+                    const from = image.getBoundingClientRect();
+                    const to = enlarged.getBoundingClientRect();
+                    if (!image.isConnected || !from.width || !to.width) return 'scale(.96)';
+                    return `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`;
+                };
+                const dismiss = () => {
+                    if (closing) return;
+                    closing = true;
+                    if (reducedMotion()) { dialog.close(); return; }
+                    // Start from the current frame, even when closing mid-expansion.
+                    const current = getComputedStyle(enlarged).transform;
+                    animation?.cancel();
+                    const target = thumbnailTransform();
+                    dialog.classList.add('is-closing');
+                    animation = enlarged.animate([{ transform: current }, { transform: target }], {
+                        duration: 240, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards'
+                    });
+                    animation.finished.then(() => { if (dialog.open) dialog.close(); }).catch(() => {});
+                };
+                close.onclick = dismiss;
+                enlarged.onclick = dismiss;
+                enlarged.onkeydown = event => {
+                    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); dismiss(); }
+                };
+                dialog.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
+                dialog.append(close, enlarged);
+                dialog.addEventListener('close', () => {
+                    animation?.cancel(); dialog.remove();
+                    if (image.isConnected) image.focus({ preventScroll: true });
+                });
                 document.body.append(dialog); dialog.showModal();
+                if (!reducedMotion()) {
+                    animation = enlarged.animate([{ transform: thumbnailTransform() }, { transform: 'none' }], {
+                        duration: 320, easing: 'cubic-bezier(.22,1,.36,1)'
+                    });
+                }
             };
             image.onclick = open;
             image.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); } };

@@ -13,7 +13,8 @@ assert.throws(() => summaryPrompt('Title', [{ content: 'x'.repeat(100001) }], 'e
 const source = await readFile(new URL('../src/background.js', import.meta.url), 'utf8');
 let settings = {}, seen, requestedVideo;
 const context = vm.createContext({
-  summaryPrompt, summaryFingerprint,
+  summaryPrompt, summaryFingerprint, AI_SETTINGS_KEYS: [],
+  generateAI: async (settings, {prompt}) => { if (!settings.googleApiKey && !settings.moonshotApiKey) throw new Error('API key missing'); seen = {contents:prompt}; return settings.aiProvider === 'moonshot' ? 'Kimi summary' : '## Summary'; },
   getNotes: async id => { requestedVideo = id; return notes; },
   chrome: { storage: { sync: { get: async () => settings } } },
   GoogleGenAI: class { models = { generateContent: async args => { seen = args; return { text: '## Summary' }; } }; },

@@ -17,6 +17,24 @@
     })();
   }
   const zh = {
+  "Faster responses": "更快响应",
+  "Read slides, screenshots and subtitles together.": "结合课件、截图和字幕理解内容。",
+  "Turn screenshots and ideas into clear notes.": "把画面与想法整理成清晰的笔记。",
+  "Organize explanations and longer notes clearly.": "梳理复杂讲解，让长笔记更好读。",
+  "Read screenshots and summarize key ideas.": "看懂截图，提炼值得记住的重点。",
+  "Connect screenshots with longer explanations.": "结合画面，串起较长的讲解内容。",
+  "Try different AI brands with one account.": "一个账号，尝试不同品牌的 AI。",
+  "Quick everyday notes": "轻快随手记",
+  "More detailed understanding": "细致理解",
+  "Visual understanding and clear notes": "看懂画面，清晰整理",
+  "Deep reasoning for complex content": "深入理解复杂内容",
+  "Balanced for everyday use": "日常均衡",
+  "Previously selected": "此前选择",
+  "Choose who helps Kairos read screenshots and organize notes. You only need one account.": "选择由谁帮助 Kairos 看懂截图、整理笔记。只需配置一家即可。",
+  "All listed models can read screenshots and summarize notes. Start with the first option; choose a more detailed model for complex diagrams.": "以下模型均支持看图记笔记和总结。日常使用选第一项即可；复杂图表可选择更细致的模型。",
+  "An API key connects your AI account to Kairos. Create one using the link below, paste it here, then save. API usage is billed by the provider; a chat subscription may not include it.": "API 密钥用于连接你的 AI 账号。点击下方链接创建，粘贴到这里后保存即可。使用费用由提供商收取，聊天会员不一定包含 API 额度。",
+  "Could not save settings. Please try again.": "设置保存失败，请重试。",
+
   "Enable": "启用",
   "Disable": "停用",
   "Note": "记一笔",
@@ -179,6 +197,7 @@
   "No Video Found": "未找到视频",
   "We couldn't detect a video on this page. Try refreshing.": "未检测到视频，请尝试刷新页面。",
   "Connection Error": "连接失败",
+  "Could not read the current tab. Please reopen Kairos.": "无法读取当前标签页，请重新打开 Kairos。",
   "Could not retrieve notes. Please try refreshing the page.": "无法获取笔记，请刷新页面重试。",
   "AI Error": "AI 出错",
   "Unknown error": "未知错误",

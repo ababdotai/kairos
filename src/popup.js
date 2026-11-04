@@ -26,7 +26,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Check current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let tab;
+  try {
+    [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  } catch {
+    showEmptyState(t("Connection Error"), t("Could not read the current tab. Please reopen Kairos."));
+    return;
+  }
 
   let url;
   try { url = new URL(tab?.url); } catch { /* Restricted tabs may omit their URL. */ }
@@ -56,8 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Request Data via Background
-  chrome.runtime.sendMessage({ type: 'GET_NOTES', payload: { videoId } }, (response) => {
-    if (response && response.success) {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_NOTES', payload: { videoId } });
+    if (response?.success && Array.isArray(response.data) && response.data.every(note => note && typeof note === 'object')) {
       const notes = response.data;
 
       // Show video section even if 0 notes, so user knows it's connected
@@ -65,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       noVideoState.style.display = 'none';
       
       // Use tab title as fallback if no notes yet
-      videoTitleEl.textContent = (notes.length > 0 && notes[0].videoTitle) ? notes[0].videoTitle : tab.title;
+      videoTitleEl.textContent = (notes.length > 0 && notes[0].videoTitle) ? notes[0].videoTitle : (tab.title || 'Kairos');
       noteCountEl.textContent = t("{count} notes", { count: notes.length });
 
       if (notes.length > 0) {
@@ -76,10 +83,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
     } else {
-      console.error('Failed to fetch notes:', response ? response.error : 'Unknown');
       showEmptyState(t("Connection Error"), t("Could not retrieve notes. Please try refreshing the page."));
     }
-  });
+  } catch {
+    // MV3 workers can be unavailable while the extension reloads or updates.
+    showEmptyState(t("Connection Error"), t("Could not retrieve notes. Please try refreshing the page."));
+  }
 
   function showEmptyState(title, msg) {
     currentVideoSection.style.display = 'none';

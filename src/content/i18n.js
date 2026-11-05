@@ -17,6 +17,21 @@
     })();
   }
   const zh = {
+  "AI on": "AI 开启",
+  "AI off": "AI 关闭",
+  "Drag to move · Position remembered": "拖动调整位置 · 自动记忆",
+  "Automatically refine new notes · Click to turn off": "自动润色新笔记 · 点击关闭",
+  "Refine new notes using the frame and subtitles · Click to turn on": "结合画面和字幕润色新笔记 · 点击开启",
+  "Configure an AI provider first": "请先在设置中配置 AI 提供商",
+  "Refining…": "润色中",
+  "AI refined": "AI 已整理",
+  "Original saved": "已保留原文",
+  "Original saved · Refining with the frame and subtitles": "原文已保存 · 正在结合画面和字幕润色",
+  "AI refined · Original available in Dashboard": "AI 已整理 · 可在笔记管理中查看原文",
+  "AI refinement unavailable · Your original is saved": "暂时无法润色 · 原文已保存",
+  "AI turned off · Your original is saved": "AI 已关闭 · 原文已保存",
+  "Your original": "你的原文",
+  "Earlier versions": "历史版本",
   "Faster responses": "更快响应",
   "Read slides, screenshots and subtitles together.": "结合课件、截图和字幕理解内容。",
   "Turn screenshots and ideas into clear notes.": "把画面与想法整理成清晰的笔记。",

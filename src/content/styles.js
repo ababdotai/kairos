@@ -13,7 +13,8 @@
    * @returns {string} CSS stylesheet content
    */
   function getStyles() {
-    return `
+    return `${window.Kairos.Refinement?.styles || ""}
+
       * {
         margin: 0;
         padding: 0;
@@ -243,8 +244,39 @@
         transform: rotate(-4deg);
         pointer-events: none;
       }
+      .kairos-note-drag-handle {
+        position: absolute;
+        bottom: -32px;
+        left: calc(50% - 16px);
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+      }
+      .kairos-note-drag-handle::before {
+        content: '';
+        display: block;
+        width: 14px;
+        height: 14px;
+        margin: auto;
+        border-radius: 50%;
+        background: #00cddd;
+        box-shadow: 0 0 14px #00cddd55;
+        transition: box-shadow .2s, transform .2s;
+      }
+      .kairos-note-drag-handle:hover::before,
+      .kairos-note-drag-handle:focus-visible::before { transform: scale(1.15); box-shadow: 0 0 0 4px #00cddd22; }
+      .kairos-note-wrapper.is-dragging { transition: none; }
+      .kairos-note-wrapper.is-dragging .kairos-note-drag-handle { cursor: grabbing; }
+      .kairos-overlay:has(.kairos-note-wrapper.active) .kairos-spatial-marker { visibility: hidden; }
       .kairos-note-wrapper .kairos-note-input,
       .kairos-note-wrapper .kairos-note-preview {
+        max-height: var(--note-text-height, 150px);
         background: transparent;
         color: #eef3f8;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
@@ -252,6 +284,7 @@
         line-height: 1.6;
       }
       .kairos-note-wrapper .kairos-note-input::placeholder { color: #bbc6d2; opacity: .85; font-style: normal; }
+      .kairos-note-wrapper .kairos-capture-preview { max-height: var(--note-image-height, 76px); }
       .kairos-capture-preview {
         width: calc(100% - 20px);
         height: 76px;
@@ -888,18 +921,23 @@
         color: #edf3fa;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 13px;
-        max-width: 240px;
+        width: max-content;
+        max-width: min(240px, calc(100% - 24px));
+        overflow: auto;
+        overflow-wrap: anywhere;
+        overscroll-behavior: contain;
         pointer-events: auto;
         z-index: 101;
         opacity: 0;
-        transform: translate(-50%, -100%) translateY(-15px) scale(0.95);
-        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform-origin: center bottom;
+        transform: translateY(4px) scale(0.95);
+        transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         box-shadow: 0 10px 30px var(--kairos-shadow);
       }
 
       .kairos-spatial-tooltip.active {
         opacity: 1;
-        transform: translate(-50%, -100%) translateY(-10px) scale(1);
+        transform: translateY(0) scale(1);
       }
 
       @keyframes kairos-orb-breathe {
@@ -1017,6 +1055,11 @@
       }
       /* Video-relative glass island; hover expansion is independent of activation. */
       .kairos-island-container.docked {
+        --island-glass-header: rgba(18,25,36,.38);
+        --island-glass-body: rgba(18,25,36,.58);
+        --island-glass-blur: 14px;
+        --island-glass-shadow: #0003;
+        --island-glass-duration: 220ms;
         position: absolute; top: var(--island-y, 12px) !important;
         left: var(--island-x, 50%) !important; right: auto !important; bottom: auto !important;
         transform: translateX(-50%) !important; z-index: 1100;
@@ -1057,12 +1100,14 @@
         max-width: 100%; padding: 0 15px;
         justify-content: flex-start; gap: 8px;
         border-radius: 25px; color: #fff;
-        background: linear-gradient(145deg, rgba(255,255,255,.16), rgba(255,255,255,.03) 45%, rgba(255,255,255,.09)), rgba(18,25,36,.38);
-        backdrop-filter: blur(14px) saturate(170%);
-        -webkit-backdrop-filter: blur(14px) saturate(170%);
+        background: linear-gradient(145deg, #ffffff16, #ffffff03 45%, #ffffff0a), var(--island-glass-header);
+        backdrop-filter: blur(var(--island-glass-blur)) saturate(150%);
+        -webkit-backdrop-filter: blur(var(--island-glass-blur)) saturate(150%);
         border: 1px solid rgba(255,255,255,.3);
-        box-shadow: inset 0 1px 0 #ffffff66, inset 0 -1px 0 #ffffff14, 0 8px 28px #0003;
-        transition: width 360ms cubic-bezier(.22,1,.36,1), height 360ms cubic-bezier(.22,1,.36,1), box-shadow 200ms;
+        box-shadow: inset 0 1px 0 #ffffff66, inset 0 -1px 0 #ffffff14, 0 8px 28px var(--island-glass-shadow);
+        transition: width 360ms cubic-bezier(.22,1,.36,1), height 360ms cubic-bezier(.22,1,.36,1),
+          background-color var(--island-glass-duration) ease, backdrop-filter var(--island-glass-duration) ease,
+          -webkit-backdrop-filter var(--island-glass-duration) ease, box-shadow var(--island-glass-duration) ease;
       }
       .docked .kairos-orb:not(.expanded):hover,
       .docked .kairos-orb.expanded:hover, .docked .kairos-orb:focus-within,
@@ -1072,7 +1117,7 @@
       }
       .docked .kairos-orb.active {
         border-color: #b4e9ff99;
-        box-shadow: inset 0 1px 0 #ffffff88, 0 0 18px #6bd4ff33, 0 8px 28px #0003;
+        box-shadow: inset 0 1px 0 #ffffff88, 0 0 18px #6bd4ff18, 0 8px 28px var(--island-glass-shadow);
       }
       .docked .kairos-orb .kairos-orb-icon {
         display: block; width: 23px; height: 23px; min-width: 23px;
@@ -1131,11 +1176,14 @@
         max-height: calc(var(--island-max-height, 300px) - 54px);
         overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
         padding: 10px 14px 12px; color: #f0f6ff;
-        background: linear-gradient(145deg, #ffffff15, #ffffff05), rgba(18,25,36,.58);
-        backdrop-filter: blur(14px) saturate(170%);
-        -webkit-backdrop-filter: blur(14px) saturate(170%);
+        background: linear-gradient(145deg, #ffffff0c, #ffffff02), var(--island-glass-body);
+        backdrop-filter: blur(var(--island-glass-blur)) saturate(150%);
+        -webkit-backdrop-filter: blur(var(--island-glass-blur)) saturate(150%);
         border: 1px solid #ffffff40; border-top: 0;
-        border-radius: 0 0 22px 22px; box-shadow: 0 14px 28px #0003;
+        border-radius: 0 0 22px 22px;
+        box-shadow: inset 1px 0 #ffffff0c, inset -1px 0 #ffffff0c, inset 0 -1px #ffffff24, 0 14px 28px var(--island-glass-shadow);
+        transition: background-color var(--island-glass-duration) ease, backdrop-filter var(--island-glass-duration) ease,
+          -webkit-backdrop-filter var(--island-glass-duration) ease, box-shadow var(--island-glass-duration) ease;
         font: 12px/1.5 system-ui;
       }
       .docked:hover .kairos-island-panel, .docked:focus-within .kairos-island-panel,
@@ -1254,8 +1302,12 @@
       .kairos-note-wrapper .kairos-note-preview h3 { color: #fff; }
       .kairos-overlay:has(.kairos-note-wrapper.active) .kairos-spatial-tooltip { display: none; }
       @media (prefers-color-scheme: light) {
+        .kairos-island-container.docked {
+          --island-glass-header: rgba(236,242,248,.92);
+          --island-glass-body: rgba(237,243,249,.94);
+        }
         .docked .kairos-orb, .docked .kairos-orb.expanded, .docked .kairos-orb:not(.expanded):hover {
-          color: #24384b; background: linear-gradient(145deg, #ffffffb3, #ffffff60), rgba(226,237,247,.72); border-color: #59788e55; text-shadow: none;
+          color: #24384b; border-color: #59788e55; text-shadow: none;
         }
         .docked .kairos-orb .kairos-orb-btn { background: #ffffff60; color: #304e64; border-color: #496f8a30; text-shadow: none; }
         .docked .kairos-orb .kairos-orb-btn:hover { background: #ffffffb3; }
@@ -1264,7 +1316,7 @@
         .kairos-feedback-mark { color: #26764d; }
         .kairos-orb[data-feedback=discarded] .kairos-feedback-mark { color: #62758a; }
         .kairos-orb[data-feedback=error] .kairos-feedback-mark { color: #a24b31; }
-        .kairos-island-panel { background: linear-gradient(145deg, #ffffffa3, #ffffff60), rgba(228,238,247,.85); color: #25394b; border-color: #59788e45; }
+        .kairos-island-panel { color: #25394b; border-color: #59788e45; }
         .kairos-island-note, .kairos-island-note-row.is-current .kairos-island-note span:last-child { color: #25394b; }
         .kairos-island-note span:first-child, .kairos-island-time, .kairos-island-library, .kairos-island-empty, .kairos-island-delete { color: #4b6c83; }
         .kairos-island-note-row { border-color: #496f8a20; }
@@ -1290,8 +1342,39 @@
         .kairos-note-wrapper .kairos-note-preview strong, .kairos-note-wrapper .kairos-note-preview h1, .kairos-note-wrapper .kairos-note-preview h2, .kairos-note-wrapper .kairos-note-preview h3 { color: #234e6b; }
         .kairos-island-delete.is-confirming { color: #a23b37; background: #b6373012; }
       }
+      /* Pinned-open glass recedes when watching. Mouse focus must not keep it opaque. */
+      .kairos-island-container.docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) {
+        --island-glass-header: rgba(18,25,36,.16);
+        --island-glass-body: rgba(18,25,36,.12);
+        --island-glass-blur: 2px;
+        --island-glass-shadow: #0000000d;
+        --island-glass-duration: 650ms;
+        text-shadow: 0 1px 3px #0008;
+      }
+      @media (prefers-color-scheme: light) {
+        .kairos-island-container.docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) {
+          --island-glass-header: rgba(26,39,52,.14);
+          --island-glass-body: rgba(26,39,52,.10);
+        }
+      }
+      /* Video luminance varies independently of the system theme: use light ink
+         with a small dark shadow on the clear surface, then restore theme ink on hover. */
+      .docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming))
+      :is(.kairos-island-brand, .kairos-orb-btn, .kairos-island-pin-toggle, .kairos-island-time,
+          .kairos-island-note, .kairos-island-note span, .kairos-island-moment, .kairos-island-delete,
+          .kairos-island-library, .kairos-island-empty, .kairos-ai-toggle, .kairos-refinement-status,
+          .kairos-island-feedback, .kairos-feedback-mark) {
+        color: #eef6fc; text-shadow: 0 1px 3px #000b;
+      }
+      .docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming))
+      :is(.kairos-orb-btn, .kairos-island-pin-toggle, .kairos-ai-toggle) {
+        background: #ffffff0d; border-color: #ffffff30;
+      }
+      .docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) .kairos-island-note-row.is-current::before {
+        border-left-color: #eef6fc;
+      }
       @media (prefers-reduced-motion: reduce) {
-        .docked .kairos-orb, .docked .kairos-orb .kairos-orb-menu { transition: none; }
+        .docked .kairos-orb, .docked .kairos-orb .kairos-orb-menu, .docked .kairos-island-panel { transition: none; }
       }
     `;
   }

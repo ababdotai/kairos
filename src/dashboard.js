@@ -3,6 +3,7 @@ import { AI_PROVIDERS, AI_SETTINGS_KEYS, resolveModel } from './ai-providers.js'
 import './content/i18n.js';
 const { t, localize } = window.Kairos.I18n;
 import './content/markdown.js';
+import './content/refinement.js';
 import { mountSummary } from './dashboard-summary.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -60,6 +61,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // State
     let currentTab = 'library';
+    let selectedVideo = null;
+    const refinementStyle = document.createElement('style');
+    refinementStyle.textContent = window.Kairos.Refinement.styles + `
+      .note-versions{display:grid;gap:16px}.note-version-label{font-size:11px;font-weight:600;opacity:.6;margin-bottom:8px;letter-spacing:.03em}
+      .note-version-original{border-bottom:1px solid #8883;padding-bottom:14px}.note-version-original .version-text{opacity:.8}
+      .note-version-history{border-top:1px solid #8883;margin-top:18px;padding-top:12px;font-size:12px}.note-version-history summary{cursor:pointer;opacity:.65}.note-version-history article{padding:12px 0}
+      .timestamp-group .kairos-refinement-status{margin-left:8px}
+    `;
+    document.head.appendChild(refinementStyle);
+    await window.Kairos.Refinement.init();
+    window.addEventListener('kairos-note-updated', ({ detail: { id, note } }) => {
+      const previous = selectedVideo?.notes.find(item => item.id === id);
+      if (previous && (!note || (note.updatedAt || 0) >= (previous.updatedAt || 0))) {
+        const entry = document.getElementById(`note-${id}`);
+        if (!note) { selectedVideo.notes = selectedVideo.notes.filter(item => item.id !== id); entry?.remove(); }
+        else {
+          Object.assign(previous, note);
+          if (entry) {
+            entry.querySelector('.content').innerHTML = renderNoteVersions(note);
+            entry.querySelector('.kairos-refinement-status')?.replaceWith(window.Kairos.Refinement.status(note));
+          }
+        }
+      }
+    });
 
     // Check URL params for tab
     const urlParams = new URLSearchParams(window.location.search);
@@ -345,6 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderNotes(video) {
+        selectedVideo = video;
         // Sort notes by timestamp
         video.notes.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -378,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
 
                         <div class="note-body ${note.source === 'ai' ? 'ai-note' : 'user-note'}">
-                            <div class="content">${Kairos.SimpleMarkdown.parse(note.content || t('Screenshot'))}</div>
+                            <div class="content">${renderNoteVersions(note)}</div>
                             ${renderExtras(note)}
                         </div>
                     </div>
@@ -386,6 +412,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
+        video.notes.forEach(note => {
+            document.getElementById(`note-${note.id}`)?.querySelector('.timestamp-group')?.appendChild(window.Kairos.Refinement.status(note));
+        });
         document.getElementById('btnExport').onclick = () => exportMarkdown(video);
         const summaryPanel = libraryViewEl.querySelector('.summary-panel');
         document.getElementById('btnSummary').onclick = () => {
@@ -468,6 +497,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function renderNoteVersions(note) {
+        const markdown = text => Kairos.SimpleMarkdown.parse(text || '');
+        const pair = (original, refined) => `<div class="note-versions"><section class="note-version-original"><div class="note-version-label">${t('Your original')}</div><div class="version-text">${markdown(original)}</div></section><section><div class="note-version-label">${t('AI refined')}</div><div class="version-text">${markdown(refined)}</div></section></div>`;
+        const current = note.originalContent && note.aiContent
+            ? pair(note.originalContent, note.aiContent)
+            : markdown(note.content || t('Screenshot'));
+        const history = note.versions?.length
+            ? `<details class="note-version-history"><summary>${t('Earlier versions')}</summary>${note.versions.map(version => `<article>${pair(version.originalContent, version.aiContent)}</article>`).join('')}</details>` : '';
+        return current + history;
+    }
+
     function renderExtras(note) {
         if (!note.imageUrl && !note.context) return '';
 
@@ -529,7 +569,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         video.notes.forEach(note => {
             md += `### ${note.timeLabel}\n`;
-            md += `${note.content}\n\n`;
+            if (note.originalContent && note.aiContent) md += `**${t('Your original')}**\n\n${note.originalContent}\n\n**${t('AI refined')}**\n\n${note.aiContent}\n\n`;
+            else md += `${note.content}\n\n`;
 
             if (note.context) {
                 md += `> **Transcript**: "${note.context}"\n\n`;

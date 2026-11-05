@@ -50,6 +50,7 @@ try {
   await call('Page.navigate',{url:`http://127.0.0.1:${server.address().port}/`});
   await run('new Promise(r=>setTimeout(r,100))');
   await run('window.chrome={runtime:{onMessage:{addListener:fn=>window.handler=fn}}};window.Kairos={log:()=>{}}');
+  await run((await readFile(new URL('../src/note-refinement.js',import.meta.url),'utf8')).replace(/^export /gm,''));
   const background=await readFile(new URL('../src/background.js',import.meta.url),'utf8');
   await run(background.slice(background.indexOf('const DB_NAME'),background.indexOf('// --- Gemini API Logic ---')));
   await run('chrome.runtime.sendMessage=(message,callback)=>handler(message,{},callback)');

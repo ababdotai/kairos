@@ -83,7 +83,7 @@ try {
   `);
   await run(`chrome.runtime.getURL = () => ${JSON.stringify(icon)}`);
   await run(`chrome.i18n = { getUILanguage: () => ${JSON.stringify(process.env.KAIROS_TEST_LANGUAGE || 'zh-CN')} }`);
-  for (const name of ['i18n', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
+  for (const name of ['i18n', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
     await run(await readFile(new URL('../src/content/' + name + '.js', import.meta.url), 'utf8'));
   }
   await run(`(async () => {
@@ -114,7 +114,7 @@ try {
   assert.equal(await run('video.paused'), false, 'Save resumes playing video');
   await run('window.typedReplayPin=o.pins.find(p=>p.savedToStorage);o.updateSpatialMarkers(typedReplayPin.timestamp)');
   assert.equal(await run('typedReplayPin.spatialTooltip.textContent'),'hi','Typed notes without capture coordinates automatically appear at their timestamp');
-  assert.equal(await run('typedReplayPin.spatialTooltip.style.left'),'50%','Coordinate-free notes use the editor fallback anchor');
+  assert.equal(await run('parseFloat(typedReplayPin.spatialTooltip.style.left)+typedReplayPin.spatialTooltip.offsetWidth/2'),480,'Playback preview defaults to the video center horizontally');
   assert.notEqual(await run('getComputedStyle(typedReplayPin.spatialTooltip).display'),'none','Playback preview is visible after the editor closes');
   assert.equal(await run('o.activePin'),null,'Automatic replay does not open the editor');
   assert.equal(await run('video.paused'),false,'Automatic replay does not pause playback');
@@ -122,7 +122,7 @@ try {
   await run('new Promise(r=>setTimeout(r,350))');
   assert.equal(await run('typedReplayPin.spatialTooltip'),null,'Playback preview disappears outside its time window');
   await run('typedReplayPin.spatialX=null;typedReplayPin.spatialY=null;o.updateSpatialMarkers(typedReplayPin.timestamp)');
-  assert.equal(await run('typedReplayPin.spatialTooltip.style.top'),'40%','Stored null coordinates also replay on a backward seek');
+  assert.equal(await run('parseFloat(typedReplayPin.spatialTooltip.style.top)+typedReplayPin.spatialTooltip.offsetHeight'),await run('540-o.companionInput.captureBottom-32'),'Legacy notes replay above the player controls');
   assert.equal(await run('getComputedStyle(typedReplayPin.spatialTooltip).pointerEvents'),'auto','Replay preview accepts pointer hover');
   await run('typedReplayPin.spatialTooltip.dispatchEvent(new PointerEvent("pointerenter"));o.updateSpatialMarkers(typedReplayPin.timestamp+10)');
   await run('new Promise(r=>setTimeout(r,350))');

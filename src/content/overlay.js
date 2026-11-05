@@ -30,6 +30,8 @@
       this.isEditing = false;
       this.wasPlaying = false;
       this.positionLoaded = false;
+      this.boundNoteUpdated = ({ detail }) => this.applyNoteUpdate(detail);
+      window.addEventListener('kairos-note-updated', this.boundNoteUpdated);
       this.scanAnimationTimer = null; // Timer for AI scanning animation
       this.timelineScaleRendered = false; // Flag for timeline scale rendering
       this.isDraggingTimeline = false; // Flag for timeline dragging
@@ -54,6 +56,7 @@
       document.body.appendChild(this.container);
       this.updatePresentationMode();
       this.setupIslandDrag();
+      this.setupNoteDrag();
 
       // Listen for note deletion events from sidepanel
       window.addEventListener('kairos-note-deleted', (e) => {
@@ -421,6 +424,13 @@
       noteActions.appendChild(saveBtn);
       noteActions.appendChild(cancelBtn);
       noteWrapper.appendChild(noteActions);
+      const noteHandle = document.createElement('button');
+      noteHandle.type = 'button';
+      noteHandle.className = 'kairos-note-drag-handle';
+      noteHandle.title = t("Drag to move · Position remembered");
+      noteHandle.setAttribute('aria-label', noteHandle.title);
+      noteWrapper.appendChild(noteHandle);
+      this.noteHandle = noteHandle;
 
       island.appendChild(orb);
       const islandPanel = document.createElement('div');
@@ -441,6 +451,7 @@
       });
       orbMenu.appendChild(this.islandPinButton);
       toolbar.append(timeLabel);
+      if (window.Kairos.Refinement) toolbar.appendChild(window.Kairos.Refinement.createToggle());
       islandPanel.appendChild(toolbar);
       islandPanel.appendChild(timeline);
       this.islandTime = timeLabel;
@@ -563,6 +574,7 @@
         const time = document.createElement('span');
         time.textContent = Utils.formatTime(pin.timestamp);
         const content = document.createElement('span');
+        content.className = 'kairos-island-note-copy';
         content.textContent = pin.note || (pin.imageUrl ? t("Screenshot") : t("Empty note"));
         open.title = content.textContent;
         open.append(time, content);
@@ -609,13 +621,43 @@
             this.loadNotesForCurrentVideo();
           }
         }, t("Delete {time} note", { time: time.textContent }));
-        row.append(open, remove);
+        row.append(open);
+        if (window.Kairos.Refinement) row.appendChild(window.Kairos.Refinement.status(pin));
+        row.appendChild(remove);
         this.islandList.appendChild(row);
         this.islandEntries.push({ pin, row, open, moment });
       }
       this.islandList.scrollTop = scrollTop;
       this.islandMoments.scrollLeft = scrollLeft;
       this.updateIslandPlayback(this.videoElement?.currentTime || 0);
+    }
+
+    /** Apply background results without rebuilding the list or stealing editor focus. */
+    applyNoteUpdate({ id, note }) {
+      if (!note) {
+        if (this.activePin?.id === id) { delete this.activePin.deferredRefinement; this.closeNoteInput(true); }
+        this.removePinByNoteId(id);
+        return;
+      }
+      if (note.videoId !== this.currentVideoId) return;
+      const pin = this.pins?.find(pin => pin.id === id);
+      if (!pin) { this.renderPin(note); this.renderIslandNotes(); return; }
+      if ((pin.updatedAt || 0) >= (note.updatedAt || 0)) return;
+      if (this.activePin === pin && this.isEditing) {
+        if ((pin.deferredRefinement?.updatedAt || 0) < note.updatedAt) pin.deferredRefinement = note;
+        return;
+      }
+      const changed = pin.note !== note.content;
+      Object.assign(pin, note, { note: note.content, savedToStorage: true });
+      const entry = this.islandEntries?.find(entry => entry.pin === pin);
+      if (entry) {
+        const body = entry.open.children[1];
+        if (changed) window.Kairos.Refinement.replaceText(body, () => { body.textContent = note.content; }, note.refinement?.status === 'complete');
+        entry.open.title = note.content; entry.moment.title = note.content;
+        entry.moment.setAttribute('aria-label', `${Utils.formatTime(note.timestamp)}：${note.content}`);
+        entry.row.querySelector('.kairos-refinement-status')?.replaceWith(window.Kairos.Refinement.status(note));
+      } else this.renderIslandNotes();
+      if (this.activePin === pin && !this.isEditing && changed) this.switchToViewMode(note.content);
     }
 
     /** Playback highlighting stays live even while the user browses elsewhere. */
@@ -1153,6 +1195,7 @@
 
         // Update opacity for fade effect
         if (pin.spatialMarker) {
+          this.alignSpatialMarker(pin);
           const opacity = held ? 1 : Math.max(0, 1 - (timeDiff / WINDOW));
           pin.spatialMarker.style.opacity = opacity;
           if (pin.spatialTooltip) pin.spatialTooltip.style.opacity = opacity;
@@ -1208,23 +1251,15 @@
     }
 
     /**
-     * Renders a spatial marker (ripple/dot) at the captured coordinates
+     * Renders a playback preview using the shared note placement preference.
      * @param {Object} pin - Pin data
      */
     renderSpatialMarker(pin) {
-      // Typed and legacy notes may have no capture coordinates. Use the same
-      // default anchor as the editor so they also appear during playback.
-      const x = Number.isFinite(pin.spatialX) ? pin.spatialX : 50;
-      const y = Number.isFinite(pin.spatialY) ? pin.spatialY : 40;
       const marker = document.createElement('div');
       marker.className = 'kairos-spatial-marker';
-      marker.style.left = `${x}%`;
-      marker.style.top = `${y}%`;
 
       const tooltip = document.createElement('div');
       tooltip.className = 'kairos-spatial-tooltip';
-      tooltip.style.left = `${x}%`;
-      tooltip.style.top = `${y}%`;
       tooltip.textContent = pin.note || '';
       tooltip.addEventListener('pointerenter', () => {
         clearTimeout(pin.spatialFadeTimer);
@@ -1248,6 +1283,21 @@
       this.spatialLayer.appendChild(tooltip);
       pin.spatialMarker = marker;
       pin.spatialTooltip = tooltip;
+      this.alignSpatialMarker(pin);
+      this.noteResizeObserver?.observe(tooltip);
+    }
+
+    alignSpatialMarker(pin) {
+      const tooltip = pin.spatialTooltip;
+      if (!tooltip || !pin.spatialMarker) return;
+      const rect = this.overlayElement.getBoundingClientRect();
+      const safeBottom = this.companionInput?.captureBottom ?? 80;
+      tooltip.style.maxHeight = `${Math.max(36, rect.height - safeBottom - 44)}px`;
+      const { left, top } = this.notePlacement(tooltip, rect.width, rect.height);
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+      pin.spatialMarker.style.left = `${left + tooltip.offsetWidth / 2}px`;
+      pin.spatialMarker.style.top = `${top + tooltip.offsetHeight + 16}px`;
     }
 
     /** Fade only after the reader leaves; keep the node available for re-entry. */
@@ -1271,6 +1321,7 @@
         pin.spatialMarker = null;
       }
       if (pin.spatialTooltip) {
+        this.noteResizeObserver?.unobserve(pin.spatialTooltip);
         pin.spatialTooltip.remove();
         pin.spatialTooltip = null;
       }
@@ -1329,22 +1380,102 @@
       }
     }
 
-    /**
-     * Updates note wrapper alignment based on reference point (Orb or Spatial)
-     * @param {Object} pinData - The pin data containing spatial info
-     * @param {number} containerWidth - Container width
-     * @param {number} containerHeight - Container height
-     */
+    /** Editor placement is independent of the captured region's spatial coordinates. */
+    setupNoteDrag() {
+      this.noteDragController = new AbortController();
+      const options = { signal: this.noteDragController.signal };
+      this.noteAnchor = { x: .5, y: 1 };
+      chrome.storage.local.get('noteEditorAnchor').then(({ noteEditorAnchor: anchor }) => {
+        if (this.noteDragController.signal.aborted || this.notePositionChanged) return;
+        if (Number.isFinite(anchor?.x) && Number.isFinite(anchor?.y)) {
+          this.noteAnchor = { x: Math.max(0, Math.min(1, anchor.x)), y: Math.max(0, Math.min(1, anchor.y)) };
+          this.alignNote();
+        }
+      }).catch(error => log('Note position load failed', error));
+      this.noteHandle.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const rect = this.noteWrapper.getBoundingClientRect();
+        this.noteDrag = { id: event.pointerId, dx: event.clientX - rect.left, dy: event.clientY - rect.top };
+        this.noteWrapper.classList.add('is-dragging');
+        this.noteHandle.setPointerCapture(event.pointerId);
+      }, options);
+      this.noteHandle.addEventListener('pointermove', event => {
+        if (this.noteDrag?.id !== event.pointerId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const rect = this.overlayElement.getBoundingClientRect();
+        const limits = this.notePlacementBounds(rect.width, rect.height);
+        const x = event.clientX - rect.left - this.noteDrag.dx;
+        const y = event.clientY - rect.top - this.noteDrag.dy;
+        this.noteAnchor = {
+          x: limits.width ? Math.max(0, Math.min(1, (x - limits.left) / limits.width)) : .5,
+          y: limits.height ? Math.max(0, Math.min(1, (y - limits.top) / limits.height)) : 1
+        };
+        this.notePositionChanged = true;
+        this.noteDrag.moved = true;
+        this.alignNote();
+      }, options);
+      const finish = event => {
+        if (!this.noteDrag || (event.pointerId !== undefined && this.noteDrag.id !== event.pointerId)) return;
+        event.stopPropagation();
+        this.finishNoteDrag();
+        if (this.isEditing && document.hasFocus()) this.noteInput.focus({ preventScroll: true });
+      };
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) this.noteHandle.addEventListener(type, finish, options);
+      window.addEventListener('blur', finish, options);
+      for (const type of ['click', 'dblclick', 'mousedown', 'mouseup']) this.noteHandle.addEventListener(type, event => {
+        event.preventDefault();
+        event.stopPropagation();
+      }, options);
+      this.noteResizeObserver = new ResizeObserver(() => this.alignNote());
+      this.noteResizeObserver.observe(this.noteWrapper);
+      this.noteResizeObserver.observe(this.overlayElement);
+    }
+
+    finishNoteDrag() {
+      const drag = this.noteDrag;
+      if (!drag) return;
+      this.noteDrag = null;
+      this.noteWrapper.classList.remove('is-dragging');
+      if (this.noteHandle.hasPointerCapture(drag.id)) this.noteHandle.releasePointerCapture(drag.id);
+      if (drag.moved) chrome.storage.local.set({ noteEditorAnchor: this.noteAnchor })
+        .catch(error => log('Note position save failed', error));
+    }
+
+    alignNote() {
+      if (this.noteWrapper?.classList.contains('active')) {
+        const rect = this.overlayElement.getBoundingClientRect();
+        this.updateNoteAlignment(this.activePin, rect.width, rect.height);
+      }
+      for (const pin of this.pins || []) this.alignSpatialMarker(pin);
+    }
+
+    notePlacementBounds(width, height, element = this.noteWrapper) {
+      const margin = 12;
+      const safeBottom = this.companionInput?.captureBottom ?? Math.max(80, Math.min(144, height * .16));
+      return {
+        left: margin, top: margin,
+        width: Math.max(0, width - element.offsetWidth - margin * 2),
+        height: Math.max(0, height - safeBottom - 32 - element.offsetHeight - margin)
+      };
+    }
+
+    notePlacement(element, width, height) {
+      const bounds = this.notePlacementBounds(width, height, element);
+      const anchor = this.noteAnchor || { x: .5, y: 1 };
+      return { left: bounds.left + bounds.width * anchor.x, top: bounds.top + bounds.height * anchor.y };
+    }
+
     updateNoteAlignment(pinData, containerWidth, containerHeight) {
       if (!this.noteWrapper) return;
-
-      const noteWidth = Math.min(320, containerWidth - 32);
-      const refX = (pinData?.spatialX ?? 50) / 100 * containerWidth;
-      const refY = (pinData?.spatialY ?? 40) / 100 * containerHeight;
-      const height = this.noteWrapper.offsetHeight || 100;
-      const left = Math.max(16, Math.min(refX - noteWidth / 2, containerWidth - noteWidth - 16));
-      const preferredTop = refY > height + 28 ? refY - height - 12 : refY + 12;
-      const top = Math.max(16, Math.min(preferredTop, containerHeight - height - 60));
+      const safeBottom = this.companionInput?.captureBottom ?? 80;
+      const availableHeight = Math.max(80, containerHeight - safeBottom - 44);
+      const imageHeight = this.capturePreview && !this.capturePreview.hidden ? Math.min(76, Math.max(0, availableHeight - 96)) : 0;
+      this.noteWrapper.style.setProperty('--note-image-height', `${imageHeight}px`);
+      this.noteWrapper.style.setProperty('--note-text-height', `${Math.max(36, availableHeight - imageHeight - 36)}px`);
+      const { left, top } = this.notePlacement(this.noteWrapper, containerWidth, containerHeight);
       this.noteWrapper.style.transformOrigin = 'center bottom';
 
       this.noteWrapper.style.left = `${left}px`;
@@ -1552,7 +1683,7 @@
         pinData.imageUrl = screenshot;
         if (this.activePin === pinData) this.updateCapturePreview(pinData);
         // Captures remain drafts. Only attach a late image to an already saved note.
-        if (pinData.savedToStorage) await this.savePinToStorage(pinData, false);
+        if (pinData.savedToStorage) await this.attachNoteImage(pinData, screenshot);
         
         if (silent) {
            pinData.isAnalyzing = true;
@@ -1806,14 +1937,7 @@
 
       this.noteWrapper.classList.add('active');
 
-      // Update note alignment based on reference (Orb or Spatial)
-      if (this.overlayElement) {
-        const rect = this.overlayElement.getBoundingClientRect();
-        // Delay alignment slightly to allow max-height transition/content rendering for height calc
-        setTimeout(() => {
-          this.updateNoteAlignment(pinData, rect.width, rect.height);
-        }, 10);
-      }
+      this.alignNote();
 
       if (this.isEditing) {
         this.noteInput.focus();
@@ -1968,9 +2092,12 @@
       }
 
       const previousContent = pin.note;
+      const previousSource = pin.source;
       pin.note = content;
+      pin.source = 'user';
+      delete pin.deferredRefinement;
       const saved = await this.savePinToStorage(pin);
-      if (!saved) { pin.note = previousContent; return; }
+      if (!saved) { pin.note = previousContent; pin.source = previousSource; return; }
       if (this.activePin !== pin) return;
       // Successful saving finishes the note-taking pause, even if playback
       // was already paused when the user opened this note.
@@ -1982,6 +2109,13 @@
      * Persists a pin data object to storage
      * @param {Object} pinData - The pin object to save
      */
+    async attachNoteImage(pinData, imageUrl) {
+      try {
+        const note = await window.Kairos.Refinement.request('ATTACH_NOTE_IMAGE', { id: pinData.id, videoId: pinData.videoId || this.currentVideoId, imageUrl });
+        if (note) this.applyNoteUpdate({ id: pinData.id, note });
+      } catch (error) { log('Could not attach captured image', error); }
+    }
+
     async savePinToStorage(pinData, notify = true) {
         if (!pinData) return;
         if (!pinData.savedToStorage && !pinData.note?.trim()) return false;
@@ -1989,9 +2123,9 @@
         const info = Utils.getVideoInfo();
         const noteRecord = {
           id: pinData.id || Utils.generateId(),
-          videoId: info.videoId,
-          videoUrl: info.url,
-          videoTitle: info.title,
+          videoId: pinData.videoId || info.videoId,
+          videoUrl: pinData.videoUrl || info.url,
+          videoTitle: pinData.videoTitle || info.title,
           content: pinData.note || '',
           timestamp: pinData.timestamp,
           timeLabel: Utils.formatTime(pinData.timestamp),
@@ -2006,9 +2140,16 @@
         };
 
         try {
-          await this.storage.saveNote(noteRecord);
-          pinData.id = noteRecord.id;
-          pinData.savedToStorage = true;
+          const response = await this.storage.saveNote(noteRecord);
+          Object.assign(noteRecord, response?.note || {});
+          const lateImage = pinData.imageUrl && !noteRecord.imageUrl ? pinData.imageUrl : null;
+          if (lateImage) { noteRecord.imageUrl = lateImage; void this.attachNoteImage(pinData, lateImage); }
+          Object.assign(pinData, noteRecord, { note: noteRecord.content, savedToStorage: true });
+          delete pinData.deferredRefinement;
+          if (window.Kairos.Refinement && noteRecord.refinement?.status === 'pending') {
+            void window.Kairos.Refinement.request('GET_NOTE', { id: noteRecord.id }).then(note => this.applyNoteUpdate({ id: noteRecord.id, note })).catch(() => {});
+          }
+          if (this.currentVideoId && noteRecord.videoId !== this.currentVideoId) return true;
           this.renderIslandNotes();
           
           // Force spatial marker refresh to update tooltip content
@@ -2038,6 +2179,7 @@
      */
     closeNoteInput(force = false) {
       if (!this.noteWrapper || (!force && this.isEditing)) return;
+      this.finishNoteDrag();
       if (this.activePin?.region && !this.activePin.savedToStorage &&
           !this.activePin.isAnalyzing && !this.noteInput.value.trim()) {
         if (this.pins.includes(this.activePin)) this.showIslandFeedback('discarded');
@@ -2046,6 +2188,8 @@
         this.pins = this.pins.filter(pin => pin !== this.activePin);
       }
 
+      const deferredRefinement = this.activePin?.deferredRefinement;
+      if (this.activePin) delete this.activePin.deferredRefinement;
       this.noteWrapper.classList.remove('active');
       this.noteInput.blur();
 
@@ -2069,6 +2213,7 @@
 
       this.activePin = null;
       this.isEditing = false;
+      if (deferredRefinement) this.applyNoteUpdate({ id: deferredRefinement.id, note: deferredRefinement });
 
       if (this.escListener) {
         document.removeEventListener('keydown', this.escListener, true);
@@ -2272,6 +2417,10 @@
         percentage: percentage,
         timestamp: this.videoElement ? this.videoElement.currentTime : 0,
         note: '',
+        context: this.subtitleManager?.getContext() || '',
+        videoId: Utils.getVideoInfo().videoId,
+        videoTitle: Utils.getVideoInfo().title,
+        videoUrl: Utils.getVideoInfo().url,
         source: 'user', // Default to user
         createdAt: Date.now()
       };
@@ -2498,6 +2647,10 @@
      * Destroys the overlay
      */
     destroy() {
+      this.finishNoteDrag();
+      this.noteDragController?.abort();
+      this.noteResizeObserver?.disconnect();
+      window.removeEventListener('kairos-note-updated', this.boundNoteUpdated);
       clearTimeout(this.islandFeedbackTimer);
       this.islandDragController?.abort();
       this.islandResizeObserver?.disconnect();

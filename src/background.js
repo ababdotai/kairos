@@ -1,3 +1,4 @@
+import { prepareNoteSave, refinementPrompt } from './note-refinement.js';
 import { GoogleGenAI } from '@google/genai';
 import { generateAI } from './ai-client.js';
 import { AI_SETTINGS_KEYS, resolveAI } from './ai-providers.js';
@@ -29,15 +30,129 @@ function openDB() {
   });
 }
 
-async function saveNote(note) {
+// Serialize each record update in IndexedDB; never recreate a deleted note on AI completion.
+async function mutateNote(id, transform) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    const request = store.put(note);
-    request.onsuccess = () => resolve({ status: 'success' });
-    request.onerror = (e) => reject(e.target.error);
+    let result;
+    tx.oncomplete = () => { db.close(); resolve(result); };
+    tx.onabort = () => { db.close(); reject(tx.error || new Error('Note transaction aborted')); };
+    tx.onerror = () => {};
+    const request = store.get(id);
+    request.onsuccess = () => {
+      try {
+        const next = transform(request.result);
+        result = { changed: next !== undefined, note: next === undefined ? request.result : next };
+        if (next === null) store.delete(id);
+        else if (next !== undefined) store.put(next);
+      } catch (error) { tx.abort(); }
+    };
   });
+}
+
+async function getNote(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const request = tx.objectStore(STORE_NAME).get(id);
+    tx.oncomplete = () => { db.close(); resolve(request.result || null); };
+    tx.onabort = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function publishNote(note, deletedId) {
+  // A small invalidation signal, never a second copy of screenshots or note text.
+  try { await chrome.storage.local.set({ kairosNoteChange: { id: note?.id ?? deletedId, videoId: note?.videoId, event: crypto.randomUUID() } }); }
+  catch { /* Persistence has already succeeded; readers can reload it later. */ }
+}
+
+let refinementEnabledOverride;
+async function saveNote(input) {
+  const settings = await chrome.storage?.sync?.get([...AI_SETTINGS_KEYS, 'autoRefineNotes']) || {};
+  const { note } = await mutateNote(input.id, previous => prepareNoteSave(input, previous, refinementEnabledOverride ?? (settings.autoRefineNotes === true)));
+  // Return the committed original immediately; refinement cannot delay playback.
+  void publishNote(note);
+  if (note.refinement?.status === 'pending') void refineNote(note, settings);
+  return { status: 'success', note };
+}
+
+const refinementJobs = new Set();
+async function refineNote(note, settings) {
+  const token = note.refinement.token;
+  refinementJobs.add(token);
+  let timeout;
+  // MV3 can suspend an idle worker while an API is slow. Keep only this bounded job alive.
+  const keepAlive = setInterval(() => { chrome.storage.local.get('kairosNoteChange').catch(() => {}); }, 20000);
+  let outcome;
+  try {
+    const { provider, model } = resolveAI(settings);
+    const text = await Promise.race([
+      generateAI(settings, { prompt: refinementPrompt(note, settings.noteLanguage || 'auto'), image: note.imageUrl, maxTokens: 2048 }),
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('REFINEMENT_TIMEOUT')), 90000); })
+    ]);
+    if (!text?.trim()) throw new Error('EMPTY_REFINEMENT');
+    outcome = { status: 'complete', text: text.trim(), provider, model, completedAt: Date.now() };
+  } catch {
+    outcome = { status: 'error', completedAt: Date.now() };
+  } finally {
+    clearTimeout(timeout); clearInterval(keepAlive); refinementJobs.delete(token);
+  }
+  try {
+    const { changed, note: updated } = await mutateNote(note.id, current => {
+      if (!current || current.revision !== note.revision || current.refinement?.token !== token || current.refinement.status !== 'pending') return;
+      const { text, ...metadata } = refinementEnabledOverride === false ? { status: 'cancelled', completedAt: Date.now() } : outcome;
+      return { ...current, ...(text ? { content: text, aiContent: text } : {}), updatedAt: Math.max(Date.now(), current.updatedAt + 1), refinement: { ...current.refinement, ...metadata } };
+    });
+    if (changed) await publishNote(updated);
+  } catch (error) { console.error('Could not persist refined note:', error); }
+}
+
+async function setAutoRefine(enabled) {
+  if (typeof enabled !== 'boolean') throw new Error('Invalid AI preference');
+  if (enabled) {
+    // Missing configuration is an expected user action, not a worker failure.
+    // Read storage outside this guard so genuine storage errors remain visible.
+    const settings = await chrome.storage.sync.get(AI_SETTINGS_KEYS);
+    try { resolveAI(settings); }
+    catch { return { status: 'configuration_required' }; }
+  }
+  const previous = refinementEnabledOverride;
+  refinementEnabledOverride = enabled;
+  try { await chrome.storage.sync.set({ autoRefineNotes: enabled }); }
+  catch (error) { refinementEnabledOverride = previous; throw error; }
+  if (!enabled) await cancelPendingRefinements();
+  return { enabled };
+}
+
+async function cancelPendingRefinements() {
+  for (const note of await getAllNotes()) {
+    if (note.refinement?.status !== 'pending') continue;
+    const result = await mutateNote(note.id, current => {
+      if (current?.refinement?.token !== note.refinement.token || current.refinement.status !== 'pending') return;
+      return { ...current, refinement: { ...current.refinement, status: 'cancelled' }, updatedAt: Math.max(Date.now(), current.updatedAt + 1) };
+    });
+    if (result.changed) await publishNote(result.note);
+  }
+}
+chrome.storage?.onChanged?.addListener((changes, area) => {
+  if (area !== 'sync' || !changes.autoRefineNotes) return;
+  refinementEnabledOverride = changes.autoRefineNotes.newValue === true;
+  if (!refinementEnabledOverride) void cancelPendingRefinements().catch(console.error);
+});
+
+// A browser/worker restart must not leave an eternal activity indicator.
+async function recoverRefinements(notes) {
+  return Promise.all(notes.map(async note => {
+    if (note.refinement?.status !== 'pending' || refinementJobs.has(note.refinement.token) || Date.now() - note.refinement.startedAt < 95000) return note;
+    const result = await mutateNote(note.id, current => {
+      if (current?.refinement?.token !== note.refinement.token || current.refinement.status !== 'pending') return;
+      return { ...current, refinement: { ...current.refinement, status: 'error' }, updatedAt: Math.max(Date.now(), current.updatedAt + 1) };
+    });
+    if (result.changed) void publishNote(result.note);
+    return result.note;
+  }));
 }
 
 async function getNotes(videoId) {
@@ -47,7 +162,7 @@ async function getNotes(videoId) {
     const store = tx.objectStore(STORE_NAME);
     const index = store.index('videoId');
     const request = index.getAll(videoId);
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => { db.close(); resolve(request.result); };
     request.onerror = (e) => reject(e.target.error);
   });
 }
@@ -58,7 +173,7 @@ async function getAllNotes() {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
     const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => { db.close(); resolve(request.result); };
     request.onerror = (e) => reject(e.target.error);
   });
 }
@@ -88,24 +203,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'SUMMARIZE_VIDEO_NOTES':
           response = await summarizeVideoNotes(message.payload);
           break;
+        case 'SET_AUTO_REFINE':
+          response = await setAutoRefine(message.payload.enabled);
+          break;
+        case 'GET_NOTE': {
+          const note = await getNote(message.payload.id);
+          response = note ? (await recoverRefinements([note]))[0] : null;
+          break;
+        }
+        case 'ATTACH_NOTE_IMAGE': {
+          const { id, videoId, imageUrl } = message.payload;
+          if (typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image/')) throw new Error('Invalid captured image');
+          const result = await mutateNote(id, current => {
+            if (!current || current.videoId !== videoId || current.imageUrl) return;
+            return { ...current, imageUrl, updatedAt: Math.max(Date.now(), current.updatedAt + 1) };
+          });
+          if (result.changed) void publishNote(result.note);
+          response = result.note || null;
+          break;
+        }
         case 'SAVE_NOTE':
           response = await saveNote(message.payload);
           break;
         case 'GET_NOTES':
-          response = await getNotes(message.payload.videoId);
+          response = (await recoverRefinements(await getNotes(message.payload.videoId))).filter(Boolean);
           break;
         case 'GET_ALL_NOTES':
-          response = await getAllNotes();
+          response = (await recoverRefinements(await getAllNotes())).filter(Boolean);
           break;
         case 'DELETE_NOTE':
           response = await deleteNote(message.payload.id);
+          void publishNote(null, message.payload.id);
           break;
         case 'OPEN_DASHBOARD':
           chrome.tabs.create({ url: '/src/dashboard.html' });
           response = { status: 'opened' };
           break;
         case 'OPEN_SETTINGS':
-          chrome.tabs.create({ url: '/src/dashboard.html?tab=settings' });
+          await chrome.tabs.create({ url: '/src/dashboard.html?tab=settings' });
           response = { status: 'opened' };
           break;
         case 'ANALYZE_FRAME':

@@ -31,6 +31,18 @@ Kairos is a **Proactive + Reactive** agent:
 - **Proactive**: Kairos watches the video with you and automatically discovers highlights and key points.
 - **Reactive**: You provide the signal; the AI reduces the noise and fills in the fidelity.
 
+## What's new in 1.0.5 · 2026-11-05
+
+- **Save first, refine in the background.** Enter saves your words and resumes playback immediately. Optional AI refinement updates the same note, while Dashboard and Markdown export retain the original and AI versions. The island uses a compact star for completed refinement; the sidebar keeps the text label.
+- **One position for writing and revisiting.** Notes open at the lower center of the video above player controls. Drag the blue dot to remember a different position across videos and reloads. Automatic playback previews use the same preference, including older screenshot notes; long previews scroll within the available video area. Hover keeps a preview visible; leaving fades it out.
+- **A clearer view through the island.** A pinned-open island becomes more transparent with less blur when the pointer leaves. Hover, keyboard navigation, dragging and delete confirmation restore readability. Light/dark themes and reduced-motion preferences are supported.
+- **A better-placed AI switch.** The localized switch sits beside the sidebar's top actions and remains available in the expanded island. Enabling without a configured provider opens Settings without recording an expected configuration prompt as a background error.
+- **Website walkthroughs.** The site combines an actual product screenshot with illustrated note/capture/refinement steps and a provider-settings demo. The privacy page explains opt-in refinement and which inputs go to the selected AI provider.
+
+### Automatic note refinement
+
+The sidebar and expanded island share an **AI off / AI on** toggle (off by default, remembered across videos). With AI enabled, Enter first saves your original note and resumes playback. A small per-note indicator shows refinement using the captured frame and nearby subtitles. The result replaces the same list entry with a short transition; reduced-motion users see an immediate update. Dashboard keeps the original and AI text together, including earlier refined versions after edits. Failures keep the original, and delayed results cannot overwrite newer saves, revive deleted notes, or replace notes after AI is turned off. Turning AI on requires a configured provider key; requests may incur provider charges. Turning it off prevents pending results from replacing notes, but does not cancel an already submitted provider request.
+
 ### AI providers and models
 
 Settings supports Gemini, OpenAI, Anthropic Claude, DeepSeek, Kimi and OpenRouter, with independent keys and model preferences. Provider cards include brand marks, plain-language setup guidance, Chinese/English localization and system light/dark themes.
@@ -119,6 +131,21 @@ Load into Chrome:
 2. Enable **Developer mode**
 3. Click **Load unpacked**
 4. Select the `dist/` directory (not the project root)
+
+After updating an unpacked installation, reload the extension and refresh open video pages.
+
+### Chrome Web Store package
+
+```bash
+pnpm run build
+python3 scripts/package-store.py
+```
+
+For this version, upload `release/kairos-1.0.5-chrome.zip`. Its root contains the production manifest; source code, tests and website files are excluded. The adjacent `.sha256` file records its checksum. Packaging does not upload or submit the extension for review.
+
+### Verification
+
+Regression checks cover storage, provider request contracts, summaries, localization, popup routing, original/AI version retention, refinement races and failures, editor drag persistence, automatic playback positioning, and dashboard rendering. Run `node test/<name>.mjs` for the relevant suite; website instructions are in [website/README.md](website/README.md). Browser tests use an isolated Chrome profile and mocked AI responses; they do not call paid AI services. Native fullscreen requires a browser environment that permits fullscreen activation and should also be checked manually on a real video page.
 
 ## 🛡️ Privacy & Security
 

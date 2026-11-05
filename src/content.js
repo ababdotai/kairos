@@ -1,5 +1,6 @@
 import './content/i18n.js';
 import './content/delete_button.js';
+import './content/refinement.js';
 import './content.css';
 import './content/config.js';
 import './content/utils.js';
@@ -33,6 +34,7 @@ import './content/sidepanel.js';
    */
   async function init() {
     await window.Kairos.I18n.init();
+    await window.Kairos.Refinement.init();
     log('Initializing Kairos...');
 
     // Create GenUI Manager

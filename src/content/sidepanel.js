@@ -66,6 +66,14 @@
 
       // DOM references
       this.elements = {};
+      window.addEventListener('kairos-note-updated', ({ detail }) => {
+        if (detail.note?.videoId === this.currentVideoId) this.addNote(detail.note);
+        else if (!detail.note) {
+          this.notes = this.notes.filter(note => note.id !== detail.id);
+          for (const item of this.elements.notesList?.querySelectorAll('.kairos-sp-note-item') || []) if (item.dataset.id === String(detail.id)) item.remove();
+          this.updateNoteCount();
+        }
+      });
     }
 
     /**
@@ -258,6 +266,7 @@
 
       // Header Actions (Right)
       const headerActions = createElement('div', { className: 'kairos-sp-header-actions' });
+      if (window.Kairos.Refinement) headerActions.appendChild(window.Kairos.Refinement.createToggle());
 
       // Export Button
       const exportBtn = createElement('button', { 
@@ -415,6 +424,7 @@
         text: badgeText
       });
       header.appendChild(badge);
+      if (window.Kairos.Refinement) header.appendChild(window.Kairos.Refinement.status(note));
 
       body.appendChild(header);
 
@@ -443,7 +453,9 @@
 
       const style = document.createElement('style');
       style.id = 'kairos-sidepanel-styles';
-      style.textContent = `
+      style.textContent = `${window.Kairos.Refinement?.styles || ""}
+        #kairos-sidepanel .kairos-sp-note-header{flex-wrap:wrap;row-gap:3px;}
+
         #kairos-sidepanel {
           margin-bottom: 16px;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
@@ -1001,10 +1013,11 @@
         #kairos-sidepanel .kairos-sp-header { min-height: 54px; box-sizing: border-box; gap: 8px; }
         #kairos-sidepanel .kairos-sp-brand { min-width: 0; }
         #kairos-sidepanel .kairos-sp-brand-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        #kairos-sidepanel .kairos-sp-tagline { font-size: 10px; line-height: 1.4; color: #b8cbdc; }
+        #kairos-sidepanel .kairos-sp-tagline { font-size: 10px; line-height: 1.4; color: #b8cbdc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #kairos-sidepanel .kairos-sp-title { background: none; -webkit-text-fill-color: currentColor; color: #fff; letter-spacing: .025em; }
-        #kairos-sidepanel .kairos-sp-logo { width: 23px; height: 23px; }
+        #kairos-sidepanel .kairos-sp-logo { width: 23px; height: 23px; flex-shrink: 0; }
         #kairos-sidepanel .kairos-sp-header-actions { flex-shrink: 0; }
+        #kairos-sidepanel .kairos-sp-header-actions .kairos-ai-toggle { height: 26px; padding: 0 8px; margin-right: 4px; }
         #kairos-sidepanel .kairos-sp-subtitle-badge { color: #d5e2ec; background: #ffffff0a; border-color: #ffffff26; box-shadow: none; }
         #kairos-sidepanel .kairos-sp-subtitle-badge.active { color: #a7e7c6; }
         #kairos-sidepanel .kairos-sp-count-badge { background: #ffffff0e; color: #dbe7f1; border: 1px solid #ffffff20; box-shadow: none; }
@@ -1262,6 +1275,21 @@
      * @param {Object} note - Note data
      */
     addNote(note) {
+      if (note.videoId && this.currentVideoId && note.videoId !== this.currentVideoId) return;
+      const previous = this.notes.find(existing => existing.id === note.id);
+      if (previous?.updatedAt > note.updatedAt) return;
+      const existingItem = [...(this.elements.notesList?.querySelectorAll('.kairos-sp-note-item') || [])].find(item => item.dataset.id === String(note.id));
+      if (previous && existingItem) {
+        const changed = previous.content !== note.content;
+        Object.assign(previous, note);
+        const body = existingItem.querySelector('.kairos-sp-note-content');
+        if (changed) window.Kairos.Refinement.replaceText(body, () => { body.innerHTML = SimpleMarkdown.parse(note.content || t("(Empty note)")); }, note.refinement?.status === 'complete');
+        const sourceBadge = existingItem.querySelector('.kairos-badge');
+        if (sourceBadge) { sourceBadge.className = `kairos-badge ${note.source || 'user'} mini`; sourceBadge.textContent = note.source === 'ai' ? 'AI' : t('YOU'); }
+        const badge = existingItem.querySelector('.kairos-refinement-status');
+        if (badge) badge.replaceWith(window.Kairos.Refinement.status(note));
+        return;
+      }
       this.notes = this.notes.filter(existing => existing.id !== note.id);
       this.notes.push(note);
       this.notes.sort((a, b) => a.timestamp - b.timestamp);

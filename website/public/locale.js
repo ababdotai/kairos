@@ -1,8 +1,47 @@
 const translations = {
+  "免费开源": "Free & open source",
+  "笔记本地保存": "Notes stored locally",
+  "你的关键词": "Your keywords",
+  "棱镜、颜色、角度不同": "prism, colors, different angles",
+  "不同颜色的光经过棱镜时，折射角度不同，所以白光会分散成彩色光谱。": "A prism bends each color at a different angle, separating white light into a spectrum.",
+  "按 Enter 整理": "Enter to refine",
+  "关键词 → 完整表达 · 开启 AI 后自动润色": "Keywords → a complete thought · Automatic refinement with AI on",
+  "结合上下文润色": "Refining with context",
+  "AI 辅助润色": "AI refinement",
+  "保留你的意思，补全表达": "Your meaning, expressed clearly",
+  "笔记流程示意": "Note-taking walkthrough",
+  "交互示意": "Interactive illustration",
+  "截图笔记": "Capture a frame",
+  "AI 理解": "AI assistance",
+  "保存回看": "Save & revisit",
+  "设置界面示意": "Settings illustration",
+  "设置": "Settings",
+  "AI 模型提供商": "AI provider",
+  "选择谁来帮你理解画面、整理想法。": "Choose who helps you understand frames and organize thoughts.",
+  "模型": "Model",
+  "使用自己的账号": "Your own account",
+  "示例密钥，无需输入真实密钥": "Example key. No real API key is needed.",
+  "示例": "Demo",
+  "密钥由你掌握": "Your key, your control",
+  "随你选择": "Your choice",
+  "我的笔记": "My note",
+  "按 Enter 保存": "Enter to save",
+  "直接打字，把一闪而过的想法留在此刻。": "Start typing. Keep a fleeting thought connected to this moment.",
+  "把这个实验留作参考。": "Keep this experiment for later.",
+  "画面和想法，一起保存": "Keep the frame and your thought",
+  "拖出一个矩形，截取画面，再添上自己的理解。": "Drag to capture a frame, then add your own understanding.",
+  "正在整理": "Thinking with you",
+  "AI 笔记": "AI note",
+  "白光由不同波长的光组成。经过棱镜时，各种颜色偏折的角度不同，于是形成色散。": "White light contains different wavelengths. A prism bends each color at a different angle, spreading them into a spectrum.",
+  "结合画面与字幕": "From the frame and subtitles",
+  "空白输入时按 Enter，让 AI 帮你理解选中的内容。": "Press Enter with an empty note to let AI explain the selected content.",
+  "02:18 · 已连到视频时刻": "02:18 · Linked to this moment",
+  "保存后继续播放；点击笔记，随时回到这一刻。": "Save and keep watching. Click your note to revisit this moment.",
+  "整理完成": "Ready to keep",
   "看到这里，记下此刻。": "A moment worth keeping.",
   "视频、想法和笔记，就在同一个画面里。": "Your video, thoughts, and notes. Together in one view.",
   "查看完整产品截图": "View the full product screenshot",
-  "真实使用截图 · 点击查看大图": "Actual product screenshot · Click to enlarge",
+  "真实使用截图": "Actual product screenshot",
   "分享卡片示例 · 用户作品即将开放": "Example card · Community creations coming soon",
   "跳到正文": "Skip to content",
   "体验": "Experience",
@@ -128,7 +167,7 @@ const localizedNodes=[];
 const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
 while(walker.nextNode()) {
  const node=walker.currentNode;
- if(node.parentElement.closest('script,style,#typed-note,#demo-caption,#island-feedback,#play-demo,.install-toggle'))continue;
+ if(node.parentElement.closest('script,style,.install-toggle,[data-workflow-text],[data-workflow-draft],[data-workflow-caption],[data-workflow-status],[data-workflow-kind],[data-workflow-hint],.workflow-play'))continue;
  const original=node.nodeValue;
  if(translations[original.trim()])localizedNodes.push({node,original});
 }

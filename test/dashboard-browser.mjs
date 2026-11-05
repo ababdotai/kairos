@@ -53,7 +53,7 @@ try {
     window.notes=[{id:'one',videoId:'a',videoTitle:'学习如何做出更好的决定',videoUrl:'https://example.com/video',timestamp:92,timeLabel:'01:32',content:'不要只看结果，还要看当时的信息与选择。',source:'user',imageUrl:canvas.toDataURL(),createdAt:1},{id:'two',videoId:'a',videoTitle:'学习如何做出更好的决定',videoUrl:'https://example.com/video',timestamp:119,timeLabel:'01:59',content:'先记录判断依据，再回头检查。',source:'user',createdAt:1},{id:'three',videoId:'b',videoTitle:'Second video',timestamp:0,timeLabel:'00:00',content:'Other video',createdAt:0}];
     window.chrome={storage:{sync:{get:async(keys,cb)=>{const result={uiLanguage:'zh',providerModels:{openai:'gpt-5.4-nano'}};if(cb)setTimeout(()=>cb(result),0);return result;},set:async()=>{}},local:{get:async k=>({[k]:cache[k]}),set:async v=>Object.assign(cache,v)}},runtime:{sendMessage:async(msg,cb)=>{requests.push(msg);if(cb){setTimeout(()=>cb({success:true,data:notes}),0);return;}if(failSummary)return {success:false,error:'Test provider unavailable'};return {success:true,data:{text:'## 我的观看收获\\n\\n- [01:32] 判断过程和结果同样重要。\\n- [01:59] 记录依据，留待复盘。',fingerprint:summaryFingerprint(notes.filter(n=>n.videoId===msg.payload.videoId))}};}}};
     Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copied=text;}}});`);
-  for (const file of ['src/provider-icons.js','src/ai-providers.js','src/content/i18n.js','src/content/markdown.js','src/note-summary.js','src/share-image.js','src/dashboard-summary.js','src/dashboard.js']) {
+  for (const file of ['src/provider-icons.js','src/ai-providers.js','src/content/i18n.js','src/content/markdown.js','src/content/refinement.js','src/note-summary.js','src/share-image.js','src/dashboard-summary.js','src/dashboard.js']) {
     let code = await readFile(new URL('../'+file,import.meta.url),'utf8');
     code=code.replace(/^import .*;\s*$/gm,'').replace(/^export /gm,'');
     await run(code);
@@ -63,6 +63,12 @@ try {
   await run('document.dispatchEvent(new Event("DOMContentLoaded"));new Promise(r=>setTimeout(r,100))');
   await run('document.querySelector(".video-item").click()');
   assert.equal(await run('document.querySelector("#btnSummary").textContent'),'总结与分享');
+  await run(`window.dispatchEvent(new CustomEvent('kairos-note-updated',{detail:{id:'one',note:{...notes[0],updatedAt:2,originalContent:'结果、信息、选择',aiContent:notes[0].content,refinement:{status:'complete'},versions:[{originalContent:'旧关键词',aiContent:'先前的整理版'}]}}}));`);
+  assert.equal(await run('document.querySelector("#note-one .note-version-original .version-text").textContent.trim()'),'结果、信息、选择');
+  assert.ok(await run('document.querySelector("#note-one .note-versions").textContent.includes("不要只看结果")'));
+  assert.ok(await run('document.querySelector("#note-one .note-version-history").textContent.includes("先前的整理版")'));
+  await writeFile(join(profile,'dashboard-versions.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'})).data,'base64'));
+
   assert.equal(await run('getComputedStyle(document.querySelector(".note-body.user-note .content")).fontSize'),'18px');
   assert.equal(await run('document.querySelector(".note-screenshot-container").getBoundingClientRect().width<=300'),true,'Screenshot no longer spans the full page with empty sidebars');
   await run('document.querySelector(".note-screenshot").click()');
@@ -96,7 +102,7 @@ try {
   await run('notes[0].content="Changed note";document.querySelector(".video-item").click();document.querySelector("#btnSummary").click();new Promise(r=>setTimeout(r,30))');
   assert.equal(await run('document.querySelector(".summary-status").textContent.includes("笔记已更新")'),true);
   await run('failSummary=false;document.querySelector("[data-generate]").click();new Promise(r=>setTimeout(r,30))');
-  await run('document.querySelector("[data-image]").click();new Promise(r=>setTimeout(r,250))');
+  await run('(async()=>{document.querySelector("[data-image]").click();for(let i=0;i<100;i++){if(document.querySelector(".share-image-dialog")?.open && document.querySelector(".share-image-scroll img")?.naturalWidth)return;await new Promise(r=>setTimeout(r,30));}throw Error("Image preview did not load");})()');
   assert.equal(await run('document.querySelector(".share-image-dialog").open'),true,'Image preview opens in a dialog');
   assert.equal(await run('document.querySelector(".share-image-scroll img").naturalWidth'),1080,'Download preview uses 1080px raster output');
   assert.equal(await run('document.querySelector(".share-image-scroll img").naturalHeight>=1080'),true,'Image is square or portrait, growing with content');

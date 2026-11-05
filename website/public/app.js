@@ -2,11 +2,11 @@ const t = text => window.KairosSite.t(text);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 function refreshInstallLabel() {
   const expanded = document.querySelector('.install-toggle').getAttribute('aria-expanded') === 'true';
-  document.querySelector('[data-install-label]').textContent = t(expanded ? '收起安装步骤' : '查看安装步骤');
+  document.querySelector('[data-install-label]').textContent = t(expanded ? '收起源码安装步骤' : '查看源码安装步骤');
 }
 window.addEventListener('kairos-preference', refreshInstallLabel);
 refreshInstallLabel();
-document.querySelector('.install-toggle').addEventListener('click',event=>{const button=event.currentTarget;const expanded=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(expanded));document.querySelector('#install-guide').hidden=!expanded;document.querySelector('[data-install-label]').textContent=t(expanded?'收起安装步骤':'查看安装步骤')});
+document.querySelector('.install-toggle').addEventListener('click',event=>{const button=event.currentTarget;const expanded=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(expanded));document.querySelector('#install-guide').hidden=!expanded;document.querySelector('[data-install-label]').textContent=t(expanded?'收起源码安装步骤':'查看源码安装步骤')});
 document.querySelector('#year').textContent=new Date().getFullYear();
 
 // Keep the original brand art crisp; move its wrapper, never morph the bitmap.

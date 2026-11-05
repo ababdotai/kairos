@@ -107,6 +107,7 @@
      * @returns {Element|null} The target element to inject before
      */
     getInjectionPoint() {
+      if (!Utils.getVideoId()) return null;
       const url = window.location.href;
 
       if (url.includes('youtube.com/watch')) {
@@ -163,6 +164,13 @@
      * Injects the panel into the page using pure DOM API
      */
     injectPanel() {
+      if (!Utils.getVideoId()) {
+        this.container?.remove();
+        this.container = null;
+        this.currentVideoId = null;
+        this.elements = {};
+        return;
+      }
       // Prevent multiple rapid injections
       const now = Date.now();
       if (now - this.lastInjectionTime < 200) {
@@ -1122,6 +1130,7 @@
     async loadNotes() {
       const info = Utils.getVideoInfo();
       this.currentVideoId = info.videoId;
+      if (!info.videoId) { this.notes = []; return; }
 
       if (this.elements.videoTitle) {
         this.elements.videoTitle.textContent = info.title || t("Current Video");
@@ -1130,7 +1139,9 @@
       this.updateSubtitleBadge();
 
       try {
-        this.notes = await this.storage.getNotesForVideo(this.currentVideoId);
+        const notes = await this.storage.getNotesForVideo(info.videoId);
+        if (this.currentVideoId !== info.videoId || Utils.getVideoInfo().videoId !== info.videoId) return;
+        this.notes = notes;
 
         if (this.elements.noteCountBadge) {
           this.elements.noteCountBadge.textContent = String(this.notes.length);

@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const { CONFIG, log } = window.Kairos;
+  const { CONFIG, log, Utils } = window.Kairos;
 
   /**
    * VideoTracker class - Tracks video element position and dimensions
@@ -28,13 +28,24 @@
      * @returns {boolean} Whether a valid video was found
      */
     findVideoElement() {
+      const videoId = Utils.getVideoId();
+      if (!videoId) {
+        this.videoElement = null;
+        return false;
+      }
       // 1. Get all potential video candidates
       const allVideos = Array.from(document.querySelectorAll(this.videoSelector));
 
       // 2. Filter candidates based on size, visibility, and ignore list
       const validCandidates = allVideos.filter(video => {
+        const playerSelector = videoId.startsWith('yt-')
+          ? '.html5-video-player'
+          : '.bpx-player-container, .bilibili-player, #bilibili-player';
+        if (!video.closest(playerSelector)) return false;
         // Check 1: Is it visible? (offsetParent is null if display:none)
         if (video.offsetParent === null) return false;
+        const style = getComputedStyle(video);
+        if (style.visibility === 'hidden' || style.visibility === 'collapse' || style.opacity === '0') return false;
 
         const rect = video.getBoundingClientRect();
 
@@ -64,8 +75,8 @@
 
       // 3. Select the best candidate (Largest Visible Area)
       if (validCandidates.length === 0) {
-        // If currently tracked video is still valid (in DOM), keep it until a better one appears
-        return this.videoElement && document.body.contains(this.videoElement);
+        this.videoElement = null;
+        return false;
       }
 
       // Sort by area descending
@@ -115,7 +126,12 @@
      * Updates the video position and triggers callbacks
      */
     update() {
+      const pageId = Utils.getVideoId();
+      const pageChanged = pageId !== this.pageId;
+      this.pageId = pageId;
       if (!this.findVideoElement()) {
+        if (!this.notifiedMissing || pageChanged) this.callbacks.forEach(callback => callback(null, null));
+        this.notifiedMissing = true;
         // Retry if video not found yet
         this.animationFrameId = requestAnimationFrame(() => this.update());
         return;
@@ -123,6 +139,7 @@
 
       const rect = this.getVideoRect();
       if (rect) {
+        this.notifiedMissing = false;
         this.callbacks.forEach(callback => callback(rect, this.videoElement));
       }
 

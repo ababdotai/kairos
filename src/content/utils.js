@@ -14,20 +14,24 @@
   const Utils = {
     /**
      * Extracts video ID from current URL based on platform
-     * @returns {string} Platform-prefixed video ID
+     * @returns {string|null} Platform-prefixed ID, or null outside a playback page
      */
-    getVideoId() {
-      const url = new URL(window.location.href);
-      if (url.hostname.includes('youtube.com')) {
-        if (url.pathname.startsWith('/shorts/')) {
-          return `yt-${url.pathname.split('/shorts/')[1]}`;
-        }
-        return `yt-${url.searchParams.get('v')}`;
-      } else if (url.hostname.includes('bilibili.com')) {
-        const bvid = url.pathname.split('/').find(p => p.startsWith('BV'));
-        return bvid ? `bili-${bvid}` : `bili-${url.pathname}`;
+    getVideoId(href = window.location.href) {
+      const url = new URL(href);
+      if (!['https:', 'http:'].includes(url.protocol)) return null;
+      if (['www.youtube.com', 'youtube.com', 'm.youtube.com'].includes(url.hostname)) {
+        const shorts = url.pathname.match(/^\/shorts\/([\w-]+)\/?$/);
+        if (shorts) return `yt-${shorts[1]}`;
+        const id = url.searchParams.get('v');
+        return url.pathname === '/watch' && id && /^[\w-]+$/.test(id) ? `yt-${id}` : null;
       }
-      return `generic-${url.hostname}${url.pathname}`;
+      if (['www.bilibili.com', 'bilibili.com'].includes(url.hostname)) {
+        const video = url.pathname.match(/^\/video\/(BV[\w]+|av\d+)\/?$/);
+        if (video) return video[1].startsWith('BV') ? `bili-${video[1]}` : `bili-${url.pathname}`;
+        // Preserve existing episode IDs while rejecting feeds, profiles and opus pages.
+        if (/^\/bangumi\/play\/(ep|ss)\d+\/?$/.test(url.pathname)) return `bili-${url.pathname}`;
+      }
+      return null;
     },
 
     /**

@@ -79,6 +79,10 @@ import './content/sidepanel.js';
     // Start tracking and update overlay position
     videoTracker.start((rect, video) => {
       overlayManager.updatePosition(rect, video);
+      if (!window.Kairos.Utils.getVideoId()) {
+        sidePanelManager.injectPanel(); // Removes a stale sidebar immediately on SPA exit.
+        if (overlayManager.currentVideoId) overlayManager.loadNotesForCurrentVideo();
+      }
       if (video) sidePanelManager.updateTime(video.currentTime);
     });
 

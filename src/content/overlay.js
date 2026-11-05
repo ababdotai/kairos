@@ -47,6 +47,8 @@
 
       this.container = document.createElement('div');
       this.container.id = CONFIG.OVERLAY_ID;
+      // Keep the UI invisible until the tracker supplies a real playback video.
+      this.container.style.display = 'none';
 
       this.shadowRoot = this.container.attachShadow({ mode: 'open' });
 
@@ -996,11 +998,24 @@
      */
     updatePosition(rect, video) {
       if (!this.overlayElement) return;
+      if (!rect || !video) {
+        this.videoPlaybackController?.abort();
+        this.wasPlaying = false;
+        this.collapseOrb();
+        this.videoElement = null;
+        this.container.style.display = 'none';
+        this.genUiManager?.clearAll();
+        return;
+      }
+      this.container.style.display = '';
 
       const isNewVideo = video && video !== this.videoElement;
       if (isNewVideo) {
+        this.videoPlaybackController?.abort();
+        this.videoPlaybackController = new AbortController();
         this.videoElement = video;
         video.addEventListener('play', () => {
+          if (this.videoElement !== video || !this.isActive) return;
           // If we are in the middle of a capture (dblclick), ignore the play event
           // and enforce pause. This fixes issues where previous clicks (before dblclick)
           // toggle the video state (e.g. Bilibili).
@@ -1014,7 +1029,7 @@
           if (this.noteWrapper && this.noteWrapper.classList.contains('active')) {
             this.closeNoteInput();
           }
-        });
+        }, { signal: this.videoPlaybackController.signal });
       }
       this.videoElement = video;
 
@@ -2012,11 +2027,14 @@
 
       log('Loading notes for:', this.currentVideoId);
 
+      this.clearAllSpatialMarkers();
       if (this.pins) {
         this.pins.forEach(p => p.element.remove());
       }
       this.pins = [];
       this.renderIslandNotes();
+
+      if (!info.videoId) return;
 
       try {
         const savedNotes = await this.storage.getNotesForVideo(this.currentVideoId);
@@ -2647,6 +2665,7 @@
      * Destroys the overlay
      */
     destroy() {
+      this.videoPlaybackController?.abort();
       this.finishNoteDrag();
       this.noteDragController?.abort();
       this.noteResizeObserver?.disconnect();

@@ -106,6 +106,14 @@
       fill: currentColor;
     }
 
+    #restore-kairos {
+      border: 0; background: #23627b; color: #fff; padding: 6px 10px;
+      font-weight: 650; white-space: nowrap;
+    }
+    #restore-kairos:hover { background: #184e65; }
+    #restore-kairos[hidden] { display: none; }
+    .header-actions:has(#restore-kairos:not([hidden])) #dashboard-btn span { display: none; }
+
     /* Main Card */
     .card {
       background: var(--kairos-card-bg);
@@ -310,12 +318,16 @@
       </div>
     </div>
     <div class="header-actions">
+      <button type="button" id="restore-kairos" class="icon-btn" hidden data-i18n="Enable Kairos">Enable Kairos</button>
       <button id="dashboard-btn" class="icon-btn" title="Open Dashboard" data-i18n-title="Open Dashboard">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="My Notes&amp;Settings">My Notes&amp;Settings</span></button>
     </div>
   </div>
 
+  <p id="restore-error" role="alert" hidden></p>
+
   <!-- Active Video Content -->
+
   <div id="current-video-section" class="card" style="display: none;">
     <h2 id="video-title" class="video-title"><span data-i18n="Loading Video...">Loading Video...</span></h2>
     <div class="stats-row">

@@ -13,7 +13,7 @@
     const reset = () => {
       armed = false;
       button.classList.remove('is-confirming');
-      button.title = label;
+      button.title = button.hasAttribute('data-kairos-tip') ? '' : label;
       button.setAttribute('aria-label', label);
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 24 24');
@@ -47,7 +47,7 @@
         armed = true;
         button.classList.add('is-confirming');
         button.textContent = t('Confirm delete');
-        button.title = t('Click again to delete · Esc to cancel');
+        button.title = button.hasAttribute('data-kairos-tip') ? '' : t('Click again to delete · Esc to cancel');
         button.setAttribute('aria-label', t('Confirm delete'));
         button.focus({ preventScroll: true });
         return;

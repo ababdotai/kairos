@@ -15,14 +15,17 @@
       } catch (error) { reject(error); }
     });
   }
+  function setHint(button, hint) {
+    button.dataset.kairosTip = hint;
+    button.setAttribute('aria-label', `${button.textContent} · ${hint}`);
+  }
   function refreshButtons() {
     for (const button of buttons) {
       if (button.wasConnected && !button.isConnected) { buttons.delete(button); continue; }
       button.wasConnected ||= button.isConnected;
-      button.textContent = t(enabled ? 'AI on' : 'AI off');
+      button.querySelector('.kairos-ai-state').textContent = t(enabled ? 'AI on' : 'AI off');
       button.setAttribute('aria-pressed', String(enabled));
-      button.title = enabled ? t('Automatically refine new notes · Click to turn off') : t('Refine new notes using the frame and subtitles · Click to turn on');
-      button.setAttribute('aria-label', `${button.textContent} · ${button.title}`);
+      setHint(button, enabled ? t('Automatically refine new notes · Click to turn off') : t('Refine new notes using the frame and subtitles · Click to turn on'));
     }
   }
   async function fetchNote(id) {
@@ -51,6 +54,13 @@
   function createToggle() {
     const button = document.createElement('button');
     button.type = 'button'; button.className = 'kairos-ai-toggle';
+    button.title = '';
+    const state = document.createElement('span');
+    state.className = 'kairos-ai-state';
+    const track = document.createElement('span');
+    track.className = 'kairos-ai-track';
+    track.setAttribute('aria-hidden', 'true');
+    button.append(state, track);
     buttons.add(button); refreshButtons();
     button.addEventListener('click', async event => {
       event.stopPropagation();
@@ -58,14 +68,13 @@
       try {
         const result = await request('SET_AUTO_REFINE', { enabled: !enabled });
         if (result.status === 'configuration_required') {
-          button.title = t('Configure an AI provider first');
-          button.setAttribute('aria-label', `${button.textContent} · ${button.title}`);
+          setHint(button, t('Configure an AI provider first'));
           await request('OPEN_SETTINGS');
           return;
         }
         enabled = result.enabled; refreshButtons();
       } catch (error) {
-        button.title = error.message === 'AI_NOT_CONFIGURED' ? t('Configure an AI provider first') : t('Could not save settings. Please try again.');
+        setHint(button, error.message === 'AI_NOT_CONFIGURED' ? t('Configure an AI provider first') : t('Could not save settings. Please try again.'));
         if (error.message === 'AI_NOT_CONFIGURED') chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' });
       } finally { button.disabled = false; }
     });
@@ -104,8 +113,17 @@
   }
   const styles = `
     .kairos-island-note .kairos-island-note-copy{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-    .kairos-ai-toggle{font:500 11px/1.3 -apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #8ca6b340;border-radius:20px;padding:5px 9px;white-space:nowrap;color:inherit;background:transparent;cursor:pointer;transition:background .2s,border-color .2s}
-    .kairos-ai-toggle[aria-pressed=true]{background:#8eb4c51a;border-color:#8eb4c580;color:inherit}.kairos-ai-toggle:hover{background:#8eb4c525}.kairos-ai-toggle:focus-visible{outline:2px solid #8eb4c5;outline-offset:2px}.kairos-ai-toggle:disabled{opacity:.55}
+    .kairos-ai-toggle { display:inline-flex; position:relative; align-items:center; gap:4px; flex:none; height:26px; padding:0 5px; border:0; border-radius:7px; background:transparent; color:inherit; cursor:pointer; }
+    .kairos-ai-toggle::before { content:"AI"; font:600 10px/1 system-ui,sans-serif; letter-spacing:.02em; }
+    .kairos-ai-state { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+    .kairos-ai-track { position:relative; width:23px; height:14px; box-sizing:border-box; border-radius:9px; background:#8797a647; box-shadow:inset 0 0 0 1px #8498a642; transition:background .2s; }
+    .kairos-ai-track::after { content:""; position:absolute; left:3px; top:3px; width:8px; height:8px; border-radius:50%; background:currentColor; transition:transform .24s cubic-bezier(.2,.8,.2,1); }
+    .kairos-ai-toggle[aria-pressed=true] .kairos-ai-track { background:#52879f; }
+    .kairos-ai-toggle[aria-pressed=true] .kairos-ai-track::after { background:white; transform:translateX(9px) rotate(90deg); clip-path:polygon(50% 0,66% 35%,100% 50%,66% 65%,50% 100%,34% 65%,0 50%,34% 35%); }
+    .kairos-ai-toggle:hover { background:#8498ab20; }
+    .kairos-ai-toggle:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+    .kairos-ai-toggle:disabled { opacity:.55; }
+    @media(prefers-reduced-motion:reduce) { .kairos-ai-track,.kairos-ai-track::after { transition:none; } }
     .kairos-refinement-status{display:inline-flex;align-items:center;gap:4px;max-width:100%;font:10px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:inherit;opacity:.68;white-space:nowrap;vertical-align:middle}.kairos-refinement-status[hidden]{display:none}
     .kairos-refinement-icon{display:inline-block;font-size:13px}.kairos-refinement-status[data-state=pending] .kairos-refinement-icon{animation:kairos-refine-spin 2.5s linear infinite}
     .kairos-island-note-row .kairos-refinement-status[data-state=complete] .kairos-refinement-label{display:none}

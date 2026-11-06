@@ -83,7 +83,7 @@ try {
   `);
   await run(`chrome.runtime.getURL = () => ${JSON.stringify(icon)}`);
   await run(`chrome.i18n = { getUILanguage: () => ${JSON.stringify(process.env.KAIROS_TEST_LANGUAGE || 'zh-CN')} }`);
-  for (const name of ['i18n', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
+  for (const name of ['i18n', 'action_tips', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
     await run(await readFile(new URL('../src/content/' + name + '.js', import.meta.url), 'utf8'));
   }
   await run(`(async () => {
@@ -99,6 +99,44 @@ try {
     window.o=new Kairos.OverlayManager();o.sidePanel=side;await o.init();o.currentVideoId='test';
     o.updatePosition(video.getBoundingClientRect(),video);o.expandOrb();
   })()`);
+  // Like Bilibili, the speed menu stays open only while the pointer remains
+  // inside the control. The upper options extend well into the capture area.
+  await run(`
+    const style = document.createElement('style');
+    style.textContent = '.test-speed-menu{display:none;position:absolute;left:0;bottom:100%;width:100%;background:#222;color:white}.bpx-player-control-wrap:hover .test-speed-menu{display:grid}.test-speed-menu span{height:32px}';
+    document.head.append(style);
+    const menu = document.createElement('span');
+    menu.className = 'test-speed-menu';
+    for (const rate of [2, 1.5, 1.25, 1, .75, .5]) {
+      const item = document.createElement('span');
+      item.textContent = rate + 'x';
+      item.onclick = event => { event.stopPropagation(); window.selectedRate = rate; video.playbackRate = rate; };
+      menu.append(item);
+    }
+    document.querySelector('.bpx-player-control-wrap').append(menu);
+  `);
+  const movePointer = (x, y) => call('Input.dispatchMouseEvent', {type:'mouseMoved', x, y});
+  await movePointer(760, 608);
+  const speedPoint = await run(`(() => {
+    const rect = document.querySelector('.test-speed-menu span:nth-child(3)').getBoundingClientRect();
+    return {x:rect.left + rect.width / 2, y:rect.top + rect.height / 2};
+  })()`);
+  assert.ok(speedPoint.y > 0 && speedPoint.y < 540, '1.25x is above the reserved control strip');
+  for (let y = 598; y > speedPoint.y; y -= 9) await movePointer(speedPoint.x, y);
+  await movePointer(speedPoint.x, speedPoint.y);
+  assert.equal(await run(`document.elementFromPoint(${speedPoint.x}, ${speedPoint.y}).textContent`), '1.25x', 'Native option keeps hover up the entire menu');
+  for (const type of ['mousePressed','mouseReleased']) await call('Input.dispatchMouseEvent', {type, ...speedPoint, button:'left', clickCount:1});
+  assert.equal(await run('window.selectedRate'), 1.25, 'The native speed handler receives the click');
+  assert.equal(await run('o.activePin'), null);
+  await movePointer(620, 350);
+  assert.equal(await run('o.shadowRoot.elementFromPoint(620,350) === o.companionInput.surface'), true, 'Returning to the image restores capture');
+  await call('Input.dispatchMouseEvent',{type:'mousePressed',x:620,y:350,button:'left',buttons:1,clickCount:1});
+  await call('Input.dispatchMouseEvent',{type:'mouseMoved',x:690,y:395,buttons:1});
+  assert.equal(await run('o.companionInput.gesture?.path?.tagName'), 'rect', 'Video accepts a real capture drag immediately after using the menu');
+  await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:690,y:395,button:'left',clickCount:1});
+  await run('new Promise(r=>setTimeout(r,80))');
+  assert.ok(await run('o.activePin?.region && !o.activePin.savedToStorage'), 'Drag opens a screenshot draft');
+  await run("o.cancelNote(); document.querySelector('.test-speed-menu').remove(); video.playbackRate=1; playerEvents=[]");
   const key = async (key, text = '') => {
     await call('Input.dispatchKeyEvent', { type: 'keyDown', key, text });
     await call('Input.dispatchKeyEvent', { type: 'keyUp', key });
@@ -384,7 +422,7 @@ try {
   await run(`o.setIslandPinned(true); o.pins=Array.from({length:24},(_,i)=>({id:'follow-'+i,timestamp:i*10,note:'Playback note '+i,savedToStorage:true})); o.renderIslandNotes()`);
   await run('new Promise(r=>setTimeout(r,450))');
   assert.equal(await run('o.islandPinButton.parentElement === o.orbMenu'),true,'Pin toggle is in top action row');
-  assert.equal(await run('o.islandPinButton.textContent'),await run('Kairos.I18n.t("Expanded")'));
+  assert.equal(await run('o.islandPinButton.getAttribute("aria-label")'),await run('Kairos.I18n.t("Unpin to expand only on hover")'));
   await run('video.volume=0.8;playerWheelEvents=0;o.islandList.scrollTop=0');
   const wheelPoint = await run('(() => {const r=o.islandList.getBoundingClientRect();return {x:r.x+80,y:r.y+30}})()');
   await call('Input.dispatchMouseEvent',{type:'mouseWheel',...wheelPoint,deltaY:120,deltaX:0});

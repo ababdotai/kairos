@@ -17,6 +17,10 @@
     })();
   }
   const zh = {
+  "Disable Kairos": "禁用 Kairos",
+  "Disable for this viewing": "仅本次观看禁用",
+  "Disable globally": "全局禁用",
+  "Enable Kairos": "启用 Kairos",
   "AI on": "AI 开启",
   "AI off": "AI 关闭",
   "Drag to move · Position remembered": "拖动调整位置 · 自动记忆",
@@ -50,6 +54,8 @@
   "An API key connects your AI account to Kairos. Create one using the link below, paste it here, then save. API usage is billed by the provider; a chat subscription may not include it.": "API 密钥用于连接你的 AI 账号。点击下方链接创建，粘贴到这里后保存即可。使用费用由提供商收取，聊天会员不一定包含 API 额度。",
   "Could not save settings. Please try again.": "设置保存失败，请重试。",
 
+  "Turn off Kairos": "关闭 Kairos",
+  "Manage all notes": "管理全部笔记",
   "Enable": "启用",
   "Disable": "停用",
   "Note": "记一笔",
@@ -127,7 +133,8 @@
   "Export Markdown": "导出 Markdown",
   "My Notes": "我的笔记",
   "Settings": "设置",
-  "Toggle panel": "展开／收起面板",
+  "Expand sidebar": "展开侧边栏",
+  "Collapse sidebar": "收起侧边栏",
   "Loading...": "正在加载…",
   "Left-drag = Region capture": "左键拖动 = 区域截图",
   "Type = Note · Esc = Exit": "打字 = 记笔记 · Esc = 退出",

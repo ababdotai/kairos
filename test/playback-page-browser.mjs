@@ -83,7 +83,7 @@ try {
   `);
   await run(`chrome.runtime.getURL = () => ${JSON.stringify(icon)}`);
   await run(`chrome.i18n = { getUILanguage: () => ${JSON.stringify(process.env.KAIROS_TEST_LANGUAGE || 'zh-CN')} }`);
-  for (const name of ['i18n', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
+  for (const name of ['i18n', 'action_tips', 'availability', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
     await run(await readFile(new URL('../src/content/' + name + '.js', import.meta.url), 'utf8'));
   }
   await run(`(async () => {
@@ -126,6 +126,24 @@ try {
   await run('pageUrl="https://www.bilibili.com/video/BV123";tick();new Promise(r=>setTimeout(r,100))');
   assert.equal(await run('tracker.videoElement===video'),true,'Playback route selects main player over larger preview');
   assert.notEqual(await run('getComputedStyle(o.container).display'),'none','SPA entry restores the overlay');
+  // Real pointer down/up catches the hover menu collapsing between the two events.
+  const point = expression => run(`(()=>{const r=(${expression}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+  async function clickControl(expression) {
+    const pos = await point(expression);
+    await call('Input.dispatchMouseEvent', { type:'mouseMoved', ...pos });
+    for (const type of ['mousePressed','mouseReleased']) {
+      await call('Input.dispatchMouseEvent', { type, ...pos, button:'left', clickCount:1 });
+    }
+  }
+  await run('o.setIslandPinned(false,false)');
+  await call('Input.dispatchMouseEvent', {type:'mouseMoved', ...await point('o.orbElement')});
+  await run('new Promise(r=>setTimeout(r,450))');
+  await clickControl("o.shadowRoot.querySelector('.kairos-disable-trigger')");
+  assert.equal(await run("!!o.shadowRoot.querySelector('.kairos-disable-options:popover-open')"),true);
+  await clickControl("o.shadowRoot.querySelector('.kairos-disable-options button')");
+  assert.equal(await run('Kairos.Availability.disabled()'),true,'Selecting visit dismissal from a hover-expanded island');
+  await run('pageUrl="https://www.bilibili.com/video/BV456";Kairos.Availability.checkVisit()');
+  assert.equal(await run('Kairos.Availability.disabled()'),false);
   await run('o.expandOrb();video.style.display="none";tick();new Promise(r=>setTimeout(r,60))');
   assert.equal(await run('tracker.videoElement'),null,'Hidden main player is invalid even while connected');
   assert.equal(await run('getComputedStyle(o.container).display'),'none','No stale overlay remains at the previous rectangle');

@@ -12,6 +12,9 @@ const routes = [
 const cases = [
   ...routes.map(([url, expected]) => ({ url, expected })),
   { noTab: true },
+  { url:'chrome://extensions/', globalDisabled:true },
+  { queryError:true, error:true, globalDisabled:true },
+  { url:'https://www.youtube.com/watch?v=abc', expected:'yt-abc', visitDisabled:true },
   { queryError: true, error: true },
   ...[undefined, {success:false,error:'Unavailable'}, {success:true}, {success:true,data:{}}, {success:true,data:[null]}]
     .map(response => ({url:'https://www.youtube.com/watch?v=abc',expected:'yt-abc',response,error:true})),
@@ -24,7 +27,7 @@ for (const scenario of cases) {
   const make = () => ({ style: {}, listeners: {}, addEventListener(type, fn) { this.listeners[type] = fn; } });
   const nodes = new Map();
   const links = ['https://www.bilibili.com/', 'https://www.youtube.com/'].map(href => Object.assign(make(), {href}));
-  const requests = [], opened = [];
+  const requests = [], opened = [], restored = [];
   const context = {
     URL, console,
     window: { Kairos: { I18n: { t: key => key, localize() {}, init: async () => {}, locale: 'en' } } },
@@ -33,8 +36,11 @@ for (const scenario of cases) {
       querySelectorAll: () => links },
     chrome: { tabs: { query: async () => {
       if(scenario.queryError) throw new Error('Tab closed');
-      return scenario.noTab ? [] : [{url, title:'Video'}];
-    }, create: args => opened.push(args.url) },
+      return scenario.noTab ? [] : [{id:42, url, title:'Video'}];
+    }, create: args => opened.push(args.url), sendMessage: async (_, {type}) => {
+      if (type === 'RESTORE_KAIROS_VISIT') restored.push('visit');
+      return {disabled: type === 'GET_KAIROS_AVAILABILITY' && !!scenario.visitDisabled};
+    } }, storage: {local: {get:async()=>({kairosDisabled:!!scenario.globalDisabled}), remove:async key=>restored.push(key)}},
       runtime: { sendMessage: async msg => {
         requests.push(msg);
         if(scenario.messageError) throw new Error('Could not establish connection');
@@ -49,6 +55,13 @@ for (const scenario of cases) {
   if (expected && !scenario.error) {
     assert.equal(nodes.get('current-video-section').style.display,'block');
     assert.equal(nodes.get('export-btn').disabled,!scenario.response?.data?.length);
+  }
+  if (scenario.globalDisabled || scenario.visitDisabled) {
+    const restore = nodes.get('restore-kairos');
+    assert.equal(restore.hidden, false);
+    await restore.listeners.click();
+    assert.equal(restore.hidden, true);
+    assert.deepEqual(restored, [...(scenario.globalDisabled ? ['kairosDisabled'] : []), ...(scenario.queryError ? [] : ['visit'])]);
   }
   for (const link of links) link.listeners.click({preventDefault() {}});
   assert.deepEqual(opened, links.map(link => link.href));

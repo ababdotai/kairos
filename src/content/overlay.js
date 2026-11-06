@@ -9,6 +9,45 @@
 
   const { CONFIG, log, Utils, StorageManager, getStyles, CaptureEngine, SimpleMarkdown } = window.Kairos;
 
+  const iconPaths = {
+    switch: 'M8 5.5h8a6.5 6.5 0 0 1 0 13H8a6.5 6.5 0 0 1 0-13z',
+    write: 'M5 2.5h10l4.5 4.5v14H5z M14.5 3v5h5 M9 14h6m-3-3v6',
+    expand: 'm6 6 6 5 6-5m-12 7 6 5 6-5',
+    collapse: 'm6 11 6-5 6 5m-12 7 6-5 6 5',
+    library: 'M4 5h4v14H4z M10 5h3v14h-3z M15 6l3-1 4 13-3 1z',
+    sparkle: 'M10 3c0 5-2 7-7 8 5 1 7 3 7 8 1-5 3-7 8-8-5-1-7-3-8-8z M19 2v5m-2.5-2.5h5'
+  };
+
+  function islandIcon(name) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('kairos-action-icon');
+    const path = document.createElementNS(svg.namespaceURI, 'path');
+    path.setAttribute('d', iconPaths[name]);
+    svg.append(path);
+    if (name === 'switch') {
+      const thumb = document.createElementNS(svg.namespaceURI, 'circle');
+      thumb.setAttribute('cx', '8');
+      thumb.setAttribute('cy', '12');
+      thumb.setAttribute('r', '3.5');
+      thumb.setAttribute('fill', 'currentColor');
+      thumb.setAttribute('stroke', 'none');
+      svg.append(thumb);
+    }
+    return svg;
+  }
+
+  function setIslandAction(button, icon, label) {
+    button.type = 'button';
+    button.title = ''; // Suppress the native tooltip inherited from the orb.
+    button.dataset.kairosTip = '';
+    button.setAttribute('aria-label', label);
+    if (button.dataset.icon === icon) return;
+    button.dataset.icon = icon;
+    button.replaceChildren(islandIcon(icon));
+  }
+
   /**
    * OverlayManager class - Manages the floating overlay UI
    */
@@ -229,8 +268,8 @@
     setIslandPinned(pinned, persist = false) {
       this.islandContainer.classList.toggle('is-pinned', pinned);
       this.islandPinButton.setAttribute('aria-pressed', String(pinned));
-      this.islandPinButton.textContent = pinned ? t("Expanded") : t("Expand");
-      this.islandPinButton.title = pinned ? t("Unpin to expand only on hover") : t("Keep expanded when the pointer leaves");
+      setIslandAction(this.islandPinButton, pinned ? 'collapse' : 'expand',
+        pinned ? t('Unpin to expand only on hover') : t('Keep expanded when the pointer leaves'));
       this.positionIsland();
       if (persist) {
         this.islandPinChanged = true;
@@ -320,11 +359,7 @@
       // Center Orb Icon Button (click to collapse)
       const orbIconBtn = document.createElement('button');
       orbIconBtn.className = 'kairos-orb-btn orb-icon-btn';
-      orbIconBtn.title = t("Enable / disable companion mode");
-      const orbIconImg = document.createElement('img');
-      orbIconImg.src = iconUrl;
-      orbIconImg.draggable = false;
-      orbIconBtn.textContent = t("Enable");
+      setIslandAction(orbIconBtn, 'switch', t('Enable Kairos'));
       this.islandToggle = orbIconBtn;
       orbIconBtn.setAttribute('aria-pressed', 'false');
       orbIconBtn.addEventListener('click', (e) => {
@@ -336,8 +371,7 @@
       // Pin Button
       const pinBtn = document.createElement('button');
       pinBtn.className = 'kairos-orb-btn pin-btn';
-      pinBtn.textContent = t("Note");
-      pinBtn.title = t("Capture this frame and take a note");
+      setIslandAction(pinBtn, 'write', t('Capture this frame and take a note'));
       pinBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!this.isActive) this.expandOrb();
@@ -443,8 +477,7 @@
       toolbar.className = 'kairos-island-toolbar';
       this.islandPinButton = document.createElement('button');
       this.islandPinButton.className = 'kairos-island-pin-toggle';
-      this.islandPinButton.textContent = t("Expand");
-      this.islandPinButton.title = t("Keep expanded when the pointer leaves");
+      setIslandAction(this.islandPinButton, 'expand', t('Keep expanded when the pointer leaves'));
       this.islandPinButton.setAttribute('aria-pressed', 'false');
       this.islandPinButton.addEventListener('click', event => {
         event.stopPropagation();
@@ -452,8 +485,19 @@
         this.islandPinButton.blur();
       });
       orbMenu.appendChild(this.islandPinButton);
+      if (window.Kairos.Availability) {
+        const control = window.Kairos.Availability.createControl();
+        const close = control.querySelector('.kairos-disable-trigger');
+        close.dataset.kairosTip = '';
+        close.title = '';
+        orbMenu.append(control);
+      }
       toolbar.append(timeLabel);
-      if (window.Kairos.Refinement) toolbar.appendChild(window.Kairos.Refinement.createToggle());
+      if (window.Kairos.Refinement) {
+        const ai = window.Kairos.Refinement.createToggle();
+        ai.prepend(islandIcon('sparkle'));
+        toolbar.append(ai);
+      }
       islandPanel.appendChild(toolbar);
       islandPanel.appendChild(timeline);
       this.islandTime = timeLabel;
@@ -480,10 +524,11 @@
       islandPanel.appendChild(this.islandList);
       const libraryButton = document.createElement('button');
       libraryButton.className = 'kairos-island-library';
-      libraryButton.textContent = t("Manage all notes ↗");
+      setIslandAction(libraryButton, 'library', t('Manage all notes'));
       libraryButton.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'OPEN_DASHBOARD' }));
       islandPanel.appendChild(libraryButton);
       island.appendChild(islandPanel);
+      this.hideIslandTip = window.Kairos.ActionTips.install(island);
       const resumeFollow = () => {
         this.islandFollowPaused = false;
       };
@@ -606,6 +651,7 @@
         this.islandMoments.appendChild(moment);
         const remove = document.createElement('button');
         remove.className = 'kairos-island-delete';
+        remove.dataset.kairosTip = '';
         window.Kairos.bindDeleteButton(remove, async () => {
           try {
             await this.storage.deleteNote(pin.id);
@@ -999,6 +1045,8 @@
     updatePosition(rect, video) {
       if (!this.overlayElement) return;
       if (!rect || !video) {
+        this.hideIslandTip?.();
+        this.shadowRoot.querySelector('.kairos-disable-options:popover-open')?.hidePopover();
         this.videoPlaybackController?.abort();
         this.wasPlaying = false;
         this.collapseOrb();
@@ -1007,6 +1055,7 @@
         this.genUiManager?.clearAll();
         return;
       }
+      this.islandContainer.classList.toggle('is-playing', !video.paused && !video.ended);
       this.container.style.display = '';
 
       const isNewVideo = video && video !== this.videoElement;
@@ -1509,7 +1558,7 @@
       const { flash, ripple, glowBorder } = this.effectElements;
 
       this.isActive = true;
-      this.islandToggle.textContent = t("Disable");
+      setIslandAction(this.islandToggle, 'switch', t('Turn off Kairos'));
       this.islandToggle.setAttribute('aria-pressed', 'true');
       this.shadowRoot.activeElement?.blur();
       this.orbElement.classList.add('expanded');
@@ -1562,7 +1611,7 @@
 
       this.isActive = false;
       this.shadowRoot.activeElement?.blur();
-      this.islandToggle.textContent = t("Enable");
+      setIslandAction(this.islandToggle, 'switch', t('Enable Kairos'));
       this.islandToggle.setAttribute('aria-pressed', 'false');
       this.companionInput?.cancel();
       if (this.companionHint) this.companionHint.hidden = true;
@@ -1588,7 +1637,7 @@
      * @param {MouseEvent} e - Mouse event
      */
     handleGlobalDoubleClick(e) {
-      if (e.composedPath().includes(this.container)) return;
+      if (this.companionInput?.isControl(e, true) || e.composedPath().includes(this.container)) return;
       // Only intercept if Kairos is active
       if (!this.isActive || !this.overlayElement || !this.videoElement) return;
 
@@ -2665,6 +2714,7 @@
      * Destroys the overlay
      */
     destroy() {
+      this.hideIslandTip?.();
       this.videoPlaybackController?.abort();
       this.finishNoteDrag();
       this.noteDragController?.abort();

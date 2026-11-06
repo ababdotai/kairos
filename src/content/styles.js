@@ -14,6 +14,8 @@
    */
   function getStyles() {
     return `${window.Kairos.Refinement?.styles || ""}
+      ${window.Kairos.Availability?.styles || ""}
+      ${window.Kairos.ActionTips.styles}
 
       * {
         margin: 0;
@@ -1055,6 +1057,7 @@
       }
       /* Video-relative glass island; hover expansion is independent of activation. */
       .kairos-island-container.docked {
+        container-type: inline-size;
         --island-glass-header: rgba(18,25,36,.38);
         --island-glass-body: rgba(18,25,36,.58);
         --island-glass-blur: 14px;
@@ -1079,7 +1082,7 @@
       .kairos-island-container.docked.is-resizing,
       .kairos-island-container.docked.is-resizing .kairos-orb { transition: none !important; }
       .kairos-island-resize { display: none; position: absolute; z-index: 5; touch-action: none; }
-      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging) > .kairos-island-resize { display: block; }
+      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging, :has(.kairos-disable-options:popover-open)) > .kairos-island-resize { display: block; }
       .kairos-island-resize.edge-n, .kairos-island-resize.edge-s { height: 8px; left: 20px; right: 20px; cursor: ns-resize; }
       .kairos-island-resize.edge-n { top: -3px; }
       .kairos-island-resize.edge-s { bottom: -3px; }
@@ -1150,8 +1153,8 @@
         background: #ffffff60; flex-shrink: 0;
       }
       .active .kairos-island-status { background: #57df96; box-shadow: 0 0 8px #57df9644; }
-      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging) .kairos-island-status { margin-left: 0; }
-      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging) .kairos-orb .kairos-orb-menu { margin-left: auto; }
+      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging, :has(.kairos-disable-options:popover-open)) .kairos-island-status { margin-left: 0; }
+      .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging, :has(.kairos-disable-options:popover-open)) .kairos-orb .kairos-orb-menu { margin-left: auto; }
       .docked .kairos-orb .kairos-orb-menu {
         max-width: 0; opacity: 0; visibility: hidden;
         pointer-events: none; gap: 4px; margin-left: 0;
@@ -1161,7 +1164,10 @@
       .docked .kairos-orb:focus-within .kairos-orb-menu,
       .docked:hover .kairos-orb-menu, .docked:focus-within .kairos-orb-menu,
       .docked.dock-dragging .kairos-orb-menu {
-        max-width: 190px; opacity: 1; visibility: visible; pointer-events: auto;
+        max-width: 250px; flex-shrink: 0; opacity: 1; visibility: visible; pointer-events: auto;
+      }
+      @container (max-width: 330px) {
+        .docked:is(:hover, :focus-within, .is-pinned, .dock-dragging, :has(.kairos-disable-options:popover-open)) .kairos-orb { gap: 5px; padding-inline: 10px; }
       }
       .docked .kairos-orb .kairos-orb-btn {
         width: auto; height: 32px; padding: 0 8px;
@@ -1219,16 +1225,18 @@
       .kairos-island-note:hover, .kairos-island-delete:hover { background: #ffffff12; border-radius: 6px; }
       .kairos-island-library { background: transparent; color: #cee4f0; border: 0; padding: 10px 0 0; font: inherit; cursor: pointer; }
       .kairos-island-empty { margin: 6px 0 10px; color: #becfda; font-size: 11px; }
-      .kairos-island-container.docked.is-pinned { width: var(--island-expanded-width, 340px); }
-      .docked.is-pinned .kairos-orb,
-      .docked.is-pinned .kairos-orb.expanded,
-      .docked.is-pinned .kairos-orb:not(.expanded) {
+      /* Keep the controls hittable while focus moves into the top-layer menu. */
+      .kairos-island-container.docked:is(.is-pinned, :has(.kairos-disable-options:popover-open)) { width: var(--island-expanded-width, 340px); }
+      .docked:is(.is-pinned, :has(.kairos-disable-options:popover-open)) .kairos-orb,
+      .docked:is(.is-pinned, :has(.kairos-disable-options:popover-open)) .kairos-orb.expanded,
+      .docked:is(.is-pinned, :has(.kairos-disable-options:popover-open)) .kairos-orb:not(.expanded) {
         width: var(--island-expanded-width, 340px); height: 54px; border-radius: 25px 25px 0 0;
       }
-      .docked.is-pinned .kairos-orb .kairos-orb-menu {
-        max-width: 190px; opacity: 1; visibility: visible; pointer-events: auto;
+      .docked:is(.is-pinned, :has(.kairos-disable-options:popover-open)) .kairos-orb .kairos-orb-menu {
+        max-width: 250px; flex-shrink: 0; opacity: 1; visibility: visible; pointer-events: auto;
       }
-      .docked.is-pinned .kairos-island-panel { display: block; }
+      .docked:is(.is-pinned, :has(.kairos-disable-options:popover-open)) .kairos-island-panel { display: block; }
+      .kairos-island-toolbar .kairos-island-time { margin-inline-end:auto; }
       .kairos-island-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
       .kairos-island-pin-toggle {
         border: 1px solid #ffffff24; border-radius: 16px; padding: 0 8px; height: 32px; white-space: nowrap; flex-shrink: 0;
@@ -1343,7 +1351,7 @@
         .kairos-island-delete.is-confirming { color: #a23b37; background: #b6373012; }
       }
       /* Pinned-open glass recedes when watching. Mouse focus must not keep it opaque. */
-      .kairos-island-container.docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) {
+      .kairos-island-container.docked:is(.is-pinned, .is-playing:not(:focus-within):not(:has(.kairos-orb.active))):not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) {
         --island-glass-header: rgba(18,25,36,.16);
         --island-glass-body: rgba(18,25,36,.12);
         --island-glass-blur: 2px;
@@ -1352,29 +1360,53 @@
         text-shadow: 0 1px 3px #0008;
       }
       @media (prefers-color-scheme: light) {
-        .kairos-island-container.docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) {
+        .kairos-island-container.docked:is(.is-pinned, .is-playing:not(:focus-within):not(:has(.kairos-orb.active))):not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) {
           --island-glass-header: rgba(26,39,52,.14);
           --island-glass-body: rgba(26,39,52,.10);
         }
       }
       /* Video luminance varies independently of the system theme: use light ink
          with a small dark shadow on the clear surface, then restore theme ink on hover. */
-      .docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming))
+      .docked:is(.is-pinned, .is-playing:not(:focus-within):not(:has(.kairos-orb.active))):not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming))
       :is(.kairos-island-brand, .kairos-orb-btn, .kairos-island-pin-toggle, .kairos-island-time,
           .kairos-island-note, .kairos-island-note span, .kairos-island-moment, .kairos-island-delete,
           .kairos-island-library, .kairos-island-empty, .kairos-ai-toggle, .kairos-refinement-status,
           .kairos-island-feedback, .kairos-feedback-mark) {
         color: #eef6fc; text-shadow: 0 1px 3px #000b;
       }
-      .docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming))
+      .docked:is(.is-pinned, .is-playing:not(:focus-within):not(:has(.kairos-orb.active))):not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming))
       :is(.kairos-orb-btn, .kairos-island-pin-toggle, .kairos-ai-toggle) {
         background: #ffffff0d; border-color: #ffffff30;
       }
-      .docked.is-pinned:not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) .kairos-island-note-row.is-current::before {
+      .docked:is(.is-pinned, .is-playing:not(:focus-within):not(:has(.kairos-orb.active))):not(:hover):not(.dock-dragging):not(:has(:focus-visible, .dragging, .is-confirming)) .kairos-island-note-row.is-current::before {
         border-left-color: #eef6fc;
       }
       @media (prefers-reduced-motion: reduce) {
         .docked .kairos-orb, .docked .kairos-orb .kairos-orb-menu, .docked .kairos-island-panel { transition: none; }
+      }
+      .kairos-action-icon {
+        display: block; width: 18px; height: 18px; fill: none; stroke: currentColor;
+        stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+      }
+      .docked .kairos-orb-menu button:is(.kairos-orb-btn, .kairos-island-pin-toggle, .kairos-disable-trigger),
+      .docked .kairos-island-library {
+        display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px;
+        padding: 0; border: 0; border-radius: 9px; background: transparent; color: inherit;
+      }
+      .orb-icon-btn[aria-pressed=true] circle { transform: translateX(8px); }
+      @media (prefers-reduced-motion: no-preference) {
+        .orb-icon-btn circle { transition: transform 150ms ease-out; }
+      }
+      .docked .kairos-orb-menu button[aria-pressed=true] { background: #80b8c830; }
+      .docked button[data-kairos-tip]:hover { background-color: #899fab28; }
+      .docked button[data-kairos-tip]:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+      .docked .kairos-ai-toggle::before { content: none; }
+      .docked .kairos-island-library { margin-top: 5px; }
+      .docked .kairos-island-panel .kairos-island-library { color: inherit; }
+      @media (prefers-reduced-motion: no-preference) {
+        .docked button[data-kairos-tip] svg { transition: transform 150ms ease-out; }
+        .docked button[data-kairos-tip]:hover svg { transform: translateY(-1px); }
+        .docked button[data-kairos-tip]:active svg { transform: scale(.92); }
       }
     `;
   }

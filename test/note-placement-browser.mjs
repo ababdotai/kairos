@@ -83,7 +83,7 @@ try {
   `);
   await run(`chrome.runtime.getURL = () => ${JSON.stringify(icon)}`);
   await run(`chrome.i18n = { getUILanguage: () => ${JSON.stringify(process.env.KAIROS_TEST_LANGUAGE || 'zh-CN')} }`);
-  for (const name of ['i18n', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
+  for (const name of ['i18n', 'action_tips', 'refinement', 'delete_button', 'config', 'utils', 'storage', 'markdown', 'capture', 'styles', 'companion', 'sidepanel', 'overlay']) {
     await run(await readFile(new URL('../src/content/' + name + '.js', import.meta.url), 'utf8'));
   }
   await run(`(async () => {

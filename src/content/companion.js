@@ -3,18 +3,28 @@
   'use strict';
   const { t } = window.Kairos.I18n;
 
+  // Menus may be children of the control bar or separate popups in the player.
+  const playerControls = [
+    '.bpx-player-control-wrap', '.bpx-player-control-bottom', '.bpx-player-progress-wrap',
+    '.bpx-player-ctrl-btn', '.bpx-player-ctrl-playbackrate-menu', '.bpx-player-ctrl-quality-menu',
+    '.bpx-player-ctrl-setting-box', '.bilibili-player-video-control',
+    '.ytp-chrome-bottom', '.ytp-popup', '.ytp-settings-menu',
+    '[role="menu"]', '[role="menuitem"]', '[role="menuitemradio"]', '[role="listbox"]', '[role="option"]'
+  ].join(',');
+
   class CompanionInput {
     /** Registers removable capture-phase listeners before page handlers. */
     constructor(overlay) {
       this.overlay = overlay;
       this.listeners = [];
       this.suppressClickUntil = 0;
+      this.overPlayerControl = false;
       this.surface = document.createElement('div');
       this.surface.className = 'kairos-capture-surface';
       this.surface.title = t("Drag to capture · Click to play/pause");
       overlay.overlayElement.prepend(this.surface);
       for (const [type, method] of Object.entries({
-        keydown: 'keydown', pointerdown: 'pointerdown', pointermove: 'pointermove',
+        keydown: 'keydown', pointerover: 'updateControlHover', pointerdown: 'pointerdown', pointermove: 'pointermove',
         pointerup: 'pointerup', pointercancel: 'cancel', blur: 'cancel',
         click: 'click', dblclick: 'click', dragstart: 'dragstart',
         mousedown: 'mouse', mousemove: 'mouse', mouseup: 'mouse',
@@ -43,11 +53,32 @@
       this.surface.style.bottom = `${this.captureBottom}px`;
     }
 
+    // Yield hit testing as soon as the pointer enters native controls. The
+    // upward trip into a hover menu must stay in the player's DOM, including
+    // the very first pointerover, or the player closes the menu on mouseleave.
+    updateControlHover(event) {
+      if (this.gesture || !this.overlay.isActive) return;
+      const target = event.composedPath()[0];
+      let control = target instanceof Element && target.closest(playerControls);
+      if (!control && target === this.surface && event.type === 'pointerover') {
+        // Also cover a menu opened by keyboard or positioned outside its bar.
+        const underneath = document.elementsFromPoint(event.clientX, event.clientY)
+          .find(element => element !== this.overlay.container);
+        control = underneath?.closest(playerControls);
+      }
+      if (this.overPlayerControl === Boolean(control)) return;
+      this.overPlayerControl = Boolean(control);
+      this.surface.style.pointerEvents = control ? 'none' : '';
+      if (!control && this.overlay.shadowRoot.elementFromPoint(event.clientX, event.clientY) === this.surface) {
+        this.prepareTyping();
+      }
+    }
+
     /** Keeps native editors, controls, links and extension UI interactive. */
     isControl(event, pointer = false) {
       if (event.composedPath().includes(this.surface)) return false;
       return event.composedPath().some(node => node instanceof Element && (
-        node === this.overlay.container || node.isContentEditable ||
+        node === this.overlay.container || node.isContentEditable || node.matches(playerControls) ||
         node.matches('input, textarea, select, button, a, [role="slider"], [role="textbox"], .ytp-chrome-bottom, .bpx-player-control-wrap') ||
         (node.matches('[role="button"]') && !(pointer && node.contains(this.overlay.videoElement)))
       ));
@@ -66,7 +97,10 @@
       if (o.shadowRoot.activeElement === o.noteInput) return;
       let active = document.activeElement;
       while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
-      if (active && active !== o.container && (active.isContentEditable || active.matches('input, textarea, select'))) return;
+      if (active && active !== o.container) {
+        if (active.isContentEditable || active.matches('input, textarea, select')) return;
+        if (active.closest(playerControls) && (this.overPlayerControl || active.matches(':focus-visible'))) return;
+      }
       o.noteInput.classList.remove('hidden');
       o.noteInput.value = '';
       o.noteInput.focus({ preventScroll: true });
@@ -79,7 +113,7 @@
         let active = document.activeElement;
         while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
         if (active && active !== this.overlay.noteInput && !this.overlay.noteWrapper.contains(active) &&
-            (active.isContentEditable || active.matches('input, textarea, select, button, a, [role="slider"], [role="textbox"]'))) return;
+            (active.closest(playerControls) || active.isContentEditable || active.matches('input, textarea, select, button, a, [role="slider"], [role="textbox"]'))) return;
         this.prepareTyping();
       }, 0);
     }
@@ -130,7 +164,7 @@
     /** Starts a rectangular selection on the video image, away from controls. */
     pointerdown(event) {
       const o = this.overlay;
-      if (this.gesture || !o.isActive || o.isEditing || !o.videoElement || event.button !== 0 ||
+      if (this.gesture || this.overPlayerControl || !o.isActive || o.isEditing || !o.videoElement || event.button !== 0 ||
           event.pointerType === 'touch' || event.metaKey || event.ctrlKey || event.altKey || this.isControl(event, true)) return;
       const rect = o.videoElement.getBoundingClientRect();
       this.updateSafeArea(rect);
@@ -146,7 +180,10 @@
     /** Draws the rectangle between press and current pointer, preserving clicks. */
     pointermove(event) {
       const g = this.gesture;
-      if (!g && event.composedPath().includes(this.surface)) this.prepareTyping();
+      if (!g) {
+        if (this.overPlayerControl && event.composedPath()[0] !== this.surface) this.updateControlHover(event);
+        if (!this.overPlayerControl && event.composedPath().includes(this.surface)) this.prepareTyping();
+      }
       if (!g || event.pointerId !== g.id) return;
       if (!this.overlay.isActive || location.href !== g.url) return this.cancel();
       this.consume(event);
@@ -205,12 +242,14 @@
 
     /** Prevents a completed drawing from toggling playback or closing its note. */
     click(event) {
+      if (this.isControl(event, true)) return;
       if (event.button === 0 && (Date.now() < this.suppressClickUntil ||
           event.composedPath().includes(this.surface))) this.consume(event);
     }
 
     /** Blocks compatibility mouse events, including the post-pointerup mouseup. */
     mouse(event) {
+      if (!this.gesture && this.isControl(event, true)) return;
       if (this.gesture || (event.button === 0 && event.composedPath().includes(this.surface)) ||
           (event.button === 0 && Date.now() < this.suppressClickUntil && event.type === 'mouseup')) this.consume(event);
     }
@@ -259,6 +298,10 @@
 
     /** Discards unfinished ink and restores playback when appropriate. */
     cancel() {
+      if (!this.overlay.isActive) {
+        this.overPlayerControl = false;
+        this.surface.style.pointerEvents = '';
+      }
       const g = this.gesture;
       this.gesture = null;
       if (g) {

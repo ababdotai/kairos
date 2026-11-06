@@ -1,8 +1,10 @@
 import './content/i18n.js';
+import './content/action_tips.js';
 import './content/delete_button.js';
 import './content/refinement.js';
 import './content.css';
 import './content/config.js';
+import './content/availability.js';
 import './content/utils.js';
 import './content/storage.js';
 import './content/markdown.js';
@@ -32,8 +34,22 @@ import './content/sidepanel.js';
   /**
    * Main application initialization
    */
-  async function init() {
+  const availability = window.Kairos.Availability;
+  async function bootstrap() {
     await window.Kairos.I18n.init();
+    await availability.init();
+    let started = false;
+    function startWhenEnabled() {
+      if (!started && !availability.disabled()) {
+        started = true;
+        void init();
+      }
+    }
+    availability.subscribe(startWhenEnabled);
+    startWhenEnabled();
+  }
+
+  async function init() {
     await window.Kairos.Refinement.init();
     log('Initializing Kairos...');
 
@@ -77,20 +93,42 @@ import './content/sidepanel.js';
     const videoTracker = new VideoTracker(CONFIG.VIDEO_SELECTOR);
 
     // Start tracking and update overlay position
-    videoTracker.start((rect, video) => {
+    const onVideo = (rect, video) => {
       overlayManager.updatePosition(rect, video);
       if (!window.Kairos.Utils.getVideoId()) {
         sidePanelManager.injectPanel(); // Removes a stale sidebar immediately on SPA exit.
         if (overlayManager.currentVideoId) overlayManager.loadNotesForCurrentVideo();
       }
       if (video) sidePanelManager.updateTime(video.currentTime);
-    });
+    };
+    videoTracker.start(onVideo);
+    function applyAvailability() {
+      if (availability.disabled()) {
+        videoTracker.stop();
+        overlayManager.updatePosition(null, null);
+        sidePanelManager.injectPanel();
+        agent.stop();
+        hudAgent.stop();
+        subtitleManager.stop();
+      } else {
+        subtitleManager.init();
+        agent.start();
+        if (hudAgent.isActive) hudAgent.start();
+        videoTracker.update();
+        overlayManager.loadNotesForCurrentVideo();
+        sidePanelManager.injectPanel();
+      }
+    }
+    availability.subscribe(applyAvailability);
+    if (availability.disabled()) applyAvailability();
 
     // Monitor URL changes (for SPA like YouTube)
     let lastUrl = window.location.href;
     setInterval(() => {
       if (window.location.href !== lastUrl) {
         lastUrl = window.location.href;
+        availability.checkVisit();
+        if (availability.disabled()) return;
         log('URL changed, reloading notes...');
         overlayManager.loadNotesForCurrentVideo();
         sidePanelManager.refresh();
@@ -118,9 +156,9 @@ import './content/sidepanel.js';
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', bootstrap);
   } else {
-    init();
+    bootstrap();
   }
 
 })();

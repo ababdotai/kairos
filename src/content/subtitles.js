@@ -260,7 +260,10 @@
       }
       if (this.pollInterval) {
         clearInterval(this.pollInterval);
+        this.pollInterval = null;
       }
+      clearInterval(this.contentPollInterval);
+      this.contentPollInterval = null;
       this.buffer = [];
       this.fullSessionBuffer = [];
     }

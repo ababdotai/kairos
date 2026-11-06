@@ -100,7 +100,7 @@ try {
   await act('await mutateNote("interrupted",()=>({...note("interrupted"),revision:1,updatedAt:1,refinement:{status:"pending",token:"old-worker",startedAt:Date.now()-100000}}))');
   assert.equal(await run('(await ask("GET_NOTE",{id:"interrupted"})).refinement.status'),'error','Interrupted jobs recover instead of spinning forever');
   await act('await ask("SET_AUTO_REFINE",{enabled:false})');
-  for (const name of ['i18n','refinement','delete_button','config','utils','markdown','capture','styles','companion','sidepanel','overlay']) {
+  for (const name of ['i18n', 'action_tips','refinement','delete_button','config','utils','markdown','capture','styles','companion','sidepanel','overlay']) {
     await run(await readFile(new URL('../src/content/'+name+'.js',import.meta.url),'utf8'));
   }
   await act(`await Kairos.I18n.init();await Kairos.Refinement.init();
@@ -118,7 +118,7 @@ try {
   await act('delete settings.openaiApiKey;window.openedTabs=[];chrome.tabs={create:async options=>openedTabs.push(options)};toggle.click();await waitFor(()=>openedTabs.length===1 && !toggle.disabled);');
   assert.equal(await run('openedTabs[0].url'),'/src/dashboard.html?tab=settings');
   assert.deepEqual(await run('[toggle.getAttribute("aria-pressed"),islandToggle.getAttribute("aria-pressed")]'),['false','false']);
-  assert.equal(await run('toggle.title'),'请先在设置中配置 AI 提供商');
+  assert.equal(await run('toggle.dataset.kairosTip'),'请先在设置中配置 AI 提供商');
   assert.equal(await run('backgroundErrors.length'),0,'Configuration guidance does not emit background errors');
   await run('settings.openaiApiKey="test-key";');
   await act('toggle.click();await waitFor(()=>islandToggle.textContent==="AI 开启")');

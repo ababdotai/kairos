@@ -107,7 +107,7 @@
      * @returns {Element|null} The target element to inject before
      */
     getInjectionPoint() {
-      if (!Utils.getVideoId()) return null;
+      if (window.Kairos.Availability?.disabled() || !Utils.getVideoId()) return null;
       const url = window.location.href;
 
       if (url.includes('youtube.com/watch')) {
@@ -164,8 +164,9 @@
      * Injects the panel into the page using pure DOM API
      */
     injectPanel() {
-      if (!Utils.getVideoId()) {
+      if (window.Kairos.Availability?.disabled() || !Utils.getVideoId()) {
         this.container?.remove();
+        this.lastInjectionTime = 0;
         this.container = null;
         this.currentVideoId = null;
         this.elements = {};
@@ -265,7 +266,7 @@
       const subBadge = createElement('span', {
         className: 'kairos-sp-subtitle-badge',
         text: 'CC',
-        title: t("Captions available for better AI notes")
+        attrs: { 'data-kairos-tip': t("Captions available for better AI notes") }
       });
       brand.appendChild(subBadge);
       this.elements.subBadge = subBadge;
@@ -304,15 +305,23 @@
       });
       settingsBtn.appendChild(createSvgIcon('M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.57,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.08-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z', 16));
       headerActions.appendChild(settingsBtn);
+      if (window.Kairos.Availability) headerActions.append(window.Kairos.Availability.createControl());
       this.elements.settingsBtn = settingsBtn;
 
       // Toggle button
-      const toggle = createElement('button', { className: 'kairos-sp-toggle', title: t("Toggle panel") });
+      const toggle = createElement('button', { className: 'kairos-sp-toggle', attrs: { 'aria-label': t("Collapse sidebar"), 'aria-expanded': 'true' } });
       toggle.appendChild(createSvgIcon('M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'));
       headerActions.appendChild(toggle);
       this.elements.toggle = toggle;
 
+      for (const button of [exportBtn, dashboardBtn, settingsBtn, toggle, headerActions.querySelector('.kairos-disable-trigger')]) {
+        if (!button) continue;
+        if (button.title) button.setAttribute('aria-label', button.title);
+        button.title = '';
+        button.dataset.kairosTip = '';
+      }
       header.appendChild(headerActions);
+      window.Kairos.ActionTips.install(header);
       return header;
     }
 
@@ -462,6 +471,8 @@
       const style = document.createElement('style');
       style.id = 'kairos-sidepanel-styles';
       style.textContent = `${window.Kairos.Refinement?.styles || ""}
+      ${window.Kairos.Availability?.styles || ""}
+      ${window.Kairos.ActionTips.styles}
         #kairos-sidepanel .kairos-sp-note-header{flex-wrap:wrap;row-gap:3px;}
 
         #kairos-sidepanel {
@@ -1025,7 +1036,7 @@
         #kairos-sidepanel .kairos-sp-title { background: none; -webkit-text-fill-color: currentColor; color: #fff; letter-spacing: .025em; }
         #kairos-sidepanel .kairos-sp-logo { width: 23px; height: 23px; flex-shrink: 0; }
         #kairos-sidepanel .kairos-sp-header-actions { flex-shrink: 0; }
-        #kairos-sidepanel .kairos-sp-header-actions .kairos-ai-toggle { height: 26px; padding: 0 8px; margin-right: 4px; }
+        #kairos-sidepanel .kairos-sp-header-actions .kairos-ai-toggle { height: 26px; padding: 0 4px; color: var(--kairos-sp-text-muted); }
         #kairos-sidepanel .kairos-sp-subtitle-badge { color: #d5e2ec; background: #ffffff0a; border-color: #ffffff26; box-shadow: none; }
         #kairos-sidepanel .kairos-sp-subtitle-badge.active { color: #a7e7c6; }
         #kairos-sidepanel .kairos-sp-count-badge { background: #ffffff0e; color: #dbe7f1; border: 1px solid #ffffff20; box-shadow: none; }
@@ -1081,6 +1092,8 @@
         const card = this.container.querySelector('.kairos-sp-card');
         card.classList.toggle('collapsed');
         this.isExpanded = !card.classList.contains('collapsed');
+        this.elements.toggle.setAttribute('aria-expanded', String(this.isExpanded));
+        this.elements.toggle.setAttribute('aria-label', t(this.isExpanded ? 'Collapse sidebar' : 'Expand sidebar'));
       });
 
       // Export button
@@ -1111,11 +1124,11 @@
 
       if (available) {
         this.elements.subBadge.classList.add('available');
-        this.elements.subBadge.title = t("Captions available - Turn them on for best AI results");
+        this.elements.subBadge.dataset.kairosTip = t("Captions available - Turn them on for best AI results");
 
         if (active) {
           this.elements.subBadge.classList.add('active');
-          this.elements.subBadge.title = t("Captions active - Kairos is listening");
+          this.elements.subBadge.dataset.kairosTip = t("Captions active - Kairos is listening");
         } else {
           this.elements.subBadge.classList.remove('active');
         }

@@ -26,14 +26,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Check current tab
-  let tab;
+  let tab, tabQueryFailed = false;
   try {
     [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   } catch {
+    tabQueryFailed = true;
+  }
+
+  const restore = document.getElementById('restore-kairos');
+  async function currentVisit(message) {
+    if (tab?.id == null) return;
+    try { return await chrome.tabs.sendMessage(tab.id, { type: message }); }
+    catch { /* Restricted pages do not have a content script. */ }
+  }
+  const preferences = await chrome.storage?.local.get('kairosDisabled');
+  const visit = preferences?.kairosDisabled ? null : await currentVisit('GET_KAIROS_AVAILABILITY');
+  if (preferences?.kairosDisabled || visit?.disabled) {
+    restore.hidden = false;
+    restore.addEventListener('click', async () => {
+      restore.disabled = true;
+      document.getElementById('restore-error').hidden = true;
+      try {
+        if (preferences?.kairosDisabled) await chrome.storage.local.remove('kairosDisabled');
+        const result = await currentVisit('RESTORE_KAIROS_VISIT');
+        if (visit?.disabled && !result) throw new Error('Tab unavailable');
+        restore.hidden = true;
+      } catch {
+        const error = document.getElementById('restore-error');
+        error.textContent = t('Could not save settings. Please try again.');
+        error.hidden = false;
+      } finally { restore.disabled = false; }
+    });
+  }
+
+  if (tabQueryFailed) {
     showEmptyState(t("Connection Error"), t("Could not read the current tab. Please reopen Kairos."));
     return;
   }
-
   let url;
   try { url = new URL(tab?.url); } catch { /* Restricted tabs may omit their URL. */ }
   const isHost = domain => url && (url.hostname === domain || url.hostname.endsWith('.' + domain));
